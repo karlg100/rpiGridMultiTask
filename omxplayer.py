@@ -5,7 +5,7 @@ from pprint import pprint
 # This will start an `omxplayer` process, this might 
 # fail the first time you run it, currently in the 
 # process of fixing this though.
-player = OMXPlayer('/home/pi/test.mp4')
+player = OMXPlayer('/home/pi/test.mp4', '--no-osd')
 
 # The player will initially be paused
 
