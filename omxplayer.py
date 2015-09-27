@@ -15,8 +15,8 @@ socket.bind(socket.bind("tcp://*:%s" % port)
 #socket_sub.setsockopt(zmq.SUBSCRIBE, "1")
 #
 #poller = zmq.Poller()
-    #poller.register(socket_pull, zmq.POLLIN)
-    #poller.register(socket_sub, zmq.POLLIN)
+#    poller.register(socket_pull, zmq.POLLIN)
+#    poller.register(socket_sub, zmq.POLLIN)
 #
 
 # This will start an `omxplayer` process, this might 
