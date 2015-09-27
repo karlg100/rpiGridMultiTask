@@ -23,14 +23,16 @@ if len(sys.argv) > 2:
 # Subscribe to zipcode, default is NYC, 10001
 topicfilter = "10001"
 socket.setsockopt(zmq.SUBSCRIBE, topicfilter)
+socket.setsockopt(zmq.SUBSCRIBE, "1")
+socket.setsockopt(zmq.SUBSCRIBE, "10002")
 
 # Process 5 updates
 total_value = 0
 for update_nbr in range (5):
     string = socket.recv()
-    topic, messagedata = string.split()
-    total_value += int(messagedata)
-    print topic, messagedata
+    #topic, messagedata = string.split()
+    #total_value += int(messagedata)
+    print string
 
 print "Average messagedata value for topic '%s' was %dF" % (topicfilter, total_value / update_nbr)
       

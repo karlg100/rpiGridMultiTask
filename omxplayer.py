@@ -1,55 +1,59 @@
-import sys
-import zmq
-
-port = "5556"
-
 from pyomxplayer import OMXPlayer
+import json
 from time import sleep
 from pprint import pprint
 
+
+import zmq
+import random
+import sys
+import time
+
+port = "5556"
+
+context = zmq.Context()
+socket = context.socket(zmq.PUB)
+socket.bind("tcp://*:%s" % port)
+
+
 # Socket to talk to server
-zmq_playfeedback = zmq.Context()
-feedback_socket = zmq_playfeedback.socket(zmq.SUB)
-socket.bind(socket.bind("tcp://*:%s" % port)
+port = "5556"
 
-#socket_sub.setsockopt(zmq.SUBSCRIBE, "1")
-#
-#poller = zmq.Poller()
-#    poller.register(socket_pull, zmq.POLLIN)
-#    poller.register(socket_sub, zmq.POLLIN)
-#
 
-# This will start an `omxplayer` process, this might 
-# fail the first time you run it, currently in the 
-# process of fixing this though.
-player = OMXPlayer('/home/pi/test.mp4', '--no-osd')
+player = OMXPlayer('/home/pi/test2.mp4', '--no-osd --loop')
 
 # The player will initially be paused
 
+player.toggle_mute()
 player.toggle_pause()
-#pprint(player.__dict__)
-#sleep(5)
 #player.toggle_pause()
-#pprint(player.__dict__)
-#sleep(5)
 #player.toggle_pause()
-#pprint(player.__dict__)
-#sleep(5)
 #player.toggle_mute()
-#pprint(player.__dict__)
-#sleep(5)
 #player.toggle_mute()
-#pprint(player.__dict__)
-#sleep(5)
 #player.toggle_mute(.1)
-#pprint(player.__dict__)
-#sleep(5)
 #player.toggle_mute(.5)
-#pprint(player.__dict__)
 
 # Kill the `omxplayer` process gracefully.
 try:
     while True:
-        pprint(player.__dict__)
+        messagedata = json.dumps({
+		"audio": player.__dict__['audio'],
+		"video": player.__dict__['video'],
+		"current_volume": player.__dict__['current_volume'],
+		"duration": player.__dict__['duration'],
+		"media_file": player.__dict__['media_file'],
+		"paused": player.__dict__['paused'],
+		"position": player.__dict__['position'],
+		"title": player.__dict__['title'],
+		})
+        print "%d %s" % (1, messagedata)
+        socket.send("%d %s" % (1, messagedata))
+        sleep(1)
 except KeyboardInterrupt:
     player.stop()
+
+#socket_sub.setsockopt(zmq.SUBSCRIBE, 1)
+#
+#poller = zmq.Poller()
+#    poller.register(socket_pull, zmq.POLLIN)
+#    poller.register(socket_sub, zmq.POLLIN)
