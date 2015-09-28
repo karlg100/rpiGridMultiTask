@@ -15,9 +15,16 @@ context = zmq.Context()
 socket = context.socket(zmq.PUB)
 socket.bind("tcp://*:%s" % port)
 
+if len(sys.argv) > 1:
+    playerID =  int(sys.argv[1])
+else:
+    raise RuntimeError("specify player id: omxplayer.py [id]")
 
-# Socket to talk to server
-port = "5556"
+
+def sendUpdate(messagedata):
+    global playerID
+    print "%d %s" % (playerID, messagedata)
+    socket.send("%d %s" % (playerID, messagedata))
 
 
 player = OMXPlayer('/home/pi/test2.mp4', '--no-osd --loop')
@@ -46,8 +53,7 @@ try:
 		"position": player.__dict__['position'],
 		"title": player.__dict__['title'],
 		})
-        print "%d %s" % (1, messagedata)
-        socket.send("%d %s" % (1, messagedata))
+        sendUpdate(messagedata)
         sleep(1)
 except KeyboardInterrupt:
     player.stop()
