@@ -2,15 +2,32 @@ from pyomxplayer import OMXPlayer
 import json
 from time import sleep
 from pprint import pprint
-
-
+import threading
 import zmq
 import random
 import sys
 import time
 
-port = "5556"
+player = False
+exitnow = False
+def playerHandler():
+    while not exitnow:
+        print "listen here"
+        sleep(1)
 
+def playFile(file, args):
+    global player
+    player = OMXPlayer(file, args)
+    # The player will initially be paused
+    player.toggle_mute()
+    player.toggle_pause()
+
+
+#player.toggle_mute()
+#player.toggle_mute(.1)
+#player.toggle_mute(.5)
+
+port = "5556"
 context = zmq.Context()
 socket = context.socket(zmq.PUB)
 socket.bind("tcp://*:%s" % port)
@@ -26,24 +43,15 @@ def sendUpdate(messagedata):
     print "%d %s" % (playerID, messagedata)
     socket.send("%d %s" % (playerID, messagedata))
 
+t = threading.Thread(target=playerHandler)
+t.start()
 
-player = OMXPlayer('/home/pi/test2.mp4', '--no-osd --loop')
-
-# The player will initially be paused
-
-player.toggle_mute()
-player.toggle_pause()
-#player.toggle_pause()
-#player.toggle_pause()
-#player.toggle_mute()
-#player.toggle_mute()
-#player.toggle_mute(.1)
-#player.toggle_mute(.5)
-
-# Kill the `omxplayer` process gracefully.
 try:
     while True:
-        messagedata = json.dumps({
+        if not player:
+            sendUpdate(json.dumps({"player_status": "ready"}))
+        else:
+            messagedata = json.dumps({
 		"audio": player.__dict__['audio'],
 		"video": player.__dict__['video'],
 		"current_volume": player.__dict__['current_volume'],
@@ -53,10 +61,12 @@ try:
 		"position": player.__dict__['position'],
 		"title": player.__dict__['title'],
 		})
-        sendUpdate(messagedata)
+            sendUpdate(messagedata)
         sleep(1)
 except KeyboardInterrupt:
-    player.stop()
+    exitnow = True
+    if player:
+        player.stop()
 
 #socket_sub.setsockopt(zmq.SUBSCRIBE, 1)
 #
