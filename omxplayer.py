@@ -40,7 +40,7 @@ def playerHandler():
         #socks = dict(poller.poll(1000))
         #if socks:
                 #if socks.get(work_receiver) == zmq.POLLIN:
-        sleep(1)
+        #sleep(1)
 
 
 def doCommand(cmdstr):
@@ -55,6 +55,7 @@ def doCommand(cmdstr):
         playFile(args)
     elif cmd == "unpause":
         playerUnpause()
+    print "doCommand exit"
 
 def playerReset():
     global playerstatus
