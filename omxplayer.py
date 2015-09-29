@@ -121,7 +121,7 @@ try:
                 "player_status": "running",
 		})
             sendUpdate(messagedata)
-        sleep(1)
+        sleep(.1)
 except KeyboardInterrupt:
     exitnow = True
     playerReset()
