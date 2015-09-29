@@ -73,7 +73,7 @@ def playFile(args):
 def playerUnpause():
     global player
     print "palyerUnpause()"
-    if player.__dict__["paused"]:
+    if player.__dict__.has_key("paused") and player.__dict__["paused"]:
         player.toggle_pause()
 
 #player.toggle_mute()
