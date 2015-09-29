@@ -53,6 +53,8 @@ def doCommand(cmdstr):
     elif cmd == "queue":
         args = json.loads(messagedata)
         playFile(args)
+    elif cmd == "unpause":
+        playerUnpause()
 
 def playerReset():
     global playerstatus
@@ -64,10 +66,13 @@ def playFile(args):
     global player
     player = OMXPlayer(args["file"], args["args"])
     # The player will initially be paused
-    if args["mute"]:
+    if args.has_key("mute") and args["mute"]:
         player.toggle_mute()
 
-#    player.toggle_pause()
+def playerUnpause():
+    global player
+    if player.__dict__["paused"]:
+        player.toggle_pause()
 
 #player.toggle_mute()
 #player.toggle_mute(.1)
