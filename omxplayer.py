@@ -22,7 +22,6 @@ def playerHandler():
 
     work_receiver = context.socket(zmq.SUB)
     port = 5501
-    work_receiver.Linger = 250
     work_receiver.connect("tcp://192.168.1.233:5501")
 
     #poller = zmq.Poller()
@@ -72,6 +71,7 @@ def playFile(args):
 
 def playerUnpause():
     global player
+    print "palyerUnpause()"
     if player.__dict__["paused"]:
         player.toggle_pause()
 
