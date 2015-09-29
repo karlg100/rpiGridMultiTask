@@ -36,7 +36,8 @@ def playerHandler():
         string = work_receiver.recv()
         print string
         topic, messagedata = string.split(" ", 1)
-        doCommand(messagedata)
+        if int(topic) == playerID:
+            doCommand(messagedata)
         #socks = dict(poller.poll(1000))
         #if socks:
                 #if socks.get(work_receiver) == zmq.POLLIN:
@@ -81,7 +82,6 @@ def playerUnpause():
 port = "5556"
 context = zmq.Context()
 socket = context.socket(zmq.PUB)
-socket.linger = 250
 socket.bind("tcp://*:%s" % port)
 
 
