@@ -21,8 +21,8 @@ def playerHandler():
     context = zmq.Context()
 
     work_receiver = context.socket(zmq.SUB)
-    port = 5501
-    work_receiver.connect("tcp://192.168.1.233:5501")
+    port = 5500 + playerID
+    work_receiver.connect("tcp://192.168.1.233:%d" % port)
 
     #poller = zmq.Poller()
     #poller.register(work_receiver, zmq.POLLIN)
