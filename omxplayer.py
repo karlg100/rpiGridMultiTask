@@ -59,6 +59,7 @@ def doCommand(cmdstr):
 
 def playerReset():
     global playerstatus
+    global player
     if player:
         player.stop()
     playerstatus = "reset"
