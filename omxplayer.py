@@ -66,6 +66,9 @@ def playerReset():
 
 def playFile(args):
     global player
+    if player:
+        print "player already launched!"
+        return
     print "launching OMXPlayer"
     player = OMXPlayer(args["file"], args["args"])
     # The player will initially be paused
