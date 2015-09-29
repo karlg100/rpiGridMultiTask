@@ -63,6 +63,7 @@ def playerReset():
     if player:
         player.stop()
     playerstatus = "reset"
+    player = False
 
 def playFile(args):
     global player
