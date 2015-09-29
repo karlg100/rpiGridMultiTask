@@ -65,10 +65,13 @@ def playerReset():
 
 def playFile(args):
     global player
+    print "launching OMXPlayer"
     player = OMXPlayer(args["file"], args["args"])
     # The player will initially be paused
     if args.has_key("mute") and args["mute"]:
+        print "we need to mute"
         player.toggle_mute()
+    print "playFile exit"
 
 def playerUnpause():
     global player
