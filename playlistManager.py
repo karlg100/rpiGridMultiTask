@@ -25,7 +25,7 @@ def subCollector():
 
     print "Collecting updates from video players..."
     socket.connect ("tcp://192.168.1.233:%s" % port)
-    socket.connect ("tcp://192.168.1.235:%s" % port)
+    socket.connect ("tcp://192.168.1.236:%s" % port)
 
     # add more topics if you plan to have more video clients
     socket.setsockopt(zmq.SUBSCRIBE, "1")
