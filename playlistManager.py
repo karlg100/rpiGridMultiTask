@@ -11,6 +11,8 @@ videoStats = {  1: {"player_status": False},
              }
 loop = True
 
+messagelog = []
+
 def subCollector():
     global loop
     global videoStats
@@ -57,28 +59,29 @@ def checkPlayerStatus(socket):
     global videoStats
     global currentplaylist
     global playlist
+    global messagelog
     master = playlist[currentplaylist]["master"]
     for player in videoStats:
-        pprint(videoStats[player])
-        socket.send("%d checking status" % player)
+        #pprint(videoStats[player])
+        #socket.send("%d checking status" % player)
         if videoStats[player]["player_status"] == "standby":
-            print "resetting %d" % player
+            messagelog.append("resetting %d" % player)
             socket.send("%d reset" % player)
         elif videoStats[player]["player_status"] == "reset":
-            pprint(playlist[currentplaylist][int(player)])
-            print "queuing %d with %s" % (player, json.dumps(playlist[currentplaylist][int(player)]))
+            #pprint(playlist[currentplaylist][int(player)])
+            messagelog.append("queuing %d with %s" % (player, json.dumps(playlist[currentplaylist][int(player)])))
             socket.send("%d queue %s" % (player, json.dumps(playlist[currentplaylist][int(player)])))
         elif master == int(player) and \
             videoStats[player]["player_status"] == "running" and \
             videoStats[player]["paused"]:
-                print "unpausing %d" % player
+                messagelog.append("unpausing %d" % player)
                 socket.send("%d unpause" % player)
         elif master != int(player) and \
 	    videoStats[master].has_key("paused") and \
             videoStats[master]["paused"] == False and \
             videoStats[player].has_key("paused") and \
             videoStats[player]["paused"]:
-                print "unpausing %d" % player
+                messagelog.append("unpausing %d" % player)
                 socket.send("%d unpause" % player)
         elif master == int(player) and \
             videoStats[player].has_key("player_running") and \
@@ -88,12 +91,12 @@ def checkPlayerStatus(socket):
 
 def resetAllPlayers(socket):
     global videoStats
-    print "resetting all players"
+    #messagelog.append( "resetting all players"
     for player in videoStats:
-        print "resetting %d" % player
+        messagelog.append("resetting %d" % player)
         socket.send("%d reset" % player)
     #sleep(1)
-    print "resetAllPlayers exit"
+    #print "resetAllPlayers exit"
     
 
 def commandControl():
@@ -108,7 +111,13 @@ def commandControl():
         checkPlayerStatus(cmd_send)
         sleep(.2)
             
-        
+def printlog():
+    global messagelog
+    while len(messagelog) > 10:
+        del(messagelog[0])
+
+    #for line in range (25):
+    pprint(messagelog)
 
 
 t = threading.Thread(target=subCollector)
@@ -119,8 +128,9 @@ c.start()
 sleep(1)
 try:
     while True:
-        #os.system('clear')
-        #pprint(videoStats)
+        os.system('clear')
+        printlog()
+        pprint(videoStats)
         sleep(1)
 except KeyboardInterrupt:
     print "exiting"
