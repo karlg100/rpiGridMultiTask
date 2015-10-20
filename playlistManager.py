@@ -4,6 +4,7 @@ import zmq
 import os
 import threading
 import json
+import datetime
 from pprint import pprint
 
 videoStats = {  1: {"player_status": False},
@@ -43,17 +44,56 @@ playlist = {
         1: {  			# playlist 1
             "master": 1,
 	    1: {			# player 1
-                   "file": "/home/pi/test2.mp4",
+                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
                    "args": "--no-osd",
+		   #"endtime": 10,
 		},
 	    2: {			# player 2
-                   "file": "/home/pi/test.mp4",
+                   "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+                   "args": "--loop --no-osd",
+                   "mute": True,
+		},
+	   },
+        2: {  			# playlist 2
+           "master": 2,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
+                   "args": "--loop --no-osd",
+                   "mute": True,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+                   "args": "--no-osd",
+		   #"endtime": 10,
+		},
+	   },
+        3: {  			# playlist 3
+            "master": 1,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
+                   "args": "--no-osd",
+		   #"endtime": 10,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
                    "args": "--loop --no-osd",
                    "mute": True,
 		},
 	   },
 	}
 
+
+def timeNow():
+    return datetime.datetime.strftime(datetime.datetime.now(), '%H:%M:%S')
+
+def nextPlayList():
+    global currentplaylist
+    global playlist
+    global messagelog
+    currentplaylist += 1
+    if len(playlist) < currentplaylist:
+        messagelog.append("%s : at last playlist %d, starting over at 1" % (timeNow(), currentplaylist))
+        currentplaylist = 1
 
 def checkPlayerStatus(socket):
     global videoStats
@@ -65,43 +105,59 @@ def checkPlayerStatus(socket):
         #pprint(videoStats[player])
         #socket.send("%d checking status" % player)
         if videoStats[player]["player_status"] == "standby":
-            messagelog.append("resetting %d" % player)
+            messagelog.append("%s : resetting %d" % (timeNow(), player))
             socket.send("%d reset" % player)
         elif videoStats[player]["player_status"] == "reset":
             #pprint(playlist[currentplaylist][int(player)])
-            messagelog.append("queuing %d with %s" % (player, json.dumps(playlist[currentplaylist][int(player)])))
+            messagelog.append("%s : queuing %d with %s" % (timeNow(), player, json.dumps(playlist[currentplaylist][int(player)])))
             socket.send("%d queue %s" % (player, json.dumps(playlist[currentplaylist][int(player)])))
         elif master == int(player) and \
             videoStats[player]["player_status"] == "running" and \
             videoStats[player]["paused"]:
-                messagelog.append("unpausing %d" % player)
+                messagelog.append("%s : unpausing %d" % (timeNow(), player))
                 socket.send("%d unpause" % player)
         elif master != int(player) and \
 	    videoStats[master].has_key("paused") and \
             videoStats[master]["paused"] == False and \
             videoStats[player].has_key("paused") and \
             videoStats[player]["paused"]:
-                messagelog.append("unpausing %d" % player)
+                messagelog.append("%s : unpausing %d" % (timeNow(), player))
                 socket.send("%d unpause" % player)
         elif master == int(player) and \
             videoStats[player].has_key("player_running") and \
             videoStats[player]["player_running"] == False:
+                messagelog.append("%s : Master is done, resetting all players, next playlist" % timeNow())
                 resetAllPlayers(socket)
+                nextPlayList()
+	elif master == player and \
+	    videoStats[master].has_key("duration") and \
+	    playlist[currentplaylist][master].has_key("endtime") and \
+	    videoStats[master]["position"] > playlist[currentplaylist][master]["endtime"]:
+                messagelog.append("%s : Master reached endtime, resetting all players, next playlist" % timeNow())
+                resetAllPlayers(socket)
+                nextPlayList()
+	#elif master != player and \
+	    #videoStats[master].has_key("duration") and \
+	    #videoStats[master]["duration"] - videoStats[master]["position"] < 10:
+                #messagelog.append("%s : fade to black %d" % (timeNow(), player))
+                #socket.send("%d fadeblack" % player)
     
 
 def resetAllPlayers(socket):
     global videoStats
-    #messagelog.append( "resetting all players"
+    global messagelog
+    messagelog.append("%s : resetting all players" % timeNow())
     for player in videoStats:
-        messagelog.append("resetting %d" % player)
+        messagelog.append("%s :   resetting %d" % (timeNow(), player))
         socket.send("%d reset" % player)
-    #sleep(1)
-    #print "resetAllPlayers exit"
+    sleep(1)
+    messagelog.append("%s :   resetAllPlayers exit" % (timeNow()))
     
 
 def commandControl():
     global videoStats
     global loop
+    global cmd_send
     context = zmq.Context()
     cmd_send = context.socket(zmq.PUB)
     cmd_send.bind("tcp://*:5501")
@@ -130,10 +186,13 @@ try:
     while True:
         os.system('clear')
         printlog()
+        print "current playlist : %d" % currentplaylist
+        print "master player : %d" % playlist[currentplaylist]["master"]
         pprint(videoStats)
         sleep(1)
 except KeyboardInterrupt:
     print "exiting"
     loop = False
-    t.stop()
+    resetAllPlayers(cmd_send)
+    #t.stop()
 
