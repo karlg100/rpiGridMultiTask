@@ -77,6 +77,9 @@ def playFile(args):
     if args.has_key("mute") and args["mute"]:
         print "we need to mute"
         player.toggle_mute()
+    if args.has_key("vol"):
+        print "setting volume to %d" % args["vol"]
+        player.set_vol(args["vol"])
     print "playFile exit"
 
 def playerUnpause():
