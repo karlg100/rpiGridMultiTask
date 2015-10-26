@@ -46,12 +46,13 @@ playlist = {
 	    1: {			# player 1
                    "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
                    "args": "--no-osd",
-		   "endtime": 15,
+		   #"endtime": 15,
+		   "endtime": 100,
 		},
 	    2: {			# player 2
-                   "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Window\ -\ Black\ BG/BC_Numskulls_Win_Black_H.mp4",
                    "args": "--loop --no-osd",
-                   "vol": -75,
+                   "vol": -7,
 		},
 	   },
         2: {  			# playlist 2
@@ -59,12 +60,12 @@ playlist = {
 	    1: {			# player 1
                    "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
                    "args": "--loop --no-osd",
-                   "vol": -75,
+                   "vol": -7,
 		},
 	    2: {			# player 2
                    "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
                    "args": "--no-osd",
-		   "endtime": 15,
+		   #"endtime": 15,
 		},
 	   },
         3: {  			# playlist 3
@@ -72,12 +73,13 @@ playlist = {
 	    1: {			# player 1
                    "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
                    "args": "--no-osd",
-		   "endtime": 15,
+		   #"endtime": 15,
 		},
 	    2: {			# player 2
-                   "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Window\ -\ Black\ BG/BC_Numskulls_Win_Black_H.mp4",
+                   #"file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
                    "args": "--loop --no-osd",
-                   "vol": -75,
+                   "vol": -7,
 		},
 	   },
 	}
