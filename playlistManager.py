@@ -50,7 +50,7 @@ playlist = {
 		   "endtime": 100,
 		},
 	    2: {			# player 2
-                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Window\ -\ Black\ BG/BC_Numskulls_Win_Black_H.mp4",
+                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
                    "args": "--loop --no-osd",
                    "vol": -7,
 		},
@@ -76,7 +76,7 @@ playlist = {
 		   #"endtime": 15,
 		},
 	    2: {			# player 2
-                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Window\ -\ Black\ BG/BC_Numskulls_Win_Black_H.mp4",
+                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Jittery\ Bones/Wall/BC_JitteryBones_Wall_H.mp4",
                    #"file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
                    "args": "--loop --no-osd",
                    "vol": -7,

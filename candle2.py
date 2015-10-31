@@ -6,13 +6,13 @@ import RPi.GPIO as GPIO
 
 # Assign the hardware PWM pin and name it
 leds = {
+	4: "", 
+	5: "", 
 	6: "", 
 	12: "", 
 	13: "", 
-	16: "", 
 	17: "", 
 	18: "", 
-	19: "", 
        }
 
 for led in leds:
