@@ -39,19 +39,25 @@ def subCollector():
 	videoStats[int(topic)] = json.loads(messagedata)
     return
 
-currentplaylist=1
+
+if len(sys.argv) > 1:
+    currentplaylist = int(sys.argv[1])
+else:
+    currentplaylist=1
+
 playlist = { 
         1: {  			# playlist 1
             "master": 1,
 	    1: {			# player 1
                    "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
-                   "args": "--no-osd",
+                   "args": "-o local --no-osd",
 		   #"endtime": 15,
 		   "endtime": 100,
 		},
 	    2: {			# player 2
                    "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
-                   "args": "--loop --no-osd",
+                   "args": "-o local --no-osd",
+		   "wait": 15,
                    "vol": -7,
 		},
 	   },
@@ -59,12 +65,14 @@ playlist = {
            "master": 2,
 	    1: {			# player 1
                    "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
-                   "args": "--loop --no-osd",
+                   "args": "-o local --loop --no-osd",
+		   "wait": 8,
                    "vol": -7,
 		},
 	    2: {			# player 2
                    "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
-                   "args": "--no-osd",
+                   "args": "-o local --no-osd",
+                   "vol": -7,
 		   #"endtime": 15,
 		},
 	   },
@@ -72,13 +80,14 @@ playlist = {
             "master": 1,
 	    1: {			# player 1
                    "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
-                   "args": "--no-osd",
+                   "args": "-o local --no-osd",
 		   #"endtime": 15,
 		},
 	    2: {			# player 2
                    "file": "/home/pi/videos/Bone\ Chillers\ -\ Jittery\ Bones/Wall/BC_JitteryBones_Wall_H.mp4",
                    #"file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
-                   "args": "--loop --no-osd",
+		   "wait": 20,
+                   "args": "-o local --no-osd",
                    "vol": -7,
 		},
 	   },
@@ -119,10 +128,9 @@ def checkPlayerStatus(socket):
                 messagelog.append("%s : unpausing %d" % (timeNow(), player))
                 socket.send("%d unpause" % player)
         elif master != int(player) and \
-	    videoStats[master].has_key("paused") and \
-            videoStats[master]["paused"] == False and \
-            videoStats[player].has_key("paused") and \
-            videoStats[player]["paused"]:
+	    videoStats[master].has_key("paused") and videoStats[master]["paused"] == False and \
+            videoStats[player].has_key("paused") and videoStats[player]["paused"] and \
+	    (not playlist[currentplaylist][player].has_key("wait") or playlist[currentplaylist][player]["wait"] < videoStats[master]["position"]):
                 messagelog.append("%s : unpausing %d" % (timeNow(), player))
                 socket.send("%d unpause" % player)
         elif master == int(player) and \
