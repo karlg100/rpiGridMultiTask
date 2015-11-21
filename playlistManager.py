@@ -58,7 +58,7 @@ playlist = {
                    "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
                    "args": "-o local --no-osd",
 		   "wait": 15,
-                   "vol": -7,
+                   #"vol": -7,
 		},
 	   },
         2: {  			# playlist 2
@@ -67,13 +67,13 @@ playlist = {
                    "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
                    "args": "-o local --loop --no-osd",
 		   "wait": 8,
-                   "vol": -7,
+                   "vol": -18,
 		},
 	    2: {			# player 2
                    "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
                    "args": "-o local --no-osd",
-                   "vol": -7,
 		   #"endtime": 15,
+                   "vol": 5,
 		},
 	   },
         3: {  			# playlist 3
@@ -88,7 +88,7 @@ playlist = {
                    #"file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
 		   "wait": 20,
                    "args": "-o local --no-osd",
-                   "vol": -7,
+                   #"vol": -7,
 		},
 	   },
 	}
