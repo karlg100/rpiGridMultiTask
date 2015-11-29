@@ -4,40 +4,47 @@ import pxlBuffer as pxb
 import random
 from time import sleep
 
-def wheel(pos, brightness):
-	"""Generate rainbow colors across 0-255 positions."""
-	if pos < 85:
-		return pxb.Color(pos * 3 * brightness, (255 - pos * 3) * brightness, 0)
-	elif pos < 170:
-		pos -= 85
-		return pxb.Color((255 - pos * 3) * brightness, 0, pos * 3 * brightness)
-	else:
-		pos -= 170
-		return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
-def theaterChaseRainbow(wait_ms=20, pxlSpace=20):
+def redWhiteBlue(wait_ms=10, bandwidth=50):
 	global master
 	layer = master.newLayer()
-	"""Rainbow movie theater light style chaser animation."""
-	for j in range(256):
-		for q in range(pxlSpace):
-			for i in range(0, layer.numPixels()-q, pxlSpace):
-				if i+q+1 < layer.numPixels():
-					layer.setPixelColor(i+q+1, wheel((j) % 255, .5))
-				if i+q+2 < layer.numPixels():
-					layer.setPixelColor(i+q+2, wheel((j) % 255, .1))
-				layer.setPixelColor(i+q, wheel((j) % 255, 1))
-				if i+q >= 1:
-					layer.setPixelColor(i+q-1, wheel((j) % 255, .5))
-				if i+q >= 2:
-					layer.setPixelColor(i+q-2, wheel((j) % 255, .1))
-			layer.show()
-			sleep(wait_ms/1000.0)
-			for i in range(0, layer.numPixels()):
-				layer.setPixelColor(i, None)
+	count=0
+	for i in range(0, layer.numPixels()):
+		#print "%s + %s mod %s = %s  count %s" % (i, o, bandwidth, (i+o) % bandwidth, count)
+		if i % bandwidth == 0:
+			count += 1
+		if count == 4:
+			count = 1
+		#print("%s" % count),
 
+		if count == 3:
+			layer.setPixelColorRGB(i, 200,200,200)
+		elif count == 2:
+			layer.setPixelColorRGB(i, 0,0,200)
+		elif count == 1:
+			layer.setPixelColorRGB(i, 200,0,0)
+		#if i < bandwidth*3:
+		  #sleep(.5)
+		layer.show()
+
+	# rotate
+	while True:
+		leds=layer[::]
+		#print leds
+		end=leds.pop()
+		led=1
+		for color in leds:
+			layer.setPixelColor(led, color)
+			led += 1
+		layer.setPixelColor(0, end)
+		layer.show()
+		sleep(wait_ms/1000.0)
+
+
+
+# entry function
 def NeoFX(*args):
-	theaterChaseRainbow(*args)
+	redWhiteBlue(*args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -51,7 +58,7 @@ if __name__ == "__main__":
 	TARGET_FPS = 24
 
 	# LED strip configuration:
-	LED_COUNT      = 480      # Number of LED pixels.
+	LED_COUNT      = 240      # Number of LED pixels.
 	LED_PIN        = 18      # GPIO pin connected to the pixels (must support PWM!).
 	LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
 	LED_DMA        = 5       # DMA channel to use for generating signal (try 5)
@@ -79,6 +86,7 @@ if __name__ == "__main__":
 	t.start()
 
 	a = threading.Thread(target=NeoFX)
+	#a = threading.Thread(target=NeoFX, args=(10, 20, 30))
 	a.daemon=True
 	a.start()
 

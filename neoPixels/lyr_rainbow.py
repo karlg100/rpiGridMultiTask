@@ -4,40 +4,30 @@ import pxlBuffer as pxb
 import random
 from time import sleep
 
-def wheel(pos, brightness):
-	"""Generate rainbow colors across 0-255 positions."""
-	if pos < 85:
-		return pxb.Color(pos * 3 * brightness, (255 - pos * 3) * brightness, 0)
-	elif pos < 170:
-		pos -= 85
-		return pxb.Color((255 - pos * 3) * brightness, 0, pos * 3 * brightness)
-	else:
-		pos -= 170
-		return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
+def wheel(pos):
+        """Generate rainbow colors across 0-255 positions."""
+        if pos < 85:
+                return Color(pos * 3, 255 - pos * 3, 0)
+        elif pos < 170:
+                pos -= 85
+                return Color(255 - pos * 3, 0, pos * 3)
+        else:
+                pos -= 170
+                return Color(0, pos * 3, 255 - pos * 3)
 
-def theaterChaseRainbow(wait_ms=20, pxlSpace=20):
+def rainbowCycle(wait_ms=20, iterations=5):
 	global master
 	layer = master.newLayer()
-	"""Rainbow movie theater light style chaser animation."""
-	for j in range(256):
-		for q in range(pxlSpace):
-			for i in range(0, layer.numPixels()-q, pxlSpace):
-				if i+q+1 < layer.numPixels():
-					layer.setPixelColor(i+q+1, wheel((j) % 255, .5))
-				if i+q+2 < layer.numPixels():
-					layer.setPixelColor(i+q+2, wheel((j) % 255, .1))
-				layer.setPixelColor(i+q, wheel((j) % 255, 1))
-				if i+q >= 1:
-					layer.setPixelColor(i+q-1, wheel((j) % 255, .5))
-				if i+q >= 2:
-					layer.setPixelColor(i+q-2, wheel((j) % 255, .1))
-			layer.show()
-			sleep(wait_ms/1000.0)
-			for i in range(0, layer.numPixels()):
-				layer.setPixelColor(i, None)
+        """Draw rainbow that uniformly distributes itself across all pixels."""
+        for j in range(256*iterations):
+                for i in range(layer.numPixels()):
+                        layer.setPixelColor(i, wheel(((i * 256 / layer.numPixels()) + j) & 255))
+                layer.show()
+                time.sleep(wait_ms/1000.0)
 
+# entry function
 def NeoFX(*args):
-	theaterChaseRainbow(*args)
+	rainbowCycle(*args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -79,6 +69,7 @@ if __name__ == "__main__":
 	t.start()
 
 	a = threading.Thread(target=NeoFX)
+	#a = threading.Thread(target=NeoFX, args=(10, 20, 30))
 	a.daemon=True
 	a.start()
 

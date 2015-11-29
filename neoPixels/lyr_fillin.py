@@ -4,29 +4,6 @@ import pxlBuffer as pxb
 import random
 from time import sleep
 
-def twinklePxl(color, origR, origG, origB, swing):
-	rand=random.randrange(-1,2)
-	r, g, b = pxb.RGB(color)
-	#print "rand: %s - r %s g %s b %s" % (rand, r,g,b)
-	if 	(rand > 0 and \
-		r < 255 and \
-		g < 255 and \
-		b < 255):
-		#print "red %s, green %s, blue %s" % (r+rand, g+rand, b+rand)
-		return pxb.Color(r+rand, g+rand, b+rand)
-	elif	(rand < 0 and \
-		r >= origR-swing and \
-		g >= origG-swing and \
-		b >= origB-swing and \
-		r+rand >= 0 and \
-		g+rand >= 0 and \
-		b+rand >= 0):
-		#print "red %s, green %s, blue %s" % (r+rand, g+rand, b+rand)
-		return pxb.Color(r+rand, g+rand, b+rand)
-	else:
-		return color
-
-
 def wheel(pos, brightness):
         """Generate rainbow colors across 0-255 positions."""
         if pos < 85:
@@ -38,37 +15,43 @@ def wheel(pos, brightness):
                 pos -= 170
                 return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
-def twinkleColor(wait_ms=1, wheelSpeed=20, twinkleProbability=.001):
+
+def randomDrop(wait_ms=1):
 	global master
 	layer = master.newLayer()
-	#layer[0:layer.numPixels()] = pxb.Color(red, green, blue);
-	colorRound=0
-	color=0
+	count=0
 	while True:
-		if colorRound > wheelSpeed:
-			colorRound = 0
-			if color >= 255:
-				color = 0
-			else:
-				color += 1
-		else:
-			colorRound += 1
-		print color
 		
-		for x in range(layer.numPixels()):
-			#layer.setPixelColor(x, pxb.Color(red, green, blue))
-			#layer[0:layer.size+1] = pxb.Color(red, green, blue);
-			if random.randrange(0, 1000)/1000.0 <= twinkleProbability:
-		  		layer.setPixelColor(x, pxb.Color(255,255,255))
-			else:
-				layer.setPixelColor(x, wheel(color, 1))
+		if count < 1000:
+			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(0,0,255))
+		elif count < 2000:
+			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(255,0,0))
+		elif count < 3000:
+			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(0,255,0))
+		elif count < 4000:
+			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(255,255,255))
+		elif count < 5000:
+			layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
+			layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
+			layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
+		else:
+			count = 0
+
+		count += 1
+		#layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
+		#layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
+		#layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
+		
+		for pixel in range(layer.numPixels()):
+			layer.pixelBrightness(pixel, -0.00001)
+
 		layer.show()
 		sleep(wait_ms/1000.0)
 
 
 # entry function
 def NeoFX(*args):
-	twinkleColor(*args)
+	randomDrop(*args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":

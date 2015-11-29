@@ -4,15 +4,12 @@ import pxlBuffer as pxb
 import random
 from time import sleep
 
-# your function here
-def someFunction():
-	# do something
+
+# your functions here
 
 # entry function
 def NeoFX(*args):
-	# call your function here
-
-
+	yourFunc(*args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -54,6 +51,7 @@ if __name__ == "__main__":
 	t.start()
 
 	a = threading.Thread(target=NeoFX)
+	#a = threading.Thread(target=NeoFX, args=(10, 20, 30))
 	a.daemon=True
 	a.start()
 

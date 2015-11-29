@@ -187,8 +187,10 @@ def printlog():
 
 
 t = threading.Thread(target=subCollector)
+t.daemon = True
 t.start()
 c = threading.Thread(target=commandControl)
+c.daemon = True
 c.start()
 
 sleep(1)

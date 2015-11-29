@@ -6,6 +6,7 @@
 from neopixel import *
 import threading
 from pprint import pprint
+from time import sleep
 
 def Color(red, green, blue):
 	return (int(red) << 16) | (int(green) << 8) | int(blue)
@@ -57,6 +58,14 @@ class pixelLayer(object):
 		self.leds = self.ledsBuffer[:]
 		self.bufLocked = False
 
+	def pixelBrightness(self, pos, amount=0.01):
+		if self.getPixelColor(pos) == 0:
+			self.setPixelColor(pos, None)
+		if self.getPixelColor(pos) == None:
+			return False
+		r,g,b = RGB(self.getPixelColor(pos))
+		self.setPixelColorRGB(pos, r+r*amount, g+g*amount, b+b*amount)
+
 	def setPixelColor(self, n, color):
 		"""Set LED at position n to the provided 24-bit color value (in RGB order).
 		"""
@@ -67,7 +76,6 @@ class pixelLayer(object):
 			self.ledsBuffer[n] = color
 		#pprint(self.ledsBuffer)
 
-
 	def setPixelColorRGB(self, n, red, green, blue):
 		"""Set LED at position n to the provided red, green, and blue color.
 		Each color component should be a value from 0 to 255 (where 0 is the
@@ -77,7 +85,7 @@ class pixelLayer(object):
 
 	def getPixels(self):
 		while self.bufLocked is True:
-			sleep(.01)
+			sleep(.001)
 		return self.leds[:]
 
 	def getPixelsBuffer(self):
@@ -92,7 +100,7 @@ class pixelLayer(object):
 
 	def getPixelColor(self, n):
 		"""Get the 24-bit RGB color value for the LED at position n."""
-		return self.ledBuffer[n]
+		return self.ledsBuffer[n]
 
 
 class pixelMaster(object):
@@ -123,7 +131,11 @@ class pixelMaster(object):
 				bfr = self.layers[k].getPixels()
 				for pxl in range(self.size):
 					if bfr[pxl] is not None:
-						self.ledsColorBuffer[pxl] = bfr[pxl]
+						r1,g1,b1 = RGB(self.ledsColorBuffer[pxl])
+						r2,g2,b2 = RGB(bfr[pxl])
+						self.ledsColorBuffer[pxl] = Color((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
+						#rt,gt,bt = RGB(self.ledsColorBuffer[pxl])
+						#print "%s - r %s/%s = %s g %s/%s = %s b %s/%s = %s" % (k, r1, r2, rt, g1, g2, gt, b1, b2, bt)
 		finally:
 			self.layerLock.release()
 
