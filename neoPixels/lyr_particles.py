@@ -46,7 +46,7 @@ def calcParticle(layer, angle):
 	#pixRange(layer["obj"], int(wheel(math.sin(math.radians(angle)*255+255/2), 1)), pixStart, pixEnd)
 	layer["obj"].show()
 
-def particles(wait_ms=10, bandwidth=5):
+def particles(wait_ms=.01, bandwidth=5):
 	global master
 	layer = { 0: {},
 		  1: {},
@@ -71,7 +71,8 @@ def particles(wait_ms=10, bandwidth=5):
 	layer[3]["color"] = pxb.Color(255,255,255)
 
 	while True:
-		for angle in range(360):
+		for a in range(3600):
+			angle=a/10.0
 			calcParticle(layer[0], angle)
 			calcParticle(layer[1], angle+90)
 			calcParticle(layer[2], angle+180)
@@ -97,7 +98,7 @@ if __name__ == "__main__":
 	TARGET_FPS = 24
 
 	# LED strip configuration:
-	LED_COUNT      = 240      # Number of LED pixels.
+	LED_COUNT      = 480      # Number of LED pixels.
 	LED_PIN        = 18      # GPIO pin connected to the pixels (must support PWM!).
 	LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
 	LED_DMA        = 5       # DMA channel to use for generating signal (try 5)

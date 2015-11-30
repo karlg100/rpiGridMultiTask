@@ -53,7 +53,7 @@ def twinkleColor(wait_ms=1, wheelSpeed=20, twinkleProbability=.001):
 				color += 1
 		else:
 			colorRound += 1
-		print color
+		#print color
 		
 		for x in range(layer.numPixels()):
 			#layer.setPixelColor(x, pxb.Color(red, green, blue))
