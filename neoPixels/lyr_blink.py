@@ -3,15 +3,17 @@
 import pxlBuffer as pxb
 import random
 from time import sleep
+import time
 
-def blinkColor(wait_ms=1, color="random"):
+def blinkColor(wait_ms=1, color="random", runtime=30):
 	global master
 	layer = master.newLayer()
 	if color == "random":
 		rnd = True
 	else:
 		rnd = False
-	while True:
+	endTime=time.time()+runtime
+	while time.time() < endTime:
 		if rnd:
 			color=pxb.Color(random.randrange(0,256), random.randrange(0,256), random.randrange(0,256))
 		layer[0:layer.size+1] = color;
