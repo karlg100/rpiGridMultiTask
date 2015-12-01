@@ -16,7 +16,7 @@ def wheel(pos, brightness):
                 return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
 
-def randomDrop(wait_ms=1):
+def randomDrop(wait_ms=1, runtime=60):
 	global master
 	layer = master.newLayer()
 	count=0
