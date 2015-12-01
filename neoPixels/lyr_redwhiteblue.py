@@ -5,8 +5,7 @@ import random
 from time import sleep
 
 
-def redWhiteBlue(wait_ms=10, bandwidth=50):
-	global master
+def redWhiteBlue(master, wait_ms=10, bandwidth=50, runtime=60):
 	layer = master.newLayer()
 	count=0
 	for i in range(0, layer.numPixels()):
@@ -28,7 +27,8 @@ def redWhiteBlue(wait_ms=10, bandwidth=50):
 		layer.show()
 
 	# rotate
-	while True:
+        endTime=time.time()+runtime
+        while time.time() < endTime:
 		leds=layer[::]
 		#print leds
 		end=leds.pop()
@@ -43,8 +43,8 @@ def redWhiteBlue(wait_ms=10, bandwidth=50):
 
 
 # entry function
-def NeoFX(*args):
-	redWhiteBlue(*args)
+def NeoFX(master, *args):
+	redWhiteBlue(master, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -78,30 +78,24 @@ if __name__ == "__main__":
 
 	def masterThread():
 		global master
-		master.show()
-		sleep(1)
-
-	t = threading.Thread(target=masterThread)
-	t.daemon=True
-	t.start()
-
-	a = threading.Thread(target=NeoFX)
-	#a = threading.Thread(target=NeoFX, args=(10, 20, 30))
-	a.daemon=True
-	a.start()
-
-	startTime=time.time()
-	iterTime=startTime
-	count=1
-
-	while True:
+		startTime=time.time()
+		iterTime=startTime
+		count=1
 		runTime=(time.time()-startTime)
 		master.show()
 		count += 1
 		#print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
 		iterTime=time.time()
-
+	
 		sleepTime=1/float(TARGET_FPS+0.5)-(time.time()-iterTime)
-        	if sleepTime > 0:
+       		if sleepTime > 0:
 			sleep(sleepTime)
+
+
+	t = threading.Thread(target=masterThread)
+	t.daemon=True
+	t.start()
+
+	while True:
+		NeoFX(master)
 

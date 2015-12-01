@@ -3,20 +3,20 @@
 import pxlBuffer as pxb
 import random
 from time import sleep
+import time
 
 def wheel(pos):
         """Generate rainbow colors across 0-255 positions."""
         if pos < 85:
-                return Color(pos * 3, 255 - pos * 3, 0)
+                return pxb.Color(pos * 3, 255 - pos * 3, 0)
         elif pos < 170:
                 pos -= 85
-                return Color(255 - pos * 3, 0, pos * 3)
+                return pxb.Color(255 - pos * 3, 0, pos * 3)
         else:
                 pos -= 170
-                return Color(0, pos * 3, 255 - pos * 3)
+                return pxb.Color(0, pos * 3, 255 - pos * 3)
 
-def rainbowCycle(wait_ms=20, iterations=5):
-	global master
+def rainbowCycle(master, wait_ms=20, iterations=5):
 	layer = master.newLayer()
         """Draw rainbow that uniformly distributes itself across all pixels."""
         for j in range(256*iterations):
@@ -26,8 +26,8 @@ def rainbowCycle(wait_ms=20, iterations=5):
                 time.sleep(wait_ms/1000.0)
 
 # entry function
-def NeoFX(*args):
-	rainbowCycle(*args)
+def NeoFX(master, *args):
+	rainbowCycle(master, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -61,30 +61,24 @@ if __name__ == "__main__":
 
 	def masterThread():
 		global master
-		master.show()
-		sleep(1)
-
-	t = threading.Thread(target=masterThread)
-	t.daemon=True
-	t.start()
-
-	a = threading.Thread(target=NeoFX)
-	#a = threading.Thread(target=NeoFX, args=(10, 20, 30))
-	a.daemon=True
-	a.start()
-
-	startTime=time.time()
-	iterTime=startTime
-	count=1
-
-	while True:
+		startTime=time.time()
+		iterTime=startTime
+		count=1
 		runTime=(time.time()-startTime)
 		master.show()
 		count += 1
 		#print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
 		iterTime=time.time()
-
+	
 		sleepTime=1/float(TARGET_FPS+0.5)-(time.time()-iterTime)
-        	if sleepTime > 0:
+       		if sleepTime > 0:
 			sleep(sleepTime)
+
+
+	t = threading.Thread(target=masterThread)
+	t.daemon=True
+	t.start()
+
+	while True:
+		NeoFX(master)
 

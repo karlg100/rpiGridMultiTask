@@ -3,6 +3,7 @@
 import pxlBuffer as pxb
 import random
 from time import sleep
+import time
 
 def wheel(pos, brightness):
         """Generate rainbow colors across 0-255 positions."""
@@ -16,12 +17,12 @@ def wheel(pos, brightness):
                 return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
 
-def randomDrop(wait_ms=1, runtime=60):
-	global master
+def randomDrop(master, wait_ms=1, runtime=60):
 	layer = master.newLayer()
 	count=0
-	while True:
-		
+
+        endTime=time.time()+runtime
+        while time.time() < endTime:
 		if count < 1000:
 			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(0,0,255))
 		elif count < 2000:
@@ -50,8 +51,8 @@ def randomDrop(wait_ms=1, runtime=60):
 
 
 # entry function
-def NeoFX(*args):
-	randomDrop(*args)
+def NeoFX(master, *args):
+	randomDrop(master, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -85,30 +86,24 @@ if __name__ == "__main__":
 
 	def masterThread():
 		global master
-		master.show()
-		sleep(1)
-
-	t = threading.Thread(target=masterThread)
-	t.daemon=True
-	t.start()
-
-	a = threading.Thread(target=NeoFX)
-	a.daemon=True
-	a.start()
-
-	startTime=time.time()
-	iterTime=startTime
-	count=1
-
-	while True:
+		startTime=time.time()
+		iterTime=startTime
+		count=1
 		runTime=(time.time()-startTime)
 		master.show()
 		count += 1
 		#print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
 		iterTime=time.time()
-
+	
 		sleepTime=1/float(TARGET_FPS+0.5)-(time.time()-iterTime)
-        	if sleepTime > 0:
+       		if sleepTime > 0:
 			sleep(sleepTime)
 
+
+	t = threading.Thread(target=masterThread)
+	t.daemon=True
+	t.start()
+
+	while True:
+		NeoFX(master)
 

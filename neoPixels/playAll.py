@@ -10,8 +10,23 @@ import threading
 from pprint import pprint
 from time import sleep
 from neopixel import *
-import pkgutil
+import random
 
+
+plugins= [	"lyr_blink",
+		"lyr_chaseRainbow2",
+		"lyr_chaseRainbow",
+		"lyr_fillin",
+		"lyr_particles",
+		"lyr_rainbow",
+		"lyr_redwhiteblue",
+		"lyr_twinkle",
+	]
+
+modules = map(__import__, plugins)
+
+print "Playing sequences in random from the following moduels"
+pprint(modules)
 
 # LED strip configuration:
 LED_COUNT      = 480     # Number of LED pixels.
@@ -67,4 +82,7 @@ t.start()
 
 
 while True:
-	lyr_blink.NeoFX(master)
+	module= modules[random.randrange(0,len(modules))]
+	print "playing %s" % module
+	module.NeoFX(master)
+	#lyr_blink.NeoFX(master)

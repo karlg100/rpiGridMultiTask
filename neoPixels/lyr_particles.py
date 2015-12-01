@@ -4,6 +4,7 @@ import pxlBuffer as pxb
 import random
 import math
 from time import sleep
+import time
 
 
 def wheel(pos, brightness):
@@ -46,8 +47,7 @@ def calcParticle(layer, angle):
 	#pixRange(layer["obj"], int(wheel(math.sin(math.radians(angle)*255+255/2), 1)), pixStart, pixEnd)
 	layer["obj"].show()
 
-def particles(wait_ms=.01, bandwidth=5):
-	global master
+def particles(master, wait_ms=.01, bandwidth=5, runtime=60):
 	layer = { 0: {},
 		  1: {},
 		  2: {},
@@ -70,7 +70,8 @@ def particles(wait_ms=.01, bandwidth=5):
 	layer[3]["pixEnd"] = int(layer[3]["obj"].numPixels()/2)
 	layer[3]["color"] = pxb.Color(255,255,255)
 
-	while True:
+        endTime=time.time()+runtime
+        while time.time() < endTime:
 		for a in range(3600):
 			angle=a/10.0
 			calcParticle(layer[0], angle)
@@ -83,8 +84,8 @@ def particles(wait_ms=.01, bandwidth=5):
 	
 
 # entry function
-def NeoFX(*args):
-	particles(*args)
+def NeoFX(master, *args):
+	particles(master, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -118,30 +119,24 @@ if __name__ == "__main__":
 
 	def masterThread():
 		global master
-		master.show()
-		sleep(1)
-
-	t = threading.Thread(target=masterThread)
-	t.daemon=True
-	t.start()
-
-	a = threading.Thread(target=NeoFX)
-	#a = threading.Thread(target=NeoFX, args=(10, 20, 30))
-	a.daemon=True
-	a.start()
-
-	startTime=time.time()
-	iterTime=startTime
-	count=1
-
-	while True:
+		startTime=time.time()
+		iterTime=startTime
+		count=1
 		runTime=(time.time()-startTime)
 		master.show()
 		count += 1
 		#print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
 		iterTime=time.time()
-
+	
 		sleepTime=1/float(TARGET_FPS+0.5)-(time.time()-iterTime)
-        	if sleepTime > 0:
+       		if sleepTime > 0:
 			sleep(sleepTime)
+
+
+	t = threading.Thread(target=masterThread)
+	t.daemon=True
+	t.start()
+
+	while True:
+		NeoFX(master)
 
