@@ -3,7 +3,7 @@
 import pxlBuffer as pxb
 import random
 from time import sleep
-
+import time
 
 def redWhiteBlue(master, wait_ms=10, bandwidth=50, runtime=60):
 	layer = master.newLayer()
