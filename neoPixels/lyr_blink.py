@@ -3,40 +3,31 @@
 import pxlBuffer as pxb
 import random
 from time import sleep
+import time
 
-def wheel(pos, brightness):
-	"""Generate rainbow colors across 0-255 positions."""
-	if pos < 85:
-		return pxb.Color(pos * 3 * brightness, (255 - pos * 3) * brightness, 0)
-	elif pos < 170:
-		pos -= 85
-		return pxb.Color((255 - pos * 3) * brightness, 0, pos * 3 * brightness)
-	else:
-		pos -= 170
-		return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
-
-def theaterChaseRainbow(master, wait_ms=100, pxlSpace=20, runtime=30):
+def blinkColor(master, wait_ms=1, color="random", runtime=30):
 	layer = master.newLayer()
-	"""Rainbow movie theater light style chaser animation."""
-	for j in range(256):
-		for q in range(pxlSpace):
-			for i in range(0, layer.numPixels()-q, pxlSpace):
-				if i+q+1 < layer.numPixels():
-					layer.setPixelColor(i+q+1, wheel((j) % 255, .5))
-				if i+q+2 < layer.numPixels():
-					layer.setPixelColor(i+q+2, wheel((j) % 255, .1))
-				layer.setPixelColor(i+q, wheel((j) % 255, 1))
-				if i+q >= 1:
-					layer.setPixelColor(i+q-1, wheel((j) % 255, .5))
-				if i+q >= 2:
-					layer.setPixelColor(i+q-2, wheel((j) % 255, .1))
-			layer.show()
-			sleep(wait_ms/1000.0)
-			for i in range(0, layer.numPixels()):
-				layer.setPixelColor(i, None)
+	if color == "random":
+		rnd = True
+	else:
+		rnd = False
+	endTime=time.time()+runtime
+	while time.time() < endTime:
+		if rnd:
+			color=pxb.Color(random.randrange(0,256), random.randrange(0,256), random.randrange(0,256))
+		layer[0:layer.size+1] = color;
+		layer.show()
+		sleep(random.randrange(1,300)/1000.0)
+		#sleep(wait_ms/1000.0)
+		layer[0:layer.size+1] = None;
+		layer.show()
+		sleep(random.randrange(1,1000)/1000.0)
+		#sleep(wait_ms/1000.0)
+		#sleep(wait_ms/1000.0)
 
-def NeoFX(master, wait_ms=50, pxlSpace=40):
-	theaterChaseRainbow(master, wait_ms, pxlSpace)
+# entry function
+def NeoFX(master, *args):
+	blinkColor(master, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
@@ -84,9 +75,11 @@ if __name__ == "__main__":
        		if sleepTime > 0:
 			sleep(sleepTime)
 
+
 	t = threading.Thread(target=masterThread)
 	t.daemon=True
 	t.start()
 
 	while True:
 		NeoFX(master)
+
