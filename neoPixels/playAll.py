@@ -9,8 +9,9 @@ import time
 import threading
 from pprint import pprint
 from time import sleep
-from neopixel import *
 import random
+from neopixel import *
+import pxlBuffer as pxb
 
 
 plugins= [	"lyr_blink",
@@ -40,8 +41,6 @@ LED_INVERT     = False   # True to invert the signal (when using NPN transistor 
 #TARGET_FPS = 1
 TARGET_FPS = 24
 
-import pxlBuffer as pxb
-from pxlLayers import *
 
 #pxlModules = []
 #for importer, modname, ispkg in pkgutil.iter_modules(pxlLayers.__path__):
