@@ -27,8 +27,8 @@ class pixelLayer(object):
 		self.leds = [value]*size	# the shown values
 		self.ledsBuffer = self.leds[:]	# memory buffer until show() is called
 		self.offset = 0			# offset from 0 where the layer should start (unimplimented)
-		self.hasChanged = False		# tell the compliation thread to take leds and compile it into the layers
 		self.bufLocked = False		# lock the buffer while copying
+		self.dead = False		# when the thread dies, set to 1 so it can be cleaned up by the master
 
 	def __getitem__(self, pos):
 		"""Return the 24-bit RGB color value at the provided position or slice
@@ -129,11 +129,20 @@ class pixelMaster(object):
 		try:
 			for k in self.layers.keys():
 				bfr = self.layers[k].getPixels()
+				if self.layers[k].dead is not False:
+					if self.layers[k].dead < 100:
+						self.layers[k].dead += 1
+					else:
+						self.layers.remove(layers[k])
+						continue
+					alpha=100-self.layers[k].dead
+				else:
+					alpha=100
 				for pxl in range(self.size):
 					if bfr[pxl] is not None:
 						r1,g1,b1 = RGB(self.ledsColorBuffer[pxl])
 						r2,g2,b2 = RGB(bfr[pxl])
-						self.ledsColorBuffer[pxl] = Color((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
+						self.ledsColorBuffer[pxl] = Color((r1+r2)/2*alpha, (g1+g2)/2*alpha, (b1+b2)/2*alpha)
 						#rt,gt,bt = RGB(self.ledsColorBuffer[pxl])
 						#print "%s - r %s/%s = %s g %s/%s = %s b %s/%s = %s" % (k, r1, r2, rt, g1, g2, gt, b1, b2, bt)
 		finally:

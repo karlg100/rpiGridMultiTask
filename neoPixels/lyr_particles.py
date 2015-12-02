@@ -80,6 +80,10 @@ def particles(master, wait_ms=.01, bandwidth=5, runtime=60):
 			calcParticle(layer[3], angle+270)
 			sleep(wait_ms/1000.0)
 			
+	layer[0].dead = 0
+	layer[1].dead = 0
+	layer[2].dead = 0
+	layer[3].dead = 0
 	
 	
 

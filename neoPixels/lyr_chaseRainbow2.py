@@ -34,6 +34,7 @@ def theaterChaseRainbow(master, wait_ms=100, pxlSpace=20, runtime=30):
 			sleep(wait_ms/1000.0)
 			for i in range(0, layer.numPixels()):
 				layer.setPixelColor(i, None)
+	layer.dead = 0
 
 def NeoFX(master, wait_ms=50, pxlSpace=40):
 	theaterChaseRainbow(master, wait_ms, pxlSpace)

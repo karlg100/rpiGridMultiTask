@@ -48,6 +48,7 @@ def randomDrop(master, wait_ms=1, runtime=60):
 
 		layer.show()
 		sleep(wait_ms/1000.0)
+	layer.dead = 0
 
 
 # entry function

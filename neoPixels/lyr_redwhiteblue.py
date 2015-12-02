@@ -39,6 +39,7 @@ def redWhiteBlue(master, wait_ms=10, bandwidth=50, runtime=60):
 		layer.setPixelColor(0, end)
 		layer.show()
 		sleep(wait_ms/1000.0)
+	layer.dead = 0
 
 
 

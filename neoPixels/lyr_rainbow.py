@@ -24,6 +24,7 @@ def rainbowCycle(master, wait_ms=20, iterations=5):
                         layer.setPixelColor(i, wheel(((i * 256 / layer.numPixels()) + j) & 255))
                 layer.show()
                 time.sleep(wait_ms/1000.0)
+	layer.dead = 0
 
 # entry function
 def NeoFX(master, *args):

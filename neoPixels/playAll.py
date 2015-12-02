@@ -71,7 +71,8 @@ def masterThread():
 		master.show()
 		count += 1
 		if count % updateFreq == 0:
-		  print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
+		  	print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
+			print master.layers
 
 		sleepTime=targetSleep-(time.time()-iterTime)
 		iterTime=time.time()

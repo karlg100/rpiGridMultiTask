@@ -24,6 +24,7 @@ def blinkColor(master, wait_ms=1, color="random", runtime=30):
 		sleep(random.randrange(1,1000)/1000.0)
 		#sleep(wait_ms/1000.0)
 		#sleep(wait_ms/1000.0)
+	layer.dead = 0
 
 # entry function
 def NeoFX(master, *args):

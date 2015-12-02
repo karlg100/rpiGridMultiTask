@@ -65,6 +65,7 @@ def twinkleColor(master, wait_ms=1, wheelSpeed=20, twinkleProbability=.001, runt
 				layer.setPixelColor(x, wheel(color, 1))
 		layer.show()
 		sleep(wait_ms/1000.0)
+	layer.dead = 0
 
 
 # entry function
