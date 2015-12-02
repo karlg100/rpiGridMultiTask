@@ -15,7 +15,7 @@ def wheel(pos, brightness):
 		pos -= 170
 		return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
-def theaterChaseRainbow(master, wait_ms=20, pxlSpace=20):
+def theaterChaseRainbow(master, wait_ms=10, pxlSpace=20):
 	layer = master.newLayer()
 	"""Rainbow movie theater light style chaser animation."""
 	for j in range(256):

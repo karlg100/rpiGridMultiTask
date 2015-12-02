@@ -133,7 +133,7 @@ class pixelMaster(object):
 					if self.layers[k].dead < 100:
 						self.layers[k].dead += 1
 					else:
-						self.layers.remove(layers[k])
+						del layers[k]
 						continue
 					alpha=100-self.layers[k].dead
 				else:
