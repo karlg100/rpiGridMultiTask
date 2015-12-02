@@ -65,11 +65,13 @@ def masterThread():
 	iterTime=startTime
 	count=1
 	targetSleep=1/float(TARGET_FPS+0.5)
+	updateFreq=TARGET_FPS*10 # every 10 seconds
 	while True:
 		runTime=(time.time()-startTime)
 		master.show()
 		count += 1
-		print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
+		if count % updateFreq == 0:
+		  print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
 
 		sleepTime=targetSleep-(time.time()-iterTime)
 		iterTime=time.time()
