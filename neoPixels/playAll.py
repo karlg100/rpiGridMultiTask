@@ -64,15 +64,17 @@ def masterThread():
 	startTime=time.time()
 	iterTime=startTime
 	count=1
-	runTime=(time.time()-startTime)
-	master.show()
-	count += 1
-	#print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
-	iterTime=time.time()
+	targetSleep=1/float(TARGET_FPS+0.5)
+	while True:
+		runTime=(time.time()-startTime)
+		master.show()
+		count += 1
+		print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
 
-	sleepTime=1/float(TARGET_FPS+0.5)-(time.time()-iterTime)
-       	if sleepTime > 0:
-		sleep(sleepTime)
+		sleepTime=targetSleep-(time.time()-iterTime)
+		iterTime=time.time()
+       		if sleepTime > 0:
+			sleep(sleepTime)
 
 
 t = threading.Thread(target=masterThread)
