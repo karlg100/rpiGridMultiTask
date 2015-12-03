@@ -126,18 +126,19 @@ class pixelMaster(object):
 
 	def flattenLayers(self):
 		self.layerLock.acquire()
+		for k in self.layers.keys():
+			if self.layers[k].dead is not False:
+				if self.layers[k].dead < 100:
+					self.layers[k].dead += 1
+				else:
+					del self.layers[k]
+					continue
+				alpha=(100-self.layers[k].dead)/100.0
+			else:
+				alpha=1
 		try:
 			for k in self.layers.keys():
 				bfr = self.layers[k].getPixels()
-				if self.layers[k].dead is not False:
-					if self.layers[k].dead < 100:
-						self.layers[k].dead += 1
-					else:
-						del self.layers[k]
-						continue
-					alpha=100-self.layers[k].dead
-				else:
-					alpha=100
 				for pxl in range(self.size):
 					if bfr[pxl] is not None:
 						r1,g1,b1 = RGB(self.ledsColorBuffer[pxl])
