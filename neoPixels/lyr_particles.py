@@ -72,7 +72,7 @@ def particles(master, wait_ms=.01, bandwidth=5, runtime=60):
 
         endTime=time.time()+runtime
         while time.time() < endTime:
-		for a in range(3600):
+		for a in range(3600,5):
 			angle=a/10.0
 			calcParticle(layer[0], angle)
 			calcParticle(layer[1], angle+90)
