@@ -15,11 +15,14 @@ def wheel(pos, brightness):
 		pos -= 170
 		return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
-def theaterChaseRainbow(master, wait_ms=10, pxlSpace=20):
+def theaterChaseRainbow(master, wait_ms=10, pxlSpace=20, runtime=30):
 	layer = master.newLayer()
 	"""Rainbow movie theater light style chaser animation."""
-	for j in range(256):
+	endTime=time.time()+runtime
+        while time.time() < endTime:
+	#for j in range(256):
 		for q in range(pxlSpace):
+                        j=random.randrange(0,256)
 			for i in range(0, layer.numPixels()-q, pxlSpace):
 				if i+q+1 < layer.numPixels():
 					layer.setPixelColor(i+q+1, wheel((j) % 255, .5))
