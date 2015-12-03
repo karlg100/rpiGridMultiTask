@@ -144,7 +144,7 @@ class pixelMaster(object):
 					if bfr[pxl] is not None:
 						r1,g1,b1 = RGB(self.ledsColorBuffer[pxl])
 						r2,g2,b2 = RGB(bfr[pxl])
-						self.ledsColorBuffer[pxl] = Color((r1+r2)/2*alpha, (g1+g2)/2*alpha, (b1+b2)/2*alpha)
+						self.ledsColorBuffer[pxl] = Color(((r1*alpha)+r2)/2, ((g1*alpha)+g2)/2, ((b1*alpha)+b2)/2)
 						#rt,gt,bt = RGB(self.ledsColorBuffer[pxl])
 						#print "%s - r %s/%s = %s g %s/%s = %s b %s/%s = %s" % (k, r1, r2, rt, g1, g2, gt, b1, b2, bt)
 		finally:
