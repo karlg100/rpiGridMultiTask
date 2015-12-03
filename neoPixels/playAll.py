@@ -89,5 +89,4 @@ t.start()
 while True:
 	module=modules[random.randrange(0,len(modules))]
 	print "playing %s" % module
-	#module.NeoFX(master)
-	#lyr_blink.NeoFX(master)
+	module.NeoFX(master)
