@@ -22,6 +22,7 @@ plugins= [	"lyr_blink",
 		"lyr_rainbow",
 		"lyr_redwhiteblue",
 		"lyr_twinkle",
+		"lyr_strobe",
 	]
 
 modules = map(__import__, plugins)
@@ -86,7 +87,7 @@ t.start()
 
 
 while True:
-	module= modules[random.randrange(0,len(modules))]
+	module=modules[random.randrange(0,len(modules))]
 	print "playing %s" % module
-	module.NeoFX(master)
+	#module.NeoFX(master)
 	#lyr_blink.NeoFX(master)

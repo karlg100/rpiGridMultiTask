@@ -4,39 +4,29 @@ import pxlBuffer as pxb
 import random
 from time import sleep
 import time
+from collections import deque
 
 def redWhiteBlue(master, wait_ms=10, bandwidth=50, runtime=60):
 	layer = master.newLayer()
 	count=0
 	for i in range(0, layer.numPixels()):
-		#print "%s + %s mod %s = %s  count %s" % (i, o, bandwidth, (i+o) % bandwidth, count)
-		if i % bandwidth == 0:
-			count += 1
-		if count == 4:
-			count = 1
-		#print("%s" % count),
-
-		if count == 3:
+		if count > bandwidth:
 			layer.setPixelColorRGB(i, 200,200,200)
-		elif count == 2:
+		elif count > bandwidth*2:
 			layer.setPixelColorRGB(i, 0,0,200)
-		elif count == 1:
+		elif count > bandwidth*3:
 			layer.setPixelColorRGB(i, 200,0,0)
-		#if i < bandwidth*3:
-		  #sleep(.5)
+		else:
+			count = 0
+		count += 1
 		layer.show()
 
 	# rotate
+	leds=deque(layer[::])
         endTime=time.time()+runtime
         while time.time() < endTime:
-		leds=layer[::]
-		#print leds
-		end=leds.pop()
-		led=1
-		for color in leds:
-			layer.setPixelColor(led, color)
-			led += 1
-		layer.setPixelColor(0, end)
+		leds.rotate()
+		layer.ledsBuffer = list(leds)
 		layer.show()
 		sleep(wait_ms/1000.0)
 	layer.dead = 0
