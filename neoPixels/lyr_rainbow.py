@@ -60,21 +60,25 @@ if __name__ == "__main__":
 
 	#pprint(master.ledsColorBuffer)
 
-	def masterThread():
-		global master
-		startTime=time.time()
-		iterTime=startTime
-		count=1
-		runTime=(time.time()-startTime)
-		master.show()
-		count += 1
-		#print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
-		iterTime=time.time()
-	
-		sleepTime=1/float(TARGET_FPS+0.5)-(time.time()-iterTime)
-       		if sleepTime > 0:
-			sleep(sleepTime)
+        def masterThread():
+                global master
+                startTime=time.time()
+                iterTime=startTime
+                count=1
+                targetSleep=1/float(TARGET_FPS+0.5)
+                updateFreq=TARGET_FPS*10 # every 10 seconds
+                while True:
+                        runTime=(time.time()-startTime)
+                        master.show()
+                        count += 1
+                        if count % updateFreq == 0:
+                                print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
+                                print master.layers
 
+                        sleepTime=targetSleep-(time.time()-iterTime)
+                        iterTime=time.time()
+                        if sleepTime > 0:
+                                sleep(sleepTime)
 
 	t = threading.Thread(target=masterThread)
 	t.daemon=True

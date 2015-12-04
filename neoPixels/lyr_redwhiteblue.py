@@ -6,23 +6,26 @@ from time import sleep
 import time
 from collections import deque
 
-def redWhiteBlue(master, wait_ms=10, bandwidth=50, runtime=60):
+def redWhiteBlue(master, wait_ms=10, sets=4, runtime=60):
 	layer = master.newLayer()
 	count=0
+	bandwidth=int(layer.numPixels()/sets/3)
 	for i in range(0, layer.numPixels()):
-		if count > bandwidth:
+		if count < bandwidth:
 			layer.setPixelColorRGB(i, 200,200,200)
-		elif count > bandwidth*2:
+		elif count < bandwidth*2:
 			layer.setPixelColorRGB(i, 0,0,200)
-		elif count > bandwidth*3:
+		elif count < bandwidth*3:
 			layer.setPixelColorRGB(i, 200,0,0)
 		else:
 			count = 0
 		count += 1
 		layer.show()
 
+
 	# rotate
 	leds=deque(layer[::])
+	pprint(leds)
         endTime=time.time()+runtime
         while time.time() < endTime:
 		leds.rotate()
@@ -67,21 +70,25 @@ if __name__ == "__main__":
 
 	#pprint(master.ledsColorBuffer)
 
-	def masterThread():
-		global master
-		startTime=time.time()
-		iterTime=startTime
-		count=1
-		runTime=(time.time()-startTime)
-		master.show()
-		count += 1
-		#print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
-		iterTime=time.time()
-	
-		sleepTime=1/float(TARGET_FPS+0.5)-(time.time()-iterTime)
-       		if sleepTime > 0:
-			sleep(sleepTime)
+        def masterThread():
+                global master
+                startTime=time.time()
+                iterTime=startTime
+                count=1
+                targetSleep=1/float(TARGET_FPS+0.5)
+                updateFreq=TARGET_FPS*10 # every 10 seconds
+                while True:
+                        runTime=(time.time()-startTime)
+                        master.show()
+                        count += 1
+                        if count % updateFreq == 0:
+                                print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
+                                print master.layers
 
+                        sleepTime=targetSleep-(time.time()-iterTime)
+                        iterTime=time.time()
+                        if sleepTime > 0:
+                                sleep(sleepTime)
 
 	t = threading.Thread(target=masterThread)
 	t.daemon=True
