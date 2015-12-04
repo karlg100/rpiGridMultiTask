@@ -3,6 +3,7 @@
 import pxlBuffer as pxb
 import random
 from time import sleep
+import time
 
 def wheel(pos, brightness):
 	"""Generate rainbow colors across 0-255 positions."""
