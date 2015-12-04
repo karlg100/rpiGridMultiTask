@@ -128,9 +128,9 @@ class pixelMaster(object):
 		self.layerLock.acquire()
 		for k in self.layers.keys():
 			if self.layers[k].dead is not False:
-				if self.layers[k].dead < 100:
-					self.layers[k].dead += 1
-				else:
+				#if self.layers[k].dead < 100:
+					#self.layers[k].dead += 1
+				#else:
 					del self.layers[k]
 					continue
 		try:
