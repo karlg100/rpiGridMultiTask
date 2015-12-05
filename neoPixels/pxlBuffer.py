@@ -125,7 +125,7 @@ class pixelMaster(object):
 		self.layers = {0: pixelLayer(self.size, 0)}
 
 	def flattenLayers(self):
-		self.layerLock.acquire()
+		#self.layerLock.acquire()
 		for k in self.layers.keys():
 			if self.layers[k].dead is not False:
 				#if self.layers[k].dead < 100:
@@ -133,22 +133,24 @@ class pixelMaster(object):
 				#else:
 					del self.layers[k]
 					continue
-		try:
-			for k in self.layers.keys():
-				bfr = self.layers[k].getPixels()
-				if self.layers[k].dead is not False:
-					alpha=(100-self.layers[k].dead)/100.0
-				else:
-					alpha=1
-				for pxl in range(self.size):
-					if bfr[pxl] is not None:
-						r1,g1,b1 = RGB(self.ledsColorBuffer[pxl])
-						r2,g2,b2 = RGB(bfr[pxl])
-						self.ledsColorBuffer[pxl] = Color(((r1*alpha)+r2)/2, ((g1*alpha)+g2)/2, ((b1*alpha)+b2)/2)
-						#rt,gt,bt = RGB(self.ledsColorBuffer[pxl])
-						#print "%s - r %s/%s = %s g %s/%s = %s b %s/%s = %s" % (k, r1, r2, rt, g1, g2, gt, b1, b2, bt)
-		finally:
-			self.layerLock.release()
+		#try:
+		for k in self.layers.keys():
+			bfr = self.layers[k].getPixels()
+			if self.layers[k].dead is not False:
+				alpha=(100-self.layers[k].dead)/100.0
+			else:
+				alpha=1
+			if k == 0:
+				self.ldsColorBuffer = bfr
+			for pxl in range(self.size):
+				if bfr[pxl] is not None:
+					r1,g1,b1 = RGB(self.ledsColorBuffer[pxl])
+					r2,g2,b2 = RGB(bfr[pxl])
+					self.ledsColorBuffer[pxl] = Color(((r1*alpha)+r2)/2, ((g1*alpha)+g2)/2, ((b1*alpha)+b2)/2)
+					#rt,gt,bt = RGB(self.ledsColorBuffer[pxl])
+					#print "%s - r %s/%s = %s g %s/%s = %s b %s/%s = %s" % (k, r1, r2, rt, g1, g2, gt, b1, b2, bt)
+		#finally:
+			#self.layerLock.release()
 
 	def show(self):
 		"""Update the display with the data from the LED buffer."""
@@ -160,16 +162,16 @@ class pixelMaster(object):
 		self.strip.show()
 
 	def newLayer(self, number=None):
-		self.layerLock.acquire()
-		try:
-			newLayer = pixelLayer(self.size)
-			if number is None:
-				self.layers[self.layers.keys()[-1]+1] = newLayer
-			else:
-				self.layers[number] = newLayer
-			return newLayer
-		finally:
-			self.layerLock.release()
+		#self.layerLock.acquire()
+		#try:
+		newLayer = pixelLayer(self.size)
+		if number is None:
+			self.layers[self.layers.keys()[-1]+1] = newLayer
+		else:
+			self.layers[number] = newLayer
+		return newLayer
+		#finally:
+			#self.layerLock.release()
 
 	def setBrightness(self, brightness):
 		"""Scale each LED in the buffer by the provided brightness.  A brightness
