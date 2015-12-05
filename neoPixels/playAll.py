@@ -90,4 +90,7 @@ t.start()
 while True:
 	module=modules[random.randrange(0,len(modules))]
 	print "playing %s" % module
-	module.NeoFX(master)
+	try:
+		module.NeoFX(master)
+	except:
+		print "[!] %s module crashed" % module
