@@ -25,7 +25,6 @@ def redWhiteBlue(master, wait_ms=10, sets=4, runtime=60):
 
 	# rotate
 	leds=deque(layer[::])
-	pprint(leds)
         endTime=time.time()+runtime
         while time.time() < endTime:
 		leds.rotate()
