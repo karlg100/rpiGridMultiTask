@@ -5,29 +5,6 @@ import random
 from time import sleep
 import time
 
-def twinklePxl(color, origR, origG, origB, swing):
-	rand=random.randrange(-1,2)
-	r, g, b = pxb.RGB(color)
-	#print "rand: %s - r %s g %s b %s" % (rand, r,g,b)
-	if 	(rand > 0 and \
-		r < 255 and \
-		g < 255 and \
-		b < 255):
-		#print "red %s, green %s, blue %s" % (r+rand, g+rand, b+rand)
-		return pxb.Color(r+rand, g+rand, b+rand)
-	elif	(rand < 0 and \
-		r >= origR-swing and \
-		g >= origG-swing and \
-		b >= origB-swing and \
-		r+rand >= 0 and \
-		g+rand >= 0 and \
-		b+rand >= 0):
-		#print "red %s, green %s, blue %s" % (r+rand, g+rand, b+rand)
-		return pxb.Color(r+rand, g+rand, b+rand)
-	else:
-		return color
-
-
 def wheel(pos, brightness):
         """Generate rainbow colors across 0-255 positions."""
         if pos < 85:
@@ -39,7 +16,7 @@ def wheel(pos, brightness):
                 pos -= 170
                 return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
-def twinkleColor(master, wait_ms=1, wheelSpeed=0, twinkleProbability=.1, runtime=255):
+def twinkleColor(master, wait_ms=1, wheelSpeed=0, twinkleProbability=.1, runtime=60):
 	layer = master.newLayer()
 	#layer[0:layer.numPixels()] = pxb.Color(red, green, blue);
 	colorRound=0
@@ -62,7 +39,7 @@ def twinkleColor(master, wait_ms=1, wheelSpeed=0, twinkleProbability=.1, runtime
 			if random.randrange(0, 1000)/1000.0 <= twinkleProbability:
 		  		layer.setPixelColor(x, pxb.Color(255,255,255))
 			else:
-				layer.setPixelColor(x, wheel(color, 1))
+				layer.setPixelColor(x, wheel(color, .1))
 		layer.show()
 		sleep(wait_ms/1000.0)
 	layer.dead = 0

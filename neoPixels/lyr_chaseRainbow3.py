@@ -21,6 +21,9 @@ def theaterChaseRainbow(master, wait_ms=1, pxlSpace=20, runtime=60):
 	layer = master.newLayer()
 	leds=deque(layer[::])
 	"""Rainbow movie theater light style chaser animation."""
+	for led in range(1,layer.numPixels()):
+		j=random.randrange(0,256)
+		leds[led] = wheel(j, random.randrange(10,100)/100.0)
 	endTime=time.time()+runtime
         while time.time() < endTime:
 		j=random.randrange(0,256)
