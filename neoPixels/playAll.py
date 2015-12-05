@@ -15,6 +15,7 @@ import pxlBuffer as pxb
 
 
 plugins= [	"lyr_blink",
+		"lyr_chaseRainbow3",
 		"lyr_chaseRainbow2",
 		"lyr_chaseRainbow",
 		"lyr_fillin",

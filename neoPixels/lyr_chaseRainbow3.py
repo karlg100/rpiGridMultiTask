@@ -4,7 +4,6 @@ import pxlBuffer as pxb
 import random
 from time import sleep
 import time
-import math
 from collections import deque
 
 def wheel(pos, brightness):
@@ -23,40 +22,16 @@ def theaterChaseRainbow(master, wait_ms=1, pxlSpace=20, runtime=60):
 	leds=deque(layer[::])
 	"""Rainbow movie theater light style chaser animation."""
 	endTime=time.time()+runtime
-	count=0
-	speedCount=0
         while time.time() < endTime:
-		if count == 0:
-			j=random.randrange(0,256)
-		if count == 0:
-			leds[0] = wheel(j, .1)
-		elif count == 1:
-			leds[0] = wheel(j, .5)
-		elif count == 2:
-			leds[0] = wheel(j, 1)
-		elif count == 3:
-			leds[0] = wheel(j, .5)
-		elif count == 4:
-			leds[0] = wheel(j, .1)
-		else:
-			leds[0] = None
+		j=random.randrange(0,256)
+		leds[0] = wheel(j, random.randrange(10,100)/100.0)
 		layer.ledsBuffer = list(leds)
 		layer.show()
-		if count == pxlSpace:
-			count = 0
-		else:
-			count += 1
-		if speedCount > 3600:
-			speedCount=0
-		else:
-			speedCount += 1
-		#print math.cos(speedCount/10.0)+1
-		#sleep((math.cos(speedCount/10.0)+1)*wait_ms/1000.0)
 		sleep(wait_ms/1000.0)
 		leds.rotate()
 	layer.dead = 0
 
-def NeoFX(master, wait_ms=20, pxlSpace=40):
+def NeoFX(master, wait_ms=50, pxlSpace=40):
 	theaterChaseRainbow(master, wait_ms, pxlSpace)
 
 # if we're testing the module, setup and execute
