@@ -21,11 +21,9 @@ def wheel(pos, brightness):
                 return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
 def calcStars(layer):
-	#print "%s - %s" % (pixStart, pixEnd)
-
 	# light the next star
-	if random.randrange(1,100) <= 1:
-		layer["buffer"][0] = wheel(random.randrange(0, 255), 255)
+	if random.randrange(1,1000) <= 10:
+		layer["buffer"][0] = wheel(random.randrange(0, 255), random.randrange(128,255))
 
 	# rotate and paint the led buffer by the speed of the stars
 	for q in range(layer["speed"]):
@@ -34,22 +32,13 @@ def calcStars(layer):
 				layer["obj"][pxl] = layer["buffer"][pxl]
 		layer["buffer"].rotate()
 
-	#pprint(layer["buffer"])
-
 	# fade out the unused LEDs to give them a tail
 	for pixel in range(layer["obj"].numPixels()):
 		layer["obj"].pixelBrightness(pixel, -.5)
 
-	#layer["pixEnd"] = layer["pixStart"]
-	#pixEnd=int((math.cos(math.radians(angle))*(layer.numPixels()-1)/2)+layer.numPixels()/2)
-	#layer["pixStart"]=int((math.sin(math.radians(angle))*(layer["obj"].numPixels()-1)/2)+layer["obj"].numPixels()/2)
-	#pixRange(layer["obj"], layer["color"], layer["pixStart"], layer["pixEnd"])
-	#pixRange(layer["obj"], wheel((math.sin(math.radians(angle))+1)/2*255, 1), layer["pixStart"], layer["pixEnd"])
-	#print int(wheel((math.sin(math.radians(angle)+.5)*255+255/2), 1))
-	#pixRange(layer["obj"], int(wheel(math.sin(math.radians(angle)*255+255/2), 1)), pixStart, pixEnd)
 	layer["obj"].show()
 
-def stars(master, wait_ms=1, bandwidth=5, runtime=60):
+def stars(master, wait_ms=50, bandwidth=5, runtime=60):
 	layer = { 0: {},
 		  1: {},
 		  2: {},
@@ -57,30 +46,35 @@ def stars(master, wait_ms=1, bandwidth=5, runtime=60):
 		}
 	layer[0]["obj"] = master.newLayer()
 	layer[0]["buffer"] = deque(layer[0]["obj"][::])
-	layer[0]["speed"] = random.randrange(1,20)
+	layer[0]["speed"] = random.randrange(1,5)
 	#layer[0]["direction"] = random.randrange(1,2)
 	layer[1]["obj"] = master.newLayer()
 	layer[1]["buffer"] = deque(layer[1]["obj"][::])
-	layer[1]["speed"] = random.randrange(1,20)
+	layer[1]["speed"] = random.randrange(1,10)
 	#layer[1]["direction"] = random.randrange(1,2)
 	layer[2]["obj"] = master.newLayer()
 	layer[2]["buffer"] = deque(layer[2]["obj"][::])
-	layer[2]["speed"] = random.randrange(1,20)
+	layer[2]["speed"] = random.randrange(5,15)
 	#layer[2]["direction"] = random.randrange(1,2)
 	layer[3]["obj"] = master.newLayer()
 	layer[3]["buffer"] = deque(layer[3]["obj"][::])
-	layer[3]["speed"] = random.randrange(1,20)
+	layer[3]["speed"] = random.randrange(10,20)
 	#layer[3]["direction"] = random.randrange(1,2)
 
         endTime=time.time()+runtime
+	lastTime=time.time()
+	count=0
         while time.time() < endTime:
-		for a in range(0,3600,8):
-			angle=a/10.0
-			calcStars(layer[0])
-			calcStars(layer[1])
-			calcStars(layer[2])
-			calcStars(layer[3])
-			sleep(wait_ms/1000.0)
+		count += 1
+		if count % 10 == 0:
+			print "elapsed: %s - %s" % (time.time() - lastTime, count)
+			lastTime = time.time()
+
+		calcStars(layer[0])
+		calcStars(layer[1])
+		calcStars(layer[2])
+		calcStars(layer[3])
+		sleep(wait_ms/1000.0)
 			
 	layer[0]["obj"].dead = 0
 	layer[1]["obj"].dead = 0
@@ -105,7 +99,7 @@ if __name__ == "__main__":
 	TARGET_FPS = 24
 
 	# LED strip configuration:
-	LED_COUNT      = 480      # Number of LED pixels.
+	LED_COUNT      = 632      # Number of LED pixels.
 	LED_PIN        = 18      # GPIO pin connected to the pixels (must support PWM!).
 	LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
 	LED_DMA        = 5       # DMA channel to use for generating signal (try 5)
@@ -129,7 +123,7 @@ if __name__ == "__main__":
                 iterTime=startTime
                 count=1
                 targetSleep=1/float(TARGET_FPS+0.5)
-                updateFreq=TARGET_FPS*10 # every 10 seconds
+                updateFreq=TARGET_FPS*1 # every 10 seconds
                 while True:
                         runTime=(time.time()-startTime)
                         master.show()
