@@ -6,7 +6,7 @@ from time import sleep
 import time
 from collections import deque
 
-def redWhiteBlue(master, wait_ms=10, sets=4, runtime=60):
+def redWhiteBlue(master, wait_ms=.4, sets=4, runtime=60):
 	layer = master.newLayer()
 	count=0
 	bandwidth=int(layer.numPixels()/sets/3)
