@@ -17,21 +17,21 @@ def wheel(pos, brightness):
                 return pxb.Color(0, pos * 3 * brightness, (255 - pos * 3) * brightness)
 
 
-def randomDrop(master, wait_ms=1, runtime=60):
+def randomDrop(master, wait_ms=.1, runtime=70):
 	layer = master.newLayer()
 	count=0
 
         endTime=time.time()+runtime
         while time.time() < endTime:
-		if count < 1000:
+		if count < 500:
 			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(0,0,255))
-		elif count < 2000:
+		elif count < 1000:
 			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(255,0,0))
-		elif count < 3000:
+		elif count < 1500:
 			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(0,255,0))
-		elif count < 4000:
+		elif count < 2000:
 			layer.setPixelColor(random.randrange(layer.numPixels()), pxb.Color(255,255,255))
-		elif count < 5000:
+		elif count < 2500:
 			layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
 			layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
 			layer.setPixelColor(random.randrange(layer.numPixels()), wheel(random.randrange(255),random.randrange(100)/100.0))
