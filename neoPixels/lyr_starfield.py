@@ -29,7 +29,10 @@ def calcStars(layer):
 		for pxl in range(layer["obj"].numPixels()):
 			if layer["buffer"][pxl] is not None:
 				layer["obj"][pxl] = layer["buffer"][pxl]
-		layer["buffer"].rotate()
+		if layer["direction"] == 1:
+			layer["buffer"].rotate()
+		else:
+			layer["buffer"].rotate(-1)
 
 	# fade out the unused LEDs to give them a tail
 	for pixel in range(layer["obj"].numPixels()):
@@ -46,19 +49,19 @@ def stars(q, led_count, layerNum, fps=12, bandwidth=5, runtime=60):
 	layer[0]["obj"] = pxb.pixelLayer(q, led_count, layerNum)
 	layer[0]["buffer"] = deque(layer[0]["obj"][::])
 	layer[0]["speed"] = random.randrange(1,5)
-	#layer[0]["direction"] = random.randrange(1,2)
+	layer[0]["direction"] = random.randrange(1,3)
 	layer[1]["obj"] = pxb.pixelLayer(q, led_count, layerNum+1)
 	layer[1]["buffer"] = deque(layer[1]["obj"][::])
 	layer[1]["speed"] = random.randrange(1,10)
-	#layer[1]["direction"] = random.randrange(1,2)
+	layer[1]["direction"] = random.randrange(1,3)
 	layer[2]["obj"] = pxb.pixelLayer(q, led_count, layerNum+2)
 	layer[2]["buffer"] = deque(layer[2]["obj"][::])
 	layer[2]["speed"] = random.randrange(5,15)
-	#layer[2]["direction"] = random.randrange(1,2)
+	layer[2]["direction"] = random.randrange(1,3)
 	layer[3]["obj"] = pxb.pixelLayer(q, led_count, layerNum+3)
 	layer[3]["buffer"] = deque(layer[3]["obj"][::])
 	layer[3]["speed"] = random.randrange(10,20)
-	#layer[3]["direction"] = random.randrange(1,2)
+	layer[3]["direction"] = random.randrange(1,3)
 
         endTime=time.time()+runtime
 	#lastTime=time.time()
