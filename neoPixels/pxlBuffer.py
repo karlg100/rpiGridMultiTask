@@ -22,13 +22,14 @@ class pixelLayer(object):
 	   note that like the way that other neopixel libraries work, you have to call show()
 	   to trigger the update to the array
 	"""
-	def __init__(self, size, value=None):
+	def __init__(self, q, size, layer, value=None):
+		self.q = q
 		self.size = size-1
 		self.leds = [value]*size	# the shown values
-		self.ledsBuffer = self.leds[:]	# memory buffer until show() is called
 		self.offset = 0			# offset from 0 where the layer should start (unimplimented)
-		self.bufLocked = False		# lock the buffer while copying
-		self.dead = False		# when the thread dies, set to 1 so it can be cleaned up by the master
+		#self.bufLocked = False		# lock the buffer while copying
+		self.status = True		# when the thread dies, set to 1 so it can be cleaned up by the master
+		self.layer = layer		# layer number
 
 	def __getitem__(self, pos):
 		"""Return the 24-bit RGB color value at the provided position or slice
@@ -38,25 +39,30 @@ class pixelLayer(object):
 		# and returning them in a list.
 		#pprint(pos)
 		if isinstance(pos, slice):
-			return self.ledsBuffer[pos]
+			return self.leds[pos]
 		# Else assume the passed in value is a number to the position.
 		else:
-			return self.ledsBuffer
+			return self.leds
 
 	def __setitem__(self, pos, value):
 		"""Set the 24-bit RGB color value at the provided position or slice of
 		positions.
 		"""
 		#pprint(pos)
-		#pprint(self.ledsBuffer.__getitem__(pos))
+		#pprint(self.leds.__getitem__(pos))
 		# Handle if a slice of positions are passed in by setting the appropriate
 		# LED data values to the provided values.
 		self.setPixelColor(pos, value)
 
 	def show(self):
-		self.bufLocked = True
-		self.leds = self.ledsBuffer[:]
-		self.bufLocked = False
+		#self.bufLocked = True
+		#self.leds = self.leds[:]
+		self.q.put(	{"layer": self.layer,
+				"status": self.status,
+				"leds": self.leds,
+				}
+				)
+		#self.bufLocked = False
 
 	def pixelBrightness(self, pos, amount=0.01):
 		if self.getPixelColor(pos) == 0:
@@ -71,10 +77,10 @@ class pixelLayer(object):
 		"""
 		#print "pxl %s = %s" % (n, color)
 		if isinstance(n, slice):
-			self.ledsBuffer[n] = [color]*len(self.ledsBuffer[n])
+			self.leds[n] = [color]*len(self.leds[n])
 		else:
-			self.ledsBuffer[n] = color
-		#pprint(self.ledsBuffer)
+			self.leds[n] = color
+		#pprint(self.leds)
 
 	def setPixelColorRGB(self, n, red, green, blue):
 		"""Set LED at position n to the provided red, green, and blue color.
@@ -84,15 +90,15 @@ class pixelLayer(object):
 		self.setPixelColor(n, Color(red, green, blue))
 
 	def getPixels(self):
-		while self.bufLocked is True:
-			sleep(.001)
+		#while self.bufLocked is True:
+			#sleep(.001)
 		return self.leds[:]
 
 	def getPixelsBuffer(self):
 		"""Return an object which allows access to the LED display data as if 
 		it were a sequence of 24-bit RGB values.
 		"""
-		return self.ledsBuffer
+		return self.leds
 
 	def numPixels(self):
 		"""Return the number of pixels in the display."""
@@ -100,14 +106,22 @@ class pixelLayer(object):
 
 	def getPixelColor(self, n):
 		"""Get the 24-bit RGB color value for the LED at position n."""
-		return self.ledsBuffer[n]
+		return self.leds[n]
+
+	def die(self):
+		self.status = False
+		self.show()
 
 
 class pixelMaster(object):
-	def __init__(self, strip):
+	def __init__(self, strip, q):
 		"""
 		   merges the layers and pushes to the ws281x strand
 		"""
+
+		# multiprocessing que
+		self.q = q
+
 		self.strip = strip
 		# Create NeoPixel object with appropriate configuration.
 		#self.strip = Adafruit_NeoPixel(size, pin, freq_hz, dma, invert, brightness, channel)
@@ -120,24 +134,29 @@ class pixelMaster(object):
 		self.ledsColorBuffer = [0]*self.size
 		#self.ledsBrightness = brightness
 
+		self.die = False
+
 		# layers struct
-		self.layerLock = threading.RLock()
-		self.layers = {0: pixelLayer(self.size, 0)}
+		self.layers = {0: {	"layer": 0,
+					"status": True,
+					"leds":[0]*self.size,
+					}
+				}
 
 	def flattenLayers(self):
 		#self.layerLock.acquire()
 		for k in self.layers.keys():
-			if self.layers[k].dead is not False:
-				#if self.layers[k].dead < 100:
-					#self.layers[k].dead += 1
+			if self.layers[k]["status"] is not True:
+				#if self.layers[k].status < 100:
+					#self.layers[k].status += 1
 				#else:
 					del self.layers[k]
 					continue
 		#try:
 		for k in self.layers.keys():
-			bfr = self.layers[k].getPixels()
-			if self.layers[k].dead is not False:
-				alpha=(100-self.layers[k].dead)/100.0
+			bfr = self.layers[k]["leds"]
+			if self.layers[k]["status"] is not True:
+				alpha=(100-self.layers[k]["status"])/100.0
 			else:
 				alpha=1
 			if k == 0:
@@ -152,8 +171,18 @@ class pixelMaster(object):
 		#finally:
 			#self.layerLock.release()
 
+	def processQueue(self):
+		#print "processing queue"
+		while not self.q.empty():
+			msg = self.q.get()
+			if msg == "die":
+				self.die = True
+			else:
+				self.layers[msg["layer"]] = msg
+
 	def show(self):
 		"""Update the display with the data from the LED buffer."""
+		self.processQueue()
 		self.flattenLayers()
 		count = 0
 		for v in self.ledsColorBuffer:
@@ -164,14 +193,11 @@ class pixelMaster(object):
 	def newLayer(self, number=None):
 		#self.layerLock.acquire()
 		#try:
-		newLayer = pixelLayer(self.size)
+		newLayer = [None]*self.size
 		if number is None:
 			self.layers[self.layers.keys()[-1]+1] = newLayer
 		else:
 			self.layers[number] = newLayer
-		return newLayer
-		#finally:
-			#self.layerLock.release()
 
 	def setBrightness(self, brightness):
 		"""Scale each LED in the buffer by the provided brightness.  A brightness
@@ -189,3 +215,4 @@ class pixelMaster(object):
 	def numPixels(self):
 		"""Return the number of pixels in the display."""
 		return self.size
+

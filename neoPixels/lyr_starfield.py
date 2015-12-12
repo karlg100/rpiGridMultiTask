@@ -8,7 +8,6 @@ import time
 from collections import deque
 import pprint
 
-
 def wheel(pos, brightness):
         """Generate rainbow colors across 0-255 positions."""
         if pos < 85:
@@ -38,59 +37,65 @@ def calcStars(layer):
 
 	layer["obj"].show()
 
-def stars(master, wait_ms=50, bandwidth=5, runtime=60):
+def stars(q, led_count, layerNum, fps=12, bandwidth=5, runtime=60):
 	layer = { 0: {},
 		  1: {},
 		  2: {},
 		  3: {},
 		}
-	layer[0]["obj"] = master.newLayer()
+	layer[0]["obj"] = pxb.pixelLayer(q, led_count, layerNum)
 	layer[0]["buffer"] = deque(layer[0]["obj"][::])
 	layer[0]["speed"] = random.randrange(1,5)
 	#layer[0]["direction"] = random.randrange(1,2)
-	layer[1]["obj"] = master.newLayer()
+	layer[1]["obj"] = pxb.pixelLayer(q, led_count, layerNum+1)
 	layer[1]["buffer"] = deque(layer[1]["obj"][::])
 	layer[1]["speed"] = random.randrange(1,10)
 	#layer[1]["direction"] = random.randrange(1,2)
-	layer[2]["obj"] = master.newLayer()
+	layer[2]["obj"] = pxb.pixelLayer(q, led_count, layerNum+2)
 	layer[2]["buffer"] = deque(layer[2]["obj"][::])
 	layer[2]["speed"] = random.randrange(5,15)
 	#layer[2]["direction"] = random.randrange(1,2)
-	layer[3]["obj"] = master.newLayer()
+	layer[3]["obj"] = pxb.pixelLayer(q, led_count, layerNum+3)
 	layer[3]["buffer"] = deque(layer[3]["obj"][::])
 	layer[3]["speed"] = random.randrange(10,20)
 	#layer[3]["direction"] = random.randrange(1,2)
 
         endTime=time.time()+runtime
-	lastTime=time.time()
+	#lastTime=time.time()
 	count=0
+	startTime=time.time()
+	iterTime=startTime
+	targetSleep=1/float(fps)
         while time.time() < endTime:
-		count += 1
-		if count % 10 == 0:
-			print "elapsed: %s - %s" % (time.time() - lastTime, count)
-			lastTime = time.time()
-
+		#count += 1
+		#if count % 10 == 0:
+			#print "elapsed: %s - %s" % (time.time() - lastTime, count)
+			#lastTime = time.time()
+		iterTime=time.time()
 		calcStars(layer[0])
 		calcStars(layer[1])
 		calcStars(layer[2])
 		calcStars(layer[3])
-		sleep(wait_ms/1000.0)
+		sleepTime=targetSleep-(time.time()-iterTime)
+		if sleepTime > 0:
+			sleep(sleepTime)
+		#sleep(wait_ms/1000.0)
 			
-	layer[0]["obj"].dead = 0
-	layer[1]["obj"].dead = 0
-	layer[2]["obj"].dead = 0
-	layer[3]["obj"].dead = 0
+	layer[0]["obj"].die()
+	layer[1]["obj"].die()
+	layer[2]["obj"].die()
+	layer[3]["obj"].die()
 	
 	
 
 # entry function
-def NeoFX(master, *args):
-	stars(master, *args)
+def NeoFX(q, led_count, layerNum, *args):
+	stars(q, led_count, layerNum, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
 	from neopixel import *
-	import threading
+	import multiprocessing
 	import time
 	from pprint import pprint
 
@@ -106,41 +111,54 @@ if __name__ == "__main__":
 	LED_BRIGHTNESS = 128     # Set to 0 for darkest and 255 for brightest
 	LED_INVERT     = False   # True to invert the signal (when using NPN transistor level shift)
 
-	# Create NeoPixel object with appropriate configuration.
-	strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
-	# Intialize the library (must be called once before other functions).
-	strip.begin()
+	q = multiprocessing.Queue()
 
-	master = pxb.pixelMaster(strip)
-	master.show()
-	pprint(master.layers)
+        def masterThread(q):
 
-	#pprint(master.ledsColorBuffer)
+		# Create NeoPixel object with appropriate configuration.
+		strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
+		# Intialize the library (must be called once before other functions).
+		strip.begin()
 
-        def masterThread():
-                global master
+		master = pxb.pixelMaster(strip, q)
+		master.show()
+		#pprint(master.layers)
+
+		#pprint(master.ledsColorBuffer)
+
                 startTime=time.time()
                 iterTime=startTime
                 count=1
-                targetSleep=1/float(TARGET_FPS+0.5)
-                updateFreq=TARGET_FPS*1 # every 10 seconds
-                while True:
+                targetSleep=1/float(TARGET_FPS)
+		print "target FPS: %s" % TARGET_FPS
+		print "target runtime per frame: %s" % targetSleep
+                updateFreq=TARGET_FPS*10 # every 10 seconds
+                while master.die == False:
+                        iterTime=time.time()
                         runTime=(time.time()-startTime)
                         master.show()
-                        count += 1
                         if count % updateFreq == 0:
                                 print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
                                 print master.layers
+                		startTime=time.time()
+				count = 1
+			else:
+                        	count += 1
 
                         sleepTime=targetSleep-(time.time()-iterTime)
-                        iterTime=time.time()
                         if sleepTime > 0:
                                 sleep(sleepTime)
 
-	t = threading.Thread(target=masterThread)
-	t.daemon=True
-	t.start()
+	m = multiprocessing.Process(target=masterThread, args=(q,))
+	m.daemon=True
+	m.start()
 
-	while True:
-		NeoFX(master)
+	try:
+		layer = 1
+		while True:
+			NeoFX(q, LED_COUNT, layer)
+			layer += 1
 
+	except KeyboardInterrupt:
+		q.put("die")
+		m.join()

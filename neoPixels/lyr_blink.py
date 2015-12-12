@@ -5,8 +5,9 @@ import random
 from time import sleep
 import time
 
-def blinkColor(master, wait_ms=1, color="random", runtime=30):
-	layer = master.newLayer()
+def blinkColor(q, led_count, layerNum, wait_ms=1, color="random", runtime=30):
+	
+	layer = pxb.pixelLayer(q, led_count, layerNum)
 	if color == "random":
 		rnd = True
 	else:
@@ -24,16 +25,16 @@ def blinkColor(master, wait_ms=1, color="random", runtime=30):
 		sleep(random.randrange(1,1000)/1000.0)
 		#sleep(wait_ms/1000.0)
 		#sleep(wait_ms/1000.0)
-	layer.dead = 0
+	layer.die()
 
 # entry function
-def NeoFX(master, *args):
-	blinkColor(master, *args)
+def NeoFX(q, led_count, layerNum, *args):
+	blinkColor(q, led_count, layerNum, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
 	from neopixel import *
-	import threading
+	import multiprocessing
 	import time
 	from pprint import pprint
 
@@ -42,49 +43,61 @@ if __name__ == "__main__":
 	TARGET_FPS = 24
 
 	# LED strip configuration:
-	LED_COUNT      = 480      # Number of LED pixels.
+	LED_COUNT      = 632      # Number of LED pixels.
 	LED_PIN        = 18      # GPIO pin connected to the pixels (must support PWM!).
 	LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
 	LED_DMA        = 5       # DMA channel to use for generating signal (try 5)
 	LED_BRIGHTNESS = 128     # Set to 0 for darkest and 255 for brightest
 	LED_INVERT     = False   # True to invert the signal (when using NPN transistor level shift)
 
-	# Create NeoPixel object with appropriate configuration.
-	strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
-	# Intialize the library (must be called once before other functions).
-	strip.begin()
+	q = multiprocessing.Queue()
 
-	master = pxb.pixelMaster(strip)
-	master.show()
-	pprint(master.layers)
+        def masterThread(q):
 
-	#pprint(master.ledsColorBuffer)
+		# Create NeoPixel object with appropriate configuration.
+		strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
+		# Intialize the library (must be called once before other functions).
+		strip.begin()
 
-        def masterThread():
-                global master
+		master = pxb.pixelMaster(strip, q)
+		master.show()
+		#pprint(master.layers)
+
+		#pprint(master.ledsColorBuffer)
+
                 startTime=time.time()
                 iterTime=startTime
                 count=1
-                targetSleep=1/float(TARGET_FPS+0.5)
+                targetSleep=1/float(TARGET_FPS)
+		print "target FPS: %s" % TARGET_FPS
+		print "target runtime per frame: %s" % targetSleep
                 updateFreq=TARGET_FPS*10 # every 10 seconds
-                while True:
+                while master.die == False:
+                        iterTime=time.time()
                         runTime=(time.time()-startTime)
                         master.show()
-                        count += 1
                         if count % updateFreq == 0:
                                 print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
                                 print master.layers
+                		startTime=time.time()
+				count = 1
+			else:
+                        	count += 1
 
                         sleepTime=targetSleep-(time.time()-iterTime)
-                        iterTime=time.time()
                         if sleepTime > 0:
                                 sleep(sleepTime)
 
+	m = multiprocessing.Process(target=masterThread, args=(q,))
+	m.daemon=True
+	m.start()
 
-	t = threading.Thread(target=masterThread)
-	t.daemon=True
-	t.start()
+	try:
+		layer = 1
+		while True:
+			NeoFX(q, LED_COUNT, layer)
+			layer += 1
 
-	while True:
-		NeoFX(master)
-
+	except KeyboardInterrupt:
+		q.put("die")
+		m.join()
