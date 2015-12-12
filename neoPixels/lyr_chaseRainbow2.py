@@ -25,6 +25,7 @@ def theaterChaseRainbow(q, led_count, layerNum, wait_ms=50, pxlSpace=20, runtime
 	endTime=time.time()+runtime
 	count=0
 	speedCount=0
+	populate = True
         while time.time() < endTime:
 		if count == 0:
 			j=random.randrange(0,256)
@@ -40,8 +41,12 @@ def theaterChaseRainbow(q, led_count, layerNum, wait_ms=50, pxlSpace=20, runtime
 			leds[0] = wheel(j, .1)
 		else:
 			leds[0] = None
-		layer.leds = list(leds)
-		layer.show()
+		if populate == False:
+			layer.leds = list(leds)
+			layer.show()
+			sleep(wait_ms/1000.0)
+		elif speedCount > layer.numPixels():
+			populate = False
 		if count == pxlSpace:
 			count = 0
 		else:
@@ -52,7 +57,6 @@ def theaterChaseRainbow(q, led_count, layerNum, wait_ms=50, pxlSpace=20, runtime
 			speedCount += 1
 		#print math.cos(speedCount/10.0)+1
 		#sleep((math.cos(speedCount/10.0)+1)*wait_ms/1000.0)
-		sleep(wait_ms/1000.0)
 		leds.rotate()
 	layer.die()
 
