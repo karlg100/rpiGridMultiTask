@@ -26,6 +26,7 @@ def theaterChaseRainbow(q, led_count, layerNum, wait_ms=50, pxlSpace=20, runtime
 	count=0
 	speedCount=0
 	populate = True
+	direction = random.randrange(1,3)
         while time.time() < endTime:
 		if count == 0:
 			j=random.randrange(0,256)
@@ -57,7 +58,10 @@ def theaterChaseRainbow(q, led_count, layerNum, wait_ms=50, pxlSpace=20, runtime
 			speedCount += 1
 		#print math.cos(speedCount/10.0)+1
 		#sleep((math.cos(speedCount/10.0)+1)*wait_ms/1000.0)
-		leds.rotate()
+		if direction == 1:
+			leds.rotate()
+		else:
+			leds.rotate(-1)
 	layer.die()
 
 def NeoFX(q, led_count, layerNum, *args):

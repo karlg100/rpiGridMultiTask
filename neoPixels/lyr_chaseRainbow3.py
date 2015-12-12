@@ -20,6 +20,7 @@ def wheel(pos, brightness):
 def theaterChaseRainbow(q, led_count, layerNum, wait_ms=1, pxlSpace=20, runtime=60):
 	layer = pxb.pixelLayer(q, led_count, layerNum)
 	leds=deque(layer[::])
+	direction=random.randrange(1,3)
 	"""Rainbow movie theater light style chaser animation."""
 	for led in range(1,layer.numPixels()):
 		j=random.randrange(0,256)
@@ -31,7 +32,10 @@ def theaterChaseRainbow(q, led_count, layerNum, wait_ms=1, pxlSpace=20, runtime=
 		layer.leds = list(leds)
 		layer.show()
 		sleep(wait_ms/1000.0)
-		leds.rotate()
+		if direction == 1:
+			leds.rotate()
+		else:
+			leds.rotate(-1)
 	layer.die()
 
 def NeoFX(q, led_count, layerNum, wait_ms=50, pxlSpace=40):
