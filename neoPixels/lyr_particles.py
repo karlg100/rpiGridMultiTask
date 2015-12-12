@@ -47,25 +47,25 @@ def calcParticle(layer, angle):
 	#pixRange(layer["obj"], int(wheel(math.sin(math.radians(angle)*255+255/2), 1)), pixStart, pixEnd)
 	layer["obj"].show()
 
-def particles(master, wait_ms=.01, bandwidth=5, runtime=60):
+def particles(q, led_count, layerNum, wait_ms=.01, bandwidth=5, runtime=60):
 	layer = { 0: {},
 		  1: {},
 		  2: {},
 		  3: {},
 		}
-	layer[0]["obj"] = master.newLayer()
+	layer[0]["obj"] = pxb.pixelLayer(q, led_count, layerNum)
 	layer[0]["pixStart"] = int(layer[0]["obj"].numPixels()/2)
 	layer[0]["pixEnd"] = int(layer[0]["obj"].numPixels()/2)
 	layer[0]["color"] = pxb.Color(255,0,0)
-	layer[1]["obj"] = master.newLayer()
+	layer[1]["obj"] = pxb.pixelLayer(q, led_count, layerNum+1)
 	layer[1]["pixStart"] = int(layer[1]["obj"].numPixels()/2)
 	layer[1]["pixEnd"] = int(layer[1]["obj"].numPixels()/2)
 	layer[1]["color"] = pxb.Color(0,255,0)
-	layer[2]["obj"] = master.newLayer()
+	layer[2]["obj"] = pxb.pixelLayer(q, led_count, layerNum+2)
 	layer[2]["pixStart"] = int(layer[2]["obj"].numPixels()/2)
 	layer[2]["pixEnd"] = int(layer[2]["obj"].numPixels()/2)
 	layer[2]["color"] = pxb.Color(0,0,255)
-	layer[3]["obj"] = master.newLayer()
+	layer[3]["obj"] = pxb.pixelLayer(q, led_count, layerNum+3)
 	layer[3]["pixStart"] = int(layer[3]["obj"].numPixels()/2)
 	layer[3]["pixEnd"] = int(layer[3]["obj"].numPixels()/2)
 	layer[3]["color"] = pxb.Color(255,255,255)
@@ -80,21 +80,21 @@ def particles(master, wait_ms=.01, bandwidth=5, runtime=60):
 			calcParticle(layer[3], angle+270)
 			sleep(wait_ms/1000.0)
 			
-	layer[0]["obj"].dead = 0
-	layer[1]["obj"].dead = 0
-	layer[2]["obj"].dead = 0
-	layer[3]["obj"].dead = 0
+	layer[0]["obj"].die()
+	layer[1]["obj"].die()
+	layer[2]["obj"].die()
+	layer[3]["obj"].die()
 	
 	
 
 # entry function
-def NeoFX(master, *args):
-	particles(master, *args)
+def NeoFX(q, led_count, layerNum, *args):
+	particles(q, led_count, layerNum, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
 	from neopixel import *
-	import threading
+	import multiprocessing
 	import time
 	from pprint import pprint
 
@@ -103,48 +103,61 @@ if __name__ == "__main__":
 	TARGET_FPS = 24
 
 	# LED strip configuration:
-	LED_COUNT      = 480      # Number of LED pixels.
+	LED_COUNT      = 632      # Number of LED pixels.
 	LED_PIN        = 18      # GPIO pin connected to the pixels (must support PWM!).
 	LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
 	LED_DMA        = 5       # DMA channel to use for generating signal (try 5)
 	LED_BRIGHTNESS = 128     # Set to 0 for darkest and 255 for brightest
 	LED_INVERT     = False   # True to invert the signal (when using NPN transistor level shift)
 
-	# Create NeoPixel object with appropriate configuration.
-	strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
-	# Intialize the library (must be called once before other functions).
-	strip.begin()
+	q = multiprocessing.Queue()
 
-	master = pxb.pixelMaster(strip)
-	master.show()
-	pprint(master.layers)
+        def masterThread(q):
 
-	#pprint(master.ledsColorBuffer)
+		# Create NeoPixel object with appropriate configuration.
+		strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
+		# Intialize the library (must be called once before other functions).
+		strip.begin()
 
-        def masterThread():
-                global master
+		master = pxb.pixelMaster(strip, q)
+		master.show()
+		#pprint(master.layers)
+
+		#pprint(master.ledsColorBuffer)
+
                 startTime=time.time()
                 iterTime=startTime
                 count=1
-                targetSleep=1/float(TARGET_FPS+0.5)
+                targetSleep=1/float(TARGET_FPS)
+		print "target FPS: %s" % TARGET_FPS
+		print "target runtime per frame: %s" % targetSleep
                 updateFreq=TARGET_FPS*10 # every 10 seconds
-                while True:
+                while master.die == False:
+                        iterTime=time.time()
                         runTime=(time.time()-startTime)
                         master.show()
-                        count += 1
                         if count % updateFreq == 0:
                                 print "Time: %2.3f FPS: %2.3f" % (runTime, count/runTime)
                                 print master.layers
+                		startTime=time.time()
+				count = 1
+			else:
+                        	count += 1
 
                         sleepTime=targetSleep-(time.time()-iterTime)
-                        iterTime=time.time()
                         if sleepTime > 0:
                                 sleep(sleepTime)
 
-	t = threading.Thread(target=masterThread)
-	t.daemon=True
-	t.start()
+	m = multiprocessing.Process(target=masterThread, args=(q,))
+	m.daemon=True
+	m.start()
 
-	while True:
-		NeoFX(master)
+	try:
+		layer = 1
+		while True:
+			NeoFX(q, LED_COUNT, layer)
+			layer += 1
 
+	except KeyboardInterrupt:
+		q.put("die")
+		m.join()

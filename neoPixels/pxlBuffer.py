@@ -24,7 +24,7 @@ class pixelLayer(object):
 	"""
 	def __init__(self, q, size, layer, value=None):
 		self.q = q
-		self.size = size-1
+		self.size = size
 		self.leds = [value]*size	# the shown values
 		self.offset = 0			# offset from 0 where the layer should start (unimplimented)
 		#self.bufLocked = False		# lock the buffer while copying
@@ -79,7 +79,8 @@ class pixelLayer(object):
 		if isinstance(n, slice):
 			self.leds[n] = [color]*len(self.leds[n])
 		else:
-			self.leds[n] = color
+			if n >= 0 or n <= self.size:
+				self.leds[n] = color
 		#pprint(self.leds)
 
 	def setPixelColorRGB(self, n, red, green, blue):
@@ -102,7 +103,7 @@ class pixelLayer(object):
 
 	def numPixels(self):
 		"""Return the number of pixels in the display."""
-		return self.size+1
+		return self.size
 
 	def getPixelColor(self, n):
 		"""Get the 24-bit RGB color value for the LED at position n."""
