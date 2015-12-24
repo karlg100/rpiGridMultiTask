@@ -14,15 +14,16 @@ from neopixel import *
 import pxlBuffer as pxb
 
 
-plugins= [	"lyr_blink",
+plugins= [	
+#		"lyr_blink",
 		"lyr_chaseRainbow3",
 		"lyr_chaseRainbow2",
 		"lyr_chaseRainbow",
-		"lyr_starfield",
+#		"lyr_starfield",
 		"lyr_fillin",
-		"lyr_particles",
+#		"lyr_particles",
 		"lyr_rainbow",
-		"lyr_redwhiteblue",
+#		"lyr_redwhiteblue",
 		"lyr_twinkle",
 		"lyr_strobe",
 	]
