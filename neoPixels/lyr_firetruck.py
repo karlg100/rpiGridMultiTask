@@ -5,7 +5,7 @@ import random
 from time import sleep
 import time
 
-def blinkColor(q, led_count, layerNum, wait_ms=1, color="random", runtime=30):
+def fireTruck(q, led_count, layerNum, wait_ms=1, color="random", runtime=30):
 	
 	layer = pxb.pixelLayer(q, led_count, layerNum)
 	if color == "random":
@@ -14,22 +14,18 @@ def blinkColor(q, led_count, layerNum, wait_ms=1, color="random", runtime=30):
 		rnd = False
 	endTime=time.time()+runtime
 	while time.time() < endTime:
-		if rnd:
-			color=pxb.Color(random.randrange(0,256), random.randrange(0,256), random.randrange(0,256))
-		layer[0:layer.size+1] = color;
+		layer[0:layer.size+1] = 0;
+		layer[0:layer.size+1/2] = pxb.Color(200,0,0);
 		layer.show()
-		sleep(random.randrange(1,300)/1000.0)
-		#sleep(wait_ms/1000.0)
-		layer[0:layer.size+1] = None;
-		layer.show()
-		sleep(random.randrange(1,1000)/1000.0)
-		#sleep(wait_ms/1000.0)
-		#sleep(wait_ms/1000.0)
+		sleep(100)
+		layer[0:layer.size+1] = 0;
+		layer[layer.size+1/2:layer.size+1] = pxb.Color(200,0,0);
+		sleep(100)
 	layer.die()
 
 # entry function
 def NeoFX(q, led_count, layerNum, *args):
-	blinkColor(q, led_count, layerNum, *args)
+	fireTruck(q, led_count, layerNum, *args)
 
 # if we're testing the module, setup and execute
 if __name__ == "__main__":
