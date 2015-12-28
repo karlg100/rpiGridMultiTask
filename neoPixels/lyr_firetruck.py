@@ -15,12 +15,22 @@ def fireTruck(q, led_count, layerNum, wait_ms=1, color="random", runtime=30):
 	endTime=time.time()+runtime
 	while time.time() < endTime:
 		layer[0:layer.size+1] = 0;
-		layer[0:layer.size+1/2] = pxb.Color(200,0,0);
+		layer[0:layer.size+1] = pxb.Color(200,0,0);
 		layer.show()
-		sleep(100)
+		sleep(500/1000)
 		layer[0:layer.size+1] = 0;
-		layer[layer.size+1/2:layer.size+1] = pxb.Color(200,0,0);
-		sleep(100)
+		sleep(300/1000)
+		layer[0:layer.size+1] = pxb.Color(200,0,0);
+		layer.show()
+		sleep(500/1000)
+		layer[0:layer.size+1] = 0;
+		sleep(300/1000)
+		layer[0:layer.size+1] = pxb.Color(200,0,0);
+		layer.show()
+		sleep(500/1000)
+		layer[0:layer.size+1] = 0;
+		sleep(1000/1000)
+
 	layer.die()
 
 # entry function
@@ -39,7 +49,7 @@ if __name__ == "__main__":
 	TARGET_FPS = 24
 
 	# LED strip configuration:
-	LED_COUNT      = 632      # Number of LED pixels.
+	LED_COUNT      = 480      # Number of LED pixels.
 	LED_PIN        = 18      # GPIO pin connected to the pixels (must support PWM!).
 	LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
 	LED_DMA        = 5       # DMA channel to use for generating signal (try 5)

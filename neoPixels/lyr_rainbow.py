@@ -16,7 +16,7 @@ def wheel(pos):
                 pos -= 170
                 return pxb.Color(0, pos * 3, 255 - pos * 3)
 
-def rainbowCycle(q, led_count, layerNum, wait_ms=10, iterations=1):
+def rainbowCycle(q, led_count, layerNum, wait_ms=10, iterations=30):
 	layer = pxb.pixelLayer(q, led_count, layerNum)
         """Draw rainbow that uniformly distributes itself across all pixels."""
         for j in range(256*iterations):
