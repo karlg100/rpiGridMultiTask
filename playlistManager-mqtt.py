@@ -1,0 +1,215 @@
+import sys
+from time import sleep
+import os
+import threading
+import json
+import datetime
+from pprint import pprint
+import paho.mqtt.client as mqtt
+
+server = "192.168.1.234"
+port = "1883"
+
+videoStats = {  1: {"player_status": False},
+                2: {"player_status": False},
+             }
+loop = True
+
+messagelog = []
+
+def on_message(client, userdata, msg):
+        global videoStats
+	#print "Topic: ", msg.topic+'\nMessage: '+str(msg.payload)
+        junk, player, key = msg.topic.split("/", 3)
+	print "%s/%s = %s" % (player, key, msg.payload)
+	try:
+		videoStats[int(player)][key] = json.loads(msg.payload)
+	except:
+		videoStats[int(player)][key] = msg.payload
+
+print 'Launching mqtt client'
+
+# Socket to talk to server
+mqttc = mqtt.Client("mgr")
+mqttc.connect(server, port)
+
+# add more topics if you plan to have more video clients
+mqttc.subscribe("player/#")
+
+mqttc.on_message = on_message
+
+mqttc.loop_start()
+#mqttc.loop_forever()
+
+if len(sys.argv) > 1:
+    currentplaylist = int(sys.argv[1])
+else:
+    currentplaylist=1
+
+playlist = { 
+        1: {  			# playlist 1
+            "master": 1,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
+                   "args": "-o local --no-osd",
+		   #"endtime": 15,
+		   "endtime": 100,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
+                   "args": "-o local --no-osd",
+		   "wait": 15,
+                   #"vol": -7,
+		},
+	   },
+        2: {  			# playlist 2
+           "master": 2,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
+                   "args": "-o local --loop --no-osd",
+		   "wait": 8,
+                   "vol": -18,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+                   "args": "-o local --no-osd",
+		   #"endtime": 15,
+                   "vol": 5,
+		},
+	   },
+        3: {  			# playlist 3
+            "master": 1,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
+                   "args": "-o local --no-osd",
+		   #"endtime": 15,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Jittery\ Bones/Wall/BC_JitteryBones_Wall_H.mp4",
+                   #"file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+		   "wait": 20,
+                   "args": "-o local --no-osd",
+                   #"vol": -7,
+		},
+	   },
+	}
+
+
+def timeNow():
+    return datetime.datetime.strftime(datetime.datetime.now(), '%H:%M:%S')
+
+def nextPlayList():
+    global currentplaylist
+    global playlist
+    global messagelog
+    currentplaylist += 1
+    if len(playlist) < currentplaylist:
+        messagelog.append("%s : at last playlist %d, starting over at 1" % (timeNow(), currentplaylist))
+        currentplaylist = 1
+
+def checkPlayerStatus():
+    global videoStats
+    global currentplaylist
+    global playlist
+    global messagelog
+    global mqrttc
+    master = playlist[currentplaylist]["master"]
+    for player in videoStats:
+        #pprint(videoStats[player])
+        if videoStats[player]["player_status"] == "False":
+	    videoStats[player] = False
+        elif videoStats[player]["player_status"] == "standby":
+            messagelog.append("%s : resetting %d" % (timeNow(), player))
+	    mqttc.publish("player/%d/command" % player, "reset")
+        elif videoStats[player]["player_status"] == "reset":
+            #pprint(playlist[currentplaylist][int(player)])
+            messagelog.append("%s : queuing %d with %s" % (timeNow(), player, json.dumps(playlist[currentplaylist][int(player)])))
+	    for key in playlist[currentplaylist][int(player)]:
+	    	mqttc.publish("player/%d/%s" % (player, key), playlist[currentplaylist][int(player)][key])
+	    mqttc.publish("player/%d/command" % player, "queue")
+        elif master == int(player) and \
+            videoStats[player]["player_status"] == "running" and \
+            videoStats[player]["paused"] == "True":
+                messagelog.append("%s : unpausing %d" % (timeNow(), player))
+	        mqttc.publish("player/%d/command" % player, "unpause")
+        elif master != int(player) and \
+	    videoStats[master].has_key("paused") and videoStats[master]["paused"] == "False" and \
+            videoStats[player].has_key("paused") and videoStats[player]["paused"] == "True" and \
+	    (not playlist[currentplaylist][player].has_key("wait") or playlist[currentplaylist][player]["wait"] < videoStats[master]["position"]):
+                messagelog.append("%s : unpausing %d" % (timeNow(), player))
+	        mqttc.publish("player/%d/command" % player, "unpause")
+        elif master == int(player) and \
+            videoStats[player].has_key("player_running") and \
+            videoStats[player]["player_running"] == "False":
+                messagelog.append("%s : Master is done, resetting all players, next playlist" % timeNow())
+                resetAllPlayers()
+                nextPlayList()
+	elif master == player and \
+	    videoStats[master].has_key("duration") and \
+	    playlist[currentplaylist][master].has_key("endtime") and \
+	    videoStats[master]["position"] >= playlist[currentplaylist][master]["endtime"]:
+                messagelog.append("%s : Master reached endtime, resetting all players, next playlist" % timeNow())
+                resetAllPlayers()
+                nextPlayList()
+	#elif master != player and \
+	    #videoStats[master].has_key("duration") and \
+	    #videoStats[master]["duration"] - videoStats[master]["position"] < 10:
+                #messagelog.append("%s : fade to black %d" % (timeNow(), player))
+                #socket.send("%d fadeblack" % player)
+
+
+def resetAllPlayers():
+    global videoStats
+    global messagelog
+    global mqttc
+    messagelog.append("%s : resetting all players" % timeNow())
+    for player in videoStats:
+        messagelog.append("%s :   resetting %d" % (timeNow(), player))
+	mqttc.publish("player/%d/command" % player, "reset")
+    sleep(1)
+    messagelog.append("%s :   resetAllPlayers exit" % (timeNow()))
+    
+
+def commandControl():
+    global videoStats
+    global loop
+    global cmd_send
+
+    # init players
+    while loop:
+        checkPlayerStatus()
+        sleep(.2)
+            
+def printlog():
+    global messagelog
+    while len(messagelog) > 10:
+        del(messagelog[0])
+
+    #for line in range (25):
+    pprint(messagelog)
+
+
+#t = threading.Thread(target=subCollector)
+#t.daemon = True
+#t.start()
+c = threading.Thread(target=commandControl)
+c.daemon = True
+c.start()
+
+sleep(1)
+try:
+    while True:
+        #os.system('clear')
+        printlog()
+        print "current playlist : %d" % currentplaylist
+        print "master player : %d" % playlist[currentplaylist]["master"]
+        pprint(videoStats)
+        sleep(1)
+except KeyboardInterrupt:
+    print "exiting"
+    loop = False
+    resetAllPlayers(cmd_send)
+    mqttc.disconect()
+    mqttc.stop()
+    #t.stop()
+
