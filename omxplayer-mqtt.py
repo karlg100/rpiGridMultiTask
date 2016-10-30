@@ -85,7 +85,8 @@ def playerUnpause():
 #player.toggle_mute(.1)
 #player.toggle_mute(.5)
 
-server = "192.168.1.234"
+#server = "192.168.1.234"
+server = "192.168.1.166"
 port = "1883"
 mqttc = mqtt.Client("omxplayer %d" % playerID)
 mqttc.connect(server, port)
