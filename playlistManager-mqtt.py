@@ -21,7 +21,7 @@ def on_message(client, userdata, msg):
         global videoStats
 	#print "Topic: ", msg.topic+'\nMessage: '+str(msg.payload)
         junk, player, key = msg.topic.split("/", 3)
-	print "%s/%s = %s" % (player, key, msg.payload)
+	#print "%s/%s = %s" % (player, key, msg.payload)
 	try:
 		videoStats[int(player)][key] = json.loads(msg.payload)
 	except:
@@ -61,6 +61,11 @@ playlist = {
 		   "wait": 15,
                    #"vol": -7,
 		},
+	   "front_lights": {
+		   "r": 114,
+		   "g": 40,
+		   "b": 0,
+		},
 	   },
         2: {  			# playlist 2
            "master": 2,
@@ -75,6 +80,11 @@ playlist = {
                    "args": "-o local --no-osd",
 		   #"endtime": 15,
                    "vol": 5,
+		},
+	   "front_lights": {
+		   "r": 49,
+		   "g": 0,
+		   "b": 89,
 		},
 	   },
         3: {  			# playlist 3
@@ -91,7 +101,56 @@ playlist = {
                    "args": "-o local --no-osd",
                    #"vol": -7,
 		},
+	   "front_lights": {
+		   "r": 255,
+		   "g": 165,
+		   "b": 0,
+		},
 	   },
+
+        4: {  			# playlist 4
+            "master": 2,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/TnT\ -\ Vampire\ Scenes\ -\ Window/TnT_BatsAndBrooms_Win_H.mp4",
+                   "args": "-o local --no-osd",
+		   "wait": 20,
+                   "vol": -7,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/WH\ -\ Song2\ -\ Cat\ Crow\ Canzonet\ -\ Hollusion-TV-Window/WH_Song\ 2_CatCrow_Holl_H.mp4",
+                   "args": "-o local --no-osd",
+		   #"endtime": 15,
+                   #"vol": -7,
+		},
+	   "front_lights": {
+		   "r": 64,
+		   "g": 64,
+		   "b": 64,
+		},
+	   },
+
+        5: {  			# playlist 5
+            "master": 1,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Tricks\ and\ Treats-Frankenstein.mp4",
+                   "args": "--no-osd -o local -l 37",
+                   #"vol": -7,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/Phantasms-Rise\ Of\ The\ Wraiths.mp4",
+                   "args": "-o local --no-osd",
+		   "wait": 40,
+		   #"endtime": 15,
+                   "vol": -7,
+		},
+	   "front_lights": {
+		   "r": 64,
+		   "g": 64,
+		   "b": 64,
+		},
+	   },
+
+
 	}
 
 
@@ -132,6 +191,10 @@ def checkPlayerStatus():
             videoStats[player]["paused"] == "True":
                 messagelog.append("%s : unpausing %d" % (timeNow(), player))
 	        mqttc.publish("player/%d/command" % player, "unpause")
+	        mqttc.publish("front_lights/color/r", playlist[currentplaylist]["front_lights"]["r"])
+	        mqttc.publish("front_lights/color/g", playlist[currentplaylist]["front_lights"]["g"])
+	        mqttc.publish("front_lights/color/b", playlist[currentplaylist]["front_lights"]["b"])
+	        mqttc.publish("front_lights/command", "on")
         elif master != int(player) and \
 	    videoStats[master].has_key("paused") and videoStats[master]["paused"] == "False" and \
             videoStats[player].has_key("paused") and videoStats[player]["paused"] == "True" and \
@@ -199,7 +262,7 @@ c.start()
 sleep(1)
 try:
     while True:
-        #os.system('clear')
+        os.system('clear')
         printlog()
         print "current playlist : %d" % currentplaylist
         print "master player : %d" % playlist[currentplaylist]["master"]
