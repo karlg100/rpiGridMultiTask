@@ -28,9 +28,9 @@ gamma8 = [
 
 
 def Color(red, green, blue):
-	red = gamma8[red]
-	green = gamma8[green]
-	blue = gamma8[blue]
+	red = gamma8[int(red)]
+	green = gamma8[int(green)]
+	blue = gamma8[int(blue)]
 	return (int(red) << 16) | (int(green) << 8) | int(blue)
 
 def RGB(color):
