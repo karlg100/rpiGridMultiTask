@@ -4,14 +4,14 @@
 ApplicationWatchdog wd(120000, System.reset);
 
 // This #include statement was automatically added by the Particle IDE.
-#include "MQTT/MQTT.h"
+#include <MQTT.h>
 void callback(char* topic, uint8_t* payload, unsigned int length);
 
 //#define BLYNK_DEBUG // Optional, this enables lots of prints
 //#define BLYNK_PRINT Serial
 
 // This #include statement was automatically added by the Particle IDE.
-#include "blynk/blynk.h"
+//#include <blynk.h>
 
 /*-------------------------------------------------------------------------
   Spark Core, Particle Photon, P1, Electron and RedBear Duo library to control
@@ -48,7 +48,7 @@ void callback(char* topic, uint8_t* payload, unsigned int length);
 
 /* ======================= includes ================================= */
 
-#include "neopixel/neopixel.h" // use for Build IDE
+#include <neopixel.h> // use for Build IDE
 // #include "neopixel.h" // use for local build
 
 /* ======================= prototypes =============================== */
@@ -67,6 +67,12 @@ int prvR, prvB, prvG;
 int nxtR, nxtB, nxtG;
 unsigned long fadeDuration = 0;
 unsigned long fadeLength = 0;
+
+//uint8_t mqtt_server[] = { 192,168,001,234 };
+uint8_t mqtt_server[] = { 192,168,001,166 };
+//IPAddress mqtt_serverIP(mqtt_server[0], mqtt_server[1], mqtt_server[2], mqtt_server[4]);
+MQTT client(mqtt_server, 1883, callback);
+
 
 /* ======================= extra-examples.cpp ======================== */
 
@@ -89,19 +95,19 @@ void callback(char* topic, uint8_t* payload, unsigned int length) {
     Serial.println(message);
 
     if (sTopic.equals("front_lights/color/r")) {
-        prvR = r;
         nxtR = atoi(message.c_str());
-        fadeLength = random(500, 1000);
-        fadeDuration = millis() + fadeLength;
+        client.publish("front_lights/debug/nextR", "set");
     } else if (sTopic.equals("front_lights/color/g")) {
-        prvG = g;
         nxtG = atoi(message.c_str());
-        fadeLength = random(500, 1000);
-        fadeDuration = millis() + fadeLength;
+        client.publish("front_lights/debug/nextG", "set");
     } else if (sTopic.equals("front_lights/color/b")) {
-        prvB = b;
         nxtB = atoi(message.c_str());
-        fadeLength = random(500, 1000);
+        client.publish("front_lights/debug/nextB", "set");
+    } else if (sTopic.equals("front_lights/command") && message.equals("go")) {
+        prvR = r;
+        prvG = g;
+        prvB = b;
+        fadeLength = random(2000, 5000);
         fadeDuration = millis() + fadeLength;
     } else if (sTopic.equals("front_lights/command") && message.equals("on")) {
         stripOn = true;
@@ -110,10 +116,6 @@ void callback(char* topic, uint8_t* payload, unsigned int length) {
     }
 }
 
-//uint8_t mqtt_server[] = { 192,168,001,234 };
-uint8_t mqtt_server[] = { 192,168,001,166 };
-//IPAddress mqtt_serverIP(mqtt_server[0], mqtt_server[1], mqtt_server[2], mqtt_server[4]);
-MQTT client(mqtt_server, 1883, callback);
 
 // IMPORTANT: Set pixel COUNT, PIN and TYPE
 #define PIXEL_COUNT 632
@@ -151,79 +153,27 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 // and minimize distance between Arduino and first pixel.  Avoid connecting
 // on a live circuit...if you must, connect GND first.
 
-BLYNK_CONNECTED() // runs every time Blynk connection is established
-{
-    digitalWrite(D7, LOW);
-    Blynk.syncAll();
-
-//    if (isFirstConnect) {
-//        // Request server to re-send latest values for all pins
-//        isFirstConnect = false;
-//    }
-}
-
-BLYNK_DISCONNECTED() // runs every time Blynk connection is established
-{
-    digitalWrite(D7, HIGH);
-    client.publish("front_lights/debug","blynk disconnected");
-}
-
 int turnOn(String extra) {
     stripOn = true;
-    Blynk.virtualWrite(V10, true);
     client.publish("front_lights/debug","turnOn()");
     return 1;
 }
 
 int turnOff(String extra) {
     stripOn = false;
-    Blynk.virtualWrite(V10, false);
     client.publish("front_lights/debug","turnOff()");
     return 1;
 }
 
 void toggleOnOff() {
     stripOn = !stripOn;
-    Blynk.virtualWrite(V10, stripOn);
     client.publish("front_lights/debug","toggle on/off triggered");
-}
-
-BLYNK_WRITE(V0)
-{
-    r = param.asInt();
-    Serial.print("updted red : ");
-    Serial.println(r);
-    Blynk.virtualWrite(V11, r);
-}
-
-BLYNK_WRITE(V1)
-{
-    g = param.asInt();
-    Serial.print("updted green : ");
-    Serial.println(g);
-    Blynk.virtualWrite(V12, g);
-}
-
-BLYNK_WRITE(V2)
-{
-    b = param.asInt();
-    Serial.print("updted blue : ");
-    Serial.println(b);
-    Blynk.virtualWrite(V13, b);
-}
-
-BLYNK_WRITE(V10)
-{
-    stripOn = param.asInt();
-    Serial.print("strip power : ");
-    client.publish("front_lights/debug","blynk toggled power");
-    Serial.println(stripOn);
 }
 
 void randomColor() {
     for(int x = 0; x <= PIXEL_COUNT; x++) {
         if (millis() > sleepPxl[x]) {
-            int flicker = random(0,150);
+            int flicker = random(0,40);
             int r1 = r-flicker;
             int g1 = g-flicker;
             int b1 = b-flicker;
@@ -246,11 +196,18 @@ void doFade() {
     //Serial.println(fadeDuration);
     //Serial.print("pct : ");
     //Serial.println(pct);
-    //sprintf(msg, "(%d - %d)/%d=%f", fadeDuration, millis(), fadeLength, pct);
+ 
+ /*
+    sprintf(msg, "(%d - %d)/%d=%f", fadeDuration, millis(), fadeLength, pct);
+    client.publish("front_lights/debug", msg);
     //Serial.println(msg);
-    r = int(prvR + int((nxtR - prvR)*pct));
     sprintf(msg, "p:%d n:%d sub:%d step:%d", prvR, nxtR, prvR-nxtR, int((nxtR - prvR)*pct));
-    Serial.println(msg);
+    //Serial.println(msg);
+    client.publish("front_lights/debug", msg);
+    sprintf(msg, "current: r:%d g:%d b:%d", r, g, b);
+    client.publish("front_lights/debug", msg);
+*/
+    r = int(prvR + int((nxtR - prvR)*pct));
     g = int(prvG + int((nxtG - prvG)*pct));
     b = int(prvB + int((nxtB - prvB)*pct));
 }
@@ -261,8 +218,8 @@ void fire() {
     //int b = 40;         // b
 
     for(int x = 0; x <= PIXEL_COUNT; x++) {
-        if (millis() > sleepPxl[x]) {
-            int flicker = random(0,150);
+//        if (millis() > sleepPxl[x]) {
+            int flicker = random(0,90);
             int r1 = r-flicker;
             int g1 = g-flicker;
             int b1 = b-flicker;
@@ -270,12 +227,10 @@ void fire() {
             if(r1<0) r1=0;
             if(b1<0) b1=0;
             strip.setPixelColor(x,r1,g1, b1);
-            sleepPxl[x] = millis()+random(0,40);
-            //sleepPxl[x] = millis()+10000;
-        }
+//            sleepPxl[x] = millis()+random(0,40);
+//        }
     }
-    strip.show();
-    //delay(random(50,150));
+//    strip.show();
 }
 
 // Set all pixels in the strip to a solid color, then wait (ms)
@@ -309,10 +264,13 @@ void runFire() {
   if (stripOn) {
     if (fadeLength > 0 && millis() < fadeDuration) {                  // if we are done fading, pause for up to 5 seconds
         doFade();
-    } else {
+    } else if (fadeLength > 0) {
         prvR = r;
         prvG = g;
         prvB = b;
+        nxtR = r;
+        nxtG = g;
+        nxtB = b;
         fadeLength = 0;
         fadeDuration = 0;
     }
@@ -337,6 +295,10 @@ void showDebug() {
     fps = showCount / (millis()/1000);
     sprintf(msg, "showFPS: %d", fps);
     client.publish("front_lights/debug",msg);
+    sprintf(msg, "current: r:%d g:%d b:%d", r, g, b);
+    client.publish("front_lights/debug", msg);
+    sprintf(msg, "current: nxtR:%d nxtG:%d nxtB:%d", nxtR, nxtG, nxtB);
+    client.publish("front_lights/debug", msg);
 }
 
 Timer runFireTimer(25, runFire);
@@ -353,10 +315,8 @@ void setup() {
     Particle.function("turnOff", turnOff);
 
     static String auth = "2bdc601d328e4c7f9c22ca34135c847d";
-    //Blynk.begin(auth);
     strip.begin();
     strip.show(); // Initialize all pixels to 'off'
-    pinMode(IMPACT_INPUT, INPUT);
     runFireTimer.start();
     runStripTimer.start();
     showDebugTimer.start();
@@ -371,8 +331,6 @@ void setup() {
     }
 }
 
-bool soundState = false;
-
 void loop() {
     //Blynk.run();
     if (WiFi.ready()) {
@@ -383,7 +341,7 @@ void loop() {
 //            if (Network.ping(mqtt_serverIP)) {
             Serial.println("mqtt disconnected, rebooting");
             client.disconnect();
-            client.connect("sparkclient");
+            client.connect("front_lights");
             if (client.isConnected()) {
                 client.subscribe("front_lights/color/#");
                 client.subscribe("front_lights/command");

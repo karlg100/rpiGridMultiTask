@@ -130,7 +130,8 @@ try:
                 "player_status": "running",
 		}
             sendUpdate(messagedata)
-        sleep(.1)
+        sleep(.25)
+        #sleep(.1)
 except KeyboardInterrupt:
     exitnow = True
     mqttc.publish("player/%d/player_status" % playerID, False)
