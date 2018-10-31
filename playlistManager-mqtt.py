@@ -8,7 +8,8 @@ from pprint import pprint
 import paho.mqtt.client as mqtt
 
 #server = "192.168.1.234"
-server = "192.168.1.166"
+#server = "192.168.1.166"
+server = "192.168.1.18"
 port = "1883"
 
 videoStats = {  1: {"player_status": False},
