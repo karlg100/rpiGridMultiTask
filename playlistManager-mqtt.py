@@ -8,7 +8,8 @@ from pprint import pprint
 import paho.mqtt.client as mqtt
 
 #server = "192.168.1.234"
-server = "192.168.1.166"
+#server = "192.168.1.166"
+server = "192.168.1.18"
 port = "1883"
 
 videoStats = {  1: {"player_status": False},
@@ -67,6 +68,11 @@ playlist = {
 		   "g": 40,
 		   "b": 0,
 		},
+	   "graveyard": {
+		   "r": 0,
+		   "g": 114,
+		   "b": 0,
+		},
 	   },
         2: {  			# playlist 2
            "master": 2,
@@ -83,6 +89,11 @@ playlist = {
                    "vol": 5,
 		},
 	   "front_lights": {
+		   "r": 0,
+		   "g": 0,
+		   "b": 89,
+		},
+	   "graveyard": {
 		   "r": 49,
 		   "g": 0,
 		   "b": 89,
@@ -103,6 +114,11 @@ playlist = {
                    #"vol": -7,
 		},
 	   "front_lights": {
+		   "r": 255,
+		   "g": 165,
+		   "b": 0,
+		},
+	   "graveyard": {
 		   "r": 255,
 		   "g": 165,
 		   "b": 0,
@@ -128,6 +144,11 @@ playlist = {
 		   "g": 64,
 		   "b": 64,
 		},
+	   "graveyard": {
+		   "r": 49,
+		   "g": 0,
+		   "b": 89,
+		},
 	   },
 
         5: {  			# playlist 5
@@ -149,8 +170,64 @@ playlist = {
 		   "g": 64,
 		   "b": 64,
 		},
+	   "graveyard": {
+		   "r": 0,
+		   "g": 64,
+		   "b": 0,
+		},
 	   },
 
+        6: {  			# playlist 6
+            "master": 1,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Thriller/thriller_video.mp4",
+                   #"args": "--no-osd -o local -l 410",
+                   "args": "--no-osd -o local -l 244",
+                   #"vol": -7,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/Thriller/thriller_anim.mp4",
+                   "args": "-o local --no-osd",
+		   "wait": 420,
+		   "endtime": 225,
+                   "vol": -75,
+		},
+	   "front_lights": {
+		   "r": 34,
+		   "g": 0,
+		   "b": 0,
+		},
+	   "graveyard": {
+		   "r": 64,
+		   "g": 0,
+		   "b": 64,
+		},
+	   },
+
+        7: {  			# playlist 7
+            "master": 2,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Bone\ Chillers-Dancing\ Dead.mp4",
+                   #"args": "--no-osd -o local -l 410",
+                   "args": "--no-osd -o local -loop",
+                   "vol": -75,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/Spooky/Spooky\ Scary\ Skeletons\ \(Remix\)\ -\ Extended\ Mix.mp4",
+                   "args": "-o local --no-osd",
+                   #"vol": -75,
+		},
+	   "front_lights": {
+		   "r": 24,
+		   "g": 0,
+		   "b": 24,
+		},
+	   "graveyard": {
+		   "r": 64,
+		   "g": 64,
+		   "b": 64,
+		},
+	   },
 
 	}
 
@@ -192,10 +269,16 @@ def checkPlayerStatus():
             videoStats[player]["paused"] == "True":
                 messagelog.append("%s : unpausing %d" % (timeNow(), player))
 	        mqttc.publish("player/%d/command" % player, "unpause")
+	        mqttc.publish("front_lights/command", "on")
+	        mqttc.publish("graveyard/command", "on")
 	        mqttc.publish("front_lights/color/r", playlist[currentplaylist]["front_lights"]["r"])
 	        mqttc.publish("front_lights/color/g", playlist[currentplaylist]["front_lights"]["g"])
 	        mqttc.publish("front_lights/color/b", playlist[currentplaylist]["front_lights"]["b"])
-	        mqttc.publish("front_lights/command", "on")
+	        mqttc.publish("graveyard/color/r", playlist[currentplaylist]["graveyard"]["r"])
+	        mqttc.publish("graveyard/color/g", playlist[currentplaylist]["graveyard"]["g"])
+	        mqttc.publish("graveyard/color/b", playlist[currentplaylist]["graveyard"]["b"])
+	        mqttc.publish("front_lights/command", "go")
+	        mqttc.publish("graveyard/command", "go")
         elif master != int(player) and \
 	    videoStats[master].has_key("paused") and videoStats[master]["paused"] == "False" and \
             videoStats[player].has_key("paused") and videoStats[player]["paused"] == "True" and \
