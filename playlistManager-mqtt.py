@@ -49,223 +49,182 @@ else:
     currentplaylist=1
 
 playlist = { 
-        1: {  			# playlist 1
-            "master": 1,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
-                   "args": "-o local --no-osd",
-                   "vol": 5,
-		   #"endtime": 15,
-		   "endtime": 100,
-		},
-	    2: {			# player 2
-                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
-                   "args": "-o local --no-osd",
-		   "wait": 15,
-                   #"vol": -7,
-		},
-	   "front_lights": {
-		   "r": 114,
-		   "g": 40,
-		   "b": 0,
-		},
-	   "graveyard": {
-		   "r": 0,
-		   "g": 114,
-		   "b": 0,
-		},
+      1: {  			# playlist 1
+        "master": 1,
+	        1: {			# player 1
+            "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
+            "args": "-o local --no-osd",
+            "vol": 5,
+		        #"endtime": 15,
+		        "endtime": 100,
+		      },
+	        2: {			# player 2
+            "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
+            "args": "-o local --no-osd",
+		        "wait": 15,
+            #"vol": -7,
+		      },
+	        "front_lights": {
+		        "r": 114,
+		        "g": 40,
+		        "b": 0,
+		      },
+	        "graveyard": {
+		        "r": 0,
+		        "g": 114,
+		        "b": 0,
+		      },
 	   },
-        2: {  			# playlist 2
-           "master": 2,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
-                   "args": "-o local --loop --no-osd",
-		   "wait": 8,
-                   "vol": -18,
-		},
-	    2: {			# player 2
-                   "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
-                   "args": "-o local --no-osd",
-		   #"endtime": 15,
-                   "vol": 5,
-		},
-	   "front_lights": {
-		   "r": 0,
-		   "g": 0,
-		   "b": 89,
-		},
-	   "graveyard": {
-		   "r": 49,
-		   "g": 0,
-		   "b": 89,
-		},
+     2: {  			# playlist 2
+       "master": 2,
+	       1: {			# player 1
+           "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
+           "args": "-o local --loop --no-osd",
+		       "wait": 8,
+           "vol": -18,
+		     },
+	       2: {			# player 2
+           "file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+           "args": "-o local --no-osd",
+		       #"endtime": 15,
+           "vol": 5,
+		     },
+	       "front_lights": {
+		       "r": 0,
+		       "g": 0,
+		       "b": 89,
+		     },
+	       "graveyard": {
+		       "r": 49,
+		       "g": 0,
+		       "b": 89,
+		     },
 	   },
-        3: {  			# playlist 3
-            "master": 1,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
-                   "args": "-o local --no-osd",
-		   #"endtime": 15,
-		},
-	    2: {			# player 2
-                   "file": "/home/pi/videos/Bone\ Chillers\ -\ Jittery\ Bones/Wall/BC_JitteryBones_Wall_H.mp4",
-                   #"file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
-		   "wait": 20,
-                   "args": "-o local --no-osd",
-                   #"vol": -7,
-		},
-	   "front_lights": {
-		   "r": 255,
-		   "g": 165,
-		   "b": 0,
-		},
-	   "graveyard": {
-		   "r": 255,
-		   "g": 165,
-		   "b": 0,
-		},
+     3: {  			# playlist 3
+       "master": 1,
+	       1: {			# player 1
+           "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
+           "args": "-o local --no-osd",
+		       #"endtime": 15,
+		     },
+	       2: {			# player 2
+           "file": "/home/pi/videos/Bone\ Chillers\ -\ Jittery\ Bones/Wall/BC_JitteryBones_Wall_H.mp4",
+           #"file": "/home/pi/videos/WH\ -\ Spell2\ -\ Wicked\ Brew\ -\ Hollusion+TV+Window/WH_Spell\ 2_WickedBrew_Holl_H.mp4",
+		       "wait": 20,
+           "args": "-o local --no-osd",
+           #"vol": -7,
+		     },
+	       "front_lights": {
+		       "r": 255,
+		       "g": 165,
+		       "b": 0,
+		     },
+	       "graveyard": {
+		       "r": 255,
+		       "g": 165,
+		       "b": 0,
+		     },
 	   },
-
-        4: {  			# playlist 4
-            "master": 2,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/TnT\ -\ Vampire\ Scenes\ -\ Window/TnT_BatsAndBrooms_Win_H.mp4",
-                   "args": "-o local --no-osd",
-		   "wait": 20,
-                   "vol": -7,
-		},
-	    2: {			# player 2
-                   "file": "/home/pi/videos/WH\ -\ Song2\ -\ Cat\ Crow\ Canzonet\ -\ Hollusion-TV-Window/WH_Song\ 2_CatCrow_Holl_H.mp4",
-                   "args": "-o local --no-osd",
-		   #"endtime": 15,
-                   #"vol": -7,
-		},
-	   "front_lights": {
-		   "r": 64,
-		   "g": 64,
-		   "b": 64,
-		},
-	   "graveyard": {
-		   "r": 49,
-		   "g": 0,
-		   "b": 89,
-		},
+     4: {  			# playlist 4
+       "master": 2,
+	     1: {			# player 1
+         "file": "/home/pi/videos/TnT\ -\ Vampire\ Scenes\ -\ Window/TnT_BatsAndBrooms_Win_H.mp4",
+         "args": "-o local --no-osd",
+		     "wait": 20,
+         "vol": -7,
+		   },
+	     2: {			# player 2
+         "file": "/home/pi/videos/WH\ -\ Song2\ -\ Cat\ Crow\ Canzonet\ -\ Hollusion-TV-Window/WH_Song\ 2_CatCrow_Holl_H.mp4",
+         "args": "-o local --no-osd",
+		     #"endtime": 15,
+         #"vol": -7,
+		   },
+	     "front_lights": {
+		     "r": 64,
+		     "g": 64,
+		     "b": 64,
+		   },
+	     "graveyard": {
+		     "r": 49,
+		     "g": 0,
+		     "b": 89,
+		   },
 	   },
-
-        5: {  			# playlist 5
-            "master": 1,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/Tricks\ and\ Treats-Frankenstein.mp4",
-                   "args": "--no-osd -o local -l 37",
-                   #"vol": -7,
-		},
-	    2: {			# player 2
-                   "file": "/home/pi/videos/Phantasms-Rise\ Of\ The\ Wraiths.mp4",
-                   "args": "-o local --no-osd",
-		   "wait": 40,
-		   #"endtime": 15,
-                   "vol": -7,
-		},
-	   "front_lights": {
-		   "r": 64,
-		   "g": 64,
-		   "b": 64,
-		},
-	   "graveyard": {
-		   "r": 0,
-		   "g": 64,
-		   "b": 0,
-		},
-<<<<<<< HEAD
+     5: {  			# playlist 5
+       "master": 1,
+	     1: {			# player 1
+         "file": "/home/pi/videos/Tricks\ and\ Treats-Frankenstein.mp4",
+         "args": "--no-osd -o local -l 37",
+         #"vol": -7,
+		   },
+	     2: {			# player 2
+         "file": "/home/pi/videos/Phantasms-Rise\ Of\ The\ Wraiths.mp4",
+         "args": "-o local --no-osd",
+		     "wait": 40,
+		     #"endtime": 15,
+         "vol": -7,
+		   },
+	     "front_lights": {
+		     "r": 64,
+		     "g": 64,
+		     "b": 64,
+		   },
+	     "graveyard": {
+		     "r": 0,
+		     "g": 64,
+		     "b": 0,
+		   },
 	   },
-
-        6: {  			# playlist 6
-            "master": 1,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/Thriller/thriller_video.mp4",
-                   #"args": "--no-osd -o local -l 410",
-                   "args": "--no-osd -o local -l 244",
-                   #"vol": -7,
-		},
-	    2: {			# player 2
-                   "file": "/home/pi/videos/Thriller/thriller_anim.mp4",
-                   "args": "-o local --no-osd",
-		   "wait": 420,
-		   "endtime": 225,
-                   "vol": -75,
-		},
-	   "front_lights": {
-		   "r": 34,
-		   "g": 0,
-		   "b": 0,
-		},
-	   "graveyard": {
-		   "r": 64,
-		   "g": 0,
-		   "b": 64,
-		},
+     6: {  			# playlist 6
+       "master": 1,
+	     1: {			# player 1
+         "file": "/home/pi/videos/Thriller/thriller_video.mp4",
+         #"args": "--no-osd -o local -l 410",
+         "args": "--no-osd -o local -l 244",
+         #"vol": -7,
+		   },
+	     2: {			# player 2
+         "file": "/home/pi/videos/Thriller/thriller_anim.mp4",
+         "args": "-o local --no-osd",
+		     "wait": 420,
+		     "endtime": 225,
+         "vol": -75,
+		   },
+	     "front_lights": {
+		     "r": 34,
+		     "g": 0,
+		     "b": 0,
+		   },
+	     "graveyard": {
+		     "r": 64,
+		     "g": 0,
+		     "b": 64,
+		   },
 	   },
-
-=======
+     7: {  			# playlist 7
+       "master": 2,
+	     1: {			# player 1
+         "file": "/home/pi/videos/Bone\ Chillers-Dancing\ Dead.mp4",
+         #"args": "--no-osd -o local -l 410",
+         "args": "--no-osd -o local -loop",
+         "vol": -75,
+		   },
+	     2: {			# player 2
+         "file": "/home/pi/videos/Spooly\ Scarry\ Skel.mp4",
+         "args": "-o local --no-osd",
+         #"vol": -75,
+		   },
+	     "front_lights": {
+		     "r": 24,
+		     "g": 0,
+		     "b": 24,
+		   },
+	     "graveyard": {
+		     "r": 64,
+		     "g": 64,
+		     "b": 64,
+		   },
 	   },
-
-        6: {  			# playlist 6
-            "master": 1,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/Thriller/thriller_video.mp4",
-                   #"args": "--no-osd -o local -l 410",
-                   "args": "--no-osd -o local -l 244",
-                   #"vol": -7,
-		},
-	    2: {			# player 2
-                   "file": "/home/pi/videos/Thriller/thriller_anim.mp4",
-                   "args": "-o local --no-osd",
-		   "wait": 420,
-		   "endtime": 225,
-                   "vol": -75,
-		},
-	   "front_lights": {
-		   "r": 34,
-		   "g": 0,
-		   "b": 0,
-		},
-	   "graveyard": {
-		   "r": 64,
-		   "g": 0,
-		   "b": 64,
-		},
-	   },
-
->>>>>>> 97e52434825880f786dd9c41843d435f9c7b4e59
-        7: {  			# playlist 7
-            "master": 2,
-	    1: {			# player 1
-                   "file": "/home/pi/videos/Bone\ Chillers-Dancing\ Dead.mp4",
-                   #"args": "--no-osd -o local -l 410",
-                   "args": "--no-osd -o local -loop",
-                   "vol": -75,
-		},
-	    2: {			# player 2
-<<<<<<< HEAD
-                   "file": "/home/pi/videos/Spooly\ Scarry\ Skel.mp4",
-=======
-                   "file": "/home/pi/videos/Spooky/Spooky\ Scary\ Skeletons\ \(Remix\)\ -\ Extended\ Mix.mp4",
->>>>>>> 97e52434825880f786dd9c41843d435f9c7b4e59
-                   "args": "-o local --no-osd",
-                   #"vol": -75,
-		},
-	   "front_lights": {
-		   "r": 24,
-		   "g": 0,
-		   "b": 24,
-		},
-	   "graveyard": {
-		   "r": 64,
-		   "g": 64,
-		   "b": 64,
-		},
-	   },
-
 	}
 
 
