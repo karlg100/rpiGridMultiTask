@@ -176,6 +176,7 @@ playlist = {
 		   "g": 64,
 		   "b": 0,
 		},
+<<<<<<< HEAD
 	   },
 
         6: {  			# playlist 6
@@ -205,6 +206,37 @@ playlist = {
 		},
 	   },
 
+=======
+	   },
+
+        6: {  			# playlist 6
+            "master": 1,
+	    1: {			# player 1
+                   "file": "/home/pi/videos/Thriller/thriller_video.mp4",
+                   #"args": "--no-osd -o local -l 410",
+                   "args": "--no-osd -o local -l 244",
+                   #"vol": -7,
+		},
+	    2: {			# player 2
+                   "file": "/home/pi/videos/Thriller/thriller_anim.mp4",
+                   "args": "-o local --no-osd",
+		   "wait": 420,
+		   "endtime": 225,
+                   "vol": -75,
+		},
+	   "front_lights": {
+		   "r": 34,
+		   "g": 0,
+		   "b": 0,
+		},
+	   "graveyard": {
+		   "r": 64,
+		   "g": 0,
+		   "b": 64,
+		},
+	   },
+
+>>>>>>> 97e52434825880f786dd9c41843d435f9c7b4e59
         7: {  			# playlist 7
             "master": 2,
 	    1: {			# player 1
@@ -214,7 +246,11 @@ playlist = {
                    "vol": -75,
 		},
 	    2: {			# player 2
+<<<<<<< HEAD
                    "file": "/home/pi/videos/Spooly\ Scarry\ Skel.mp4",
+=======
+                   "file": "/home/pi/videos/Spooky/Spooky\ Scary\ Skeletons\ \(Remix\)\ -\ Extended\ Mix.mp4",
+>>>>>>> 97e52434825880f786dd9c41843d435f9c7b4e59
                    "args": "-o local --no-osd",
                    #"vol": -75,
 		},
