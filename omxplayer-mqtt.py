@@ -51,9 +51,17 @@ def playerReset():
     global playerInfo
     if player:
         player.stop()
-    playerstatus = "reset"
-    playerInfo = {}
+    playerInfo["media_file"] = "";
+    #playerInfo = {}
+    playerInfo["audio"] = "";
+    playerInfo["video"] = "";
+    playerInfo["current_volume"] = "";
+    playerInfo["duration"] = "";
+    playerInfo["paused"] = "";
+    playerInfo["position"] = "";
+    playerInfo["title"] = "";
     player = False
+    playerstatus = "reset"
 
 def playFile():
     global player
