@@ -60,10 +60,14 @@ def playFile():
 
     print playerInfo
 
+    if not playerInfo.has_key("file") or not playerInfo.has_key("args"):
+        print "not all arguments loaded!"
+        return
     if player:
         print "player already launched!"
         return
     print "launching OMXPlayer"
+    print playerInfo
     player = OMXPlayer(playerInfo["file"], playerInfo["args"])
     # The player will initially be paused
     if playerInfo.has_key("mute") and playerInfo["mute"] == "True":
