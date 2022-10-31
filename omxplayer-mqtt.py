@@ -48,9 +48,11 @@ def doCommand(cmdstr):
 def playerReset():
     global playerstatus
     global player
+    global playerInfo
     if player:
         player.stop()
     playerstatus = "reset"
+    playerInfo = {}
     player = False
 
 def playFile():
@@ -122,18 +124,17 @@ try:
         if not player:
             sendUpdate({"player_status": playerstatus})
         else:
-            messagedata = {
-		"audio": player.__dict__['audio'],
-		"video": player.__dict__['video'],
-		"current_volume": player.__dict__['current_volume'],
-		"duration": player.__dict__['duration'],
-		"media_file": player.__dict__['media_file'],
-		"paused": player.__dict__['paused'],
-		"position": player.__dict__['position'],
-		"title": player.__dict__['title'],
-                "player_running": player.is_running(),
-                "player_status": "running",
-		}
+	    messagedata = {}
+            if player.__dict__.has_key("audio"): messagedata["audio"] = player.__dict__['audio']
+            if player.__dict__.has_key("video"): messagedata["video"] = player.__dict__['video'],
+            if player.__dict__.has_key("current_volume"): messagedata["current_volume"] = player.__dict__['current_volume']
+            if player.__dict__.has_key("duration"): messagedata["duration"] = player.__dict__['duration']
+            if player.__dict__.has_key("media_file"): messagedata["media_file"] = player.__dict__['media_file']
+            if player.__dict__.has_key("paused"): messagedata["paused"] = player.__dict__['paused']
+            if player.__dict__.has_key("position"): messagedata["position"] = player.__dict__['position']
+            if player.__dict__.has_key("title"): messagedata["title"] = player.__dict__['title']
+            messagedata["player_running"] = player.is_running(),
+            messagedata["player_status"] = "running"
             sendUpdate(messagedata)
         sleep(.25)
         #sleep(.1)
