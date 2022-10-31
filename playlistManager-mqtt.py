@@ -53,7 +53,7 @@ playlist = {
         "master": 1,
 	        1: {			# player 1
             "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
-            "args": "-o local --no-osd",
+            "args": "-o local --no-osd --orientation 180",
             "vol": 5,
 		        #"endtime": 15,
 		        "endtime": 100,
@@ -79,7 +79,7 @@ playlist = {
        "master": 2,
 	       1: {			# player 1
            "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
-           "args": "-o local --loop --no-osd",
+           "args": "-o local --loop --no-osd --orientation 180",
 		       "wait": 8,
            "vol": -18,
 		     },
@@ -104,7 +104,7 @@ playlist = {
        "master": 1,
 	       1: {			# player 1
            "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
-           "args": "-o local --no-osd",
+           "args": "-o local --no-osd --orientation 180",
 		       #"endtime": 15,
 		     },
 	       2: {			# player 2
@@ -129,7 +129,7 @@ playlist = {
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/TnT\ -\ Vampire\ Scenes\ -\ Window/TnT_BatsAndBrooms_Win_H.mp4",
-         "args": "-o local --no-osd",
+         "args": "-o local --no-osd --orientation 180",
 		     "wait": 20,
          "vol": -7,
 		   },
@@ -154,7 +154,7 @@ playlist = {
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/Tricks\ and\ Treats-Frankenstein.mp4",
-         "args": "--no-osd -o local -l 37",
+         "args": "--no-osd -o local -l 37 --orientation 180",
          #"vol": -7,
 		   },
 	     2: {			# player 2
@@ -180,7 +180,7 @@ playlist = {
 	     1: {			# player 1
          "file": "/home/pi/videos/Thriller/thriller_video.mp4",
          #"args": "--no-osd -o local -l 410",
-         "args": "--no-osd -o local -l 244",
+         "args": "--no-osd -o local -l 244 --orientation 180",
          #"vol": -7,
 		   },
 	     2: {			# player 2
@@ -206,7 +206,7 @@ playlist = {
 	     1: {			# player 1
          "file": "/home/pi/videos/Bone\ Chillers-Dancing\ Dead.mp4",
          #"args": "--no-osd -o local -l 410",
-         "args": "--no-osd -o local -loop",
+         "args": "--no-osd -o local -loop  --orientation 180",
          "vol": -75,
 		   },
 	     2: {			# player 2
@@ -250,50 +250,52 @@ def checkPlayerStatus():
     for player in videoStats:
         #pprint(videoStats[player])
         if videoStats[player]["player_status"] == "False":
-	    videoStats[player] = False
+          videoStats[player] = False
         elif videoStats[player]["player_status"] == "standby":
-            messagelog.append("%s : resetting %d" % (timeNow(), player))
-	    mqttc.publish("player/%d/command" % player, "reset")
+          messagelog.append("%s : resetting %d" % (timeNow(), player))
+          mqttc.publish("player/%d/command" % player, "reset")
         elif videoStats[player]["player_status"] == "reset":
-            #pprint(playlist[currentplaylist][int(player)])
-            messagelog.append("%s : queuing %d with %s" % (timeNow(), player, json.dumps(playlist[currentplaylist][int(player)])))
-	    for key in playlist[currentplaylist][int(player)]:
-	    	mqttc.publish("player/%d/%s" % (player, key), playlist[currentplaylist][int(player)][key])
-	    mqttc.publish("player/%d/command" % player, "queue")
+          #pprint(playlist[currentplaylist][int(player)])
+          messagelog.append("%s : queuing %d with %s" % (timeNow(), player, json.dumps(playlist[currentplaylist][int(player)])))
+          for key in playlist[currentplaylist][int(player)]:
+            mqttc.publish("player/%d/%s" % (player, key), playlist[currentplaylist][int(player)][key])
+            mqttc.publish("player/%d/command" % player, "queue")
         elif master == int(player) and \
             videoStats[player]["player_status"] == "running" and \
             videoStats[player]["paused"] == "True":
-                messagelog.append("%s : unpausing %d" % (timeNow(), player))
-	        mqttc.publish("player/%d/command" % player, "unpause")
-	        mqttc.publish("front_lights/command", "on")
-	        mqttc.publish("graveyard/command", "on")
-	        mqttc.publish("front_lights/color/r", playlist[currentplaylist]["front_lights"]["r"])
-	        mqttc.publish("front_lights/color/g", playlist[currentplaylist]["front_lights"]["g"])
-	        mqttc.publish("front_lights/color/b", playlist[currentplaylist]["front_lights"]["b"])
-	        mqttc.publish("graveyard/color/r", playlist[currentplaylist]["graveyard"]["r"])
-	        mqttc.publish("graveyard/color/g", playlist[currentplaylist]["graveyard"]["g"])
-	        mqttc.publish("graveyard/color/b", playlist[currentplaylist]["graveyard"]["b"])
-	        mqttc.publish("front_lights/command", "go")
-	        mqttc.publish("graveyard/command", "go")
+          messagelog.append("%s : unpausing %d" % (timeNow(), player))
+          mqttc.publish("player/%d/command" % player, "unpause")
+          #mqttc.publish("front_lights/command", "on")
+          mqttc.publish("front_lights", "ON")
+          mqttc.publish("graveyard/command", "on")
+          mqttc.publish("front_lights/col", "#%x%x%x" % (playlist[currentplaylist]["front_lights"]["r"], playlist[currentplaylist]["front_lights"]["g"], playlist[currentplaylist]["front_lights"]["b"]))
+          #mqttc.publish("front_lights/color/r", playlist[currentplaylist]["front_lights"]["r"])
+          #mqttc.publish("front_lights/color/g", playlist[currentplaylist]["front_lights"]["g"])
+          #mqttc.publish("front_lights/color/b", playlist[currentplaylist]["front_lights"]["b"])
+          mqttc.publish("graveyard/color/r", playlist[currentplaylist]["graveyard"]["r"])
+          mqttc.publish("graveyard/color/g", playlist[currentplaylist]["graveyard"]["g"])
+          mqttc.publish("graveyard/color/b", playlist[currentplaylist]["graveyard"]["b"])
+          mqttc.publish("front_lights/command", "go")
+          mqttc.publish("graveyard/command", "go")
         elif master != int(player) and \
-	    videoStats[master].has_key("paused") and videoStats[master]["paused"] == "False" and \
+            videoStats[master].has_key("paused") and videoStats[master]["paused"] == "False" and \
             videoStats[player].has_key("paused") and videoStats[player]["paused"] == "True" and \
-	    (not playlist[currentplaylist][player].has_key("wait") or playlist[currentplaylist][player]["wait"] < videoStats[master]["position"]):
-                messagelog.append("%s : unpausing %d" % (timeNow(), player))
-	        mqttc.publish("player/%d/command" % player, "unpause")
+            (not playlist[currentplaylist][player].has_key("wait") or playlist[currentplaylist][player]["wait"] < videoStats[master]["position"]):
+          messagelog.append("%s : unpausing %d" % (timeNow(), player))
+          mqttc.publish("player/%d/command" % player, "unpause")
         elif master == int(player) and \
             videoStats[player].has_key("player_running") and \
             videoStats[player]["player_running"] == "False":
-                messagelog.append("%s : Master is done, resetting all players, next playlist" % timeNow())
-                resetAllPlayers()
-                nextPlayList()
-	elif master == player and \
-	    videoStats[master].has_key("duration") and \
-	    playlist[currentplaylist][master].has_key("endtime") and \
-	    videoStats[master]["position"] >= playlist[currentplaylist][master]["endtime"]:
-                messagelog.append("%s : Master reached endtime, resetting all players, next playlist" % timeNow())
-                resetAllPlayers()
-                nextPlayList()
+          messagelog.append("%s : Master is done, resetting all players, next playlist" % timeNow())
+          resetAllPlayers()
+          nextPlayList()
+        elif master == player and \
+            videoStats[master].has_key("duration") and \
+            playlist[currentplaylist][master].has_key("endtime") and \
+            videoStats[master]["position"] >= playlist[currentplaylist][master]["endtime"]:
+          messagelog.append("%s : Master reached endtime, resetting all players, next playlist" % timeNow())
+          resetAllPlayers()
+          nextPlayList()
 	#elif master != player and \
 	    #videoStats[master].has_key("duration") and \
 	    #videoStats[master]["duration"] - videoStats[master]["position"] < 10:
