@@ -31,35 +31,45 @@ def on_message(client, userdata, msg):
     else:
     	playerInfo[topic] = msg.payload
 
+commandLock = False
 
 def doCommand(cmdstr):
+    global commandLock
+    if commandLock == True:
+      print "doCommand: locked"
+    else:
+      commandLock = True
+
     try:
         cmd, messagedata = cmdstr.split(" ", 1)
     except:
         cmd = cmdstr
+    print "doCommand (%s) start" % cmd
     if cmd == "reset":
         playerReset()
     elif cmd == "queue":
         playFile()
     elif cmd == "unpause":
         playerUnpause()
-    print "doCommand exit"
+    print "doCommand (%s) exit" % cmd
+    commandLock = False
 
 def playerReset():
     global playerstatus
     global player
     global playerInfo
+
     if player:
         player.stop()
-    playerInfo["media_file"] = "";
+    playerInfo["media_file"] = "reset";
     #playerInfo = {}
-    playerInfo["audio"] = "";
-    playerInfo["video"] = "";
-    playerInfo["current_volume"] = "";
-    playerInfo["duration"] = "";
-    playerInfo["paused"] = "";
-    playerInfo["position"] = "";
-    playerInfo["title"] = "";
+    playerInfo["audio"] = "reset";
+    playerInfo["video"] = "reset";
+    playerInfo["current_volume"] = "reset";
+    playerInfo["duration"] = "reset";
+    playerInfo["paused"] = "reset";
+    playerInfo["position"] = "reset";
+    playerInfo["title"] = "reset";
     player = False
     playerstatus = "reset"
 
@@ -91,9 +101,11 @@ def playFile():
 
 def playerUnpause():
     global player
+    global playerstatus
     print "palyerUnpause()"
     if player.__dict__.has_key("paused") and player.__dict__["paused"] == True:
         player.toggle_pause()
+    playerstatus = "running"
 
 #player.toggle_mute()
 #player.toggle_mute(.1)
@@ -142,7 +154,8 @@ try:
             if player.__dict__.has_key("position"): messagedata["position"] = player.__dict__['position']
             if player.__dict__.has_key("title"): messagedata["title"] = player.__dict__['title']
             messagedata["player_running"] = player.is_running(),
-            messagedata["player_status"] = "running"
+            #messagedata["player_status"] = playerInfo["player_status"]
+            messagedata["player_status"] = str(playerstatus)
             sendUpdate(messagedata)
         sleep(.25)
         #sleep(.1)
