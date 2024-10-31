@@ -113,9 +113,11 @@ def playerUnpause():
 
 #server = "192.168.1.234"
 #server = "192.168.1.166"
-server = "192.168.1.18"
+#server = "192.168.1.18"
+server = "192.168.1.243"
 port = "1883"
 mqttc = mqtt.Client("omxplayer %d" % playerID)
+mqttc.username_pw_set(username='home-pi', password='passwd')
 mqttc.connect(server, port)
 mqttc.loop_start()
 
