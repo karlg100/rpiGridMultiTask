@@ -53,10 +53,10 @@ mqttc.loop_start()
 if len(sys.argv) > 1:
     currentplaylist = int(sys.argv[1])
 else:
-    currentplaylist=1
+    currentplaylist=0
 
-playlist = { 
-      1: {  			# playlist 1
+playlist = [ 
+      {  			# playlist 1
         "master": 1,
 	        1: {			# player 1
             "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
@@ -67,7 +67,7 @@ playlist = {
 		      },
 	        2: {			# player 2
             "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
-            "args": "-o local --no-osd",
+            "args": "-o local --loop --no-osd",
 		        "wait": 15,
             "vol": -7,
 		      },
@@ -82,7 +82,7 @@ playlist = {
 		        "b": 0,
 		      },
 	   },
-     2: {  			# playlist 2
+     {  			# playlist 2
        "master": 2,
 	       1: {			# player 1
            "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
@@ -107,7 +107,7 @@ playlist = {
 		       "b": 89,
 		     },
 	   },
-     3: {  			# playlist 3
+     {  			# playlist 3
        "master": 1,
 	       1: {			# player 1
            "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
@@ -133,7 +133,33 @@ playlist = {
 		       "b": 0,
 		     },
 	   },
-     4: {  			# playlist 4
+     {        # playlist 14
+       "master": 1,
+       1: {     # player 2
+         #"file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         "file": "/home/pi/videos/DJ-Cummerbund-DragulAPT.mp4",
+         #"args": "--no-osd -o local -l 410",
+         "args": "--no-osd -o local --orientation 180",
+         "vol": 10,
+       },
+       2: {     # player 2
+         "file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         "args": "-o local --no-osd",
+         "vol": -99,
+       },
+       "front_lights": {
+         "r": 147,
+         "g": 112,
+         "b": 219,
+       },
+       "graveyard": {
+         "r": 200,
+         "g": 200,
+         "b": 0,
+       },
+     },
+
+     {  			# playlist 4
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/TnT\ -\ Vampire\ Scenes\ -\ Window/TnT_BatsAndBrooms_Win_H.mp4",
@@ -158,7 +184,7 @@ playlist = {
 		     "b": 89,
 		   },
 	   },
-     5: {  			# playlist 5
+     {  			# playlist 5
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/Tricks\ and\ Treats-Frankenstein.mp4",
@@ -183,7 +209,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     6: {  			# playlist 6
+     {  			# playlist 6
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/Thriller/thriller_video.mp4",
@@ -209,7 +235,7 @@ playlist = {
 		     "b": 64,
 		   },
 	   },
-     7: {  			# playlist 7
+     {  			# playlist 7
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/JOLJ_InTheHallSong_Trio_Win_BG_H.mp4",
@@ -233,7 +259,33 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-      8: {  			# playlist 8
+     {        # playlist 13
+       "master": 2,
+       1: {     # player 1
+         "file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         #"file": "/home/pi/videos/Ghostbusters_LilJon-clean.mp4",
+         #"args": "--no-osd -o local -l 410",
+         "args": "--no-osd -o local --loop --orientation 180",
+         "vol": -75,
+       },
+       2: {     # player 2
+         #"file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         "file": "/home/pi/videos/Ghostbusters_LilJon-clean.mp4",
+         "args": "-o local --no-osd",
+         "vol": -50,
+       },
+       "front_lights": {
+         "r": 147,
+         "g": 112,
+         "b": 219,
+       },
+       "graveyard": {
+         "r": 200,
+         "g": 200,
+         "b": 0,
+       },
+     },
+     {  			# playlist 8
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/Bone\ Chillers-Dancing\ Dead.mp4",
@@ -244,7 +296,7 @@ playlist = {
 	     2: {			# player 2
          "file": "/home/pi/videos/Spooly\ Scarry\ Skel.mp4",
          "args": "-o local --no-osd",
-         "vol": 0,
+         "vol": 30,
 		   },
 	     "front_lights": {
 		     "r": 0,
@@ -257,7 +309,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     9: {  			# playlist 9
+     {  			# playlist 9
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/Ghostly\ Apparitions-Beckoning\ Beauty.mp4",
@@ -281,7 +333,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     10: {  			# playlist 10
+     {  			# playlist 10
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/BOO_BooTime_Holl_H.mp4",
@@ -305,7 +357,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     11: {  			# playlist 10
+     {  			# playlist 10
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/Guardians_inferno.mp4",
@@ -329,7 +381,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-	     12: {  			# playlist 10
+	   {  			# playlist 10
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
@@ -353,7 +405,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-		}
+		]
 
 
 def timeNow():
@@ -364,9 +416,9 @@ def nextPlayList():
     global playlist
     global messagelog
     currentplaylist += 1
-    if len(playlist) < currentplaylist:
-        messagelog.append("%s : at last playlist %d, starting over at 1" % (timeNow(), currentplaylist))
-        currentplaylist = 1
+    if len(playlist) < currentplaylist+1:
+        messagelog.append("%s : at last playlist %d, starting over at 0" % (timeNow(), currentplaylist))
+        currentplaylist = 0
 
 
 state = "init";
@@ -431,6 +483,7 @@ def checkPlayerStatus():
           videoStats[player]["paused"] == b"True":
         if debug: print("player %d is master and queued and paused\n" % player)
         messagelog.append("%s : unpausing %d" % (timeNow(), player))
+        sleep(.5)
         mqttc.publish("player/%d/command" % player, "unpause")
         mqttc.publish("player/%d/3_last_master_unpause" % player, timeNow())
         #mqttc.publish("front_lights/command", "on")
