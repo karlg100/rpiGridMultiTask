@@ -11,28 +11,31 @@ import paho.mqtt.client as mqtt
 #server = "192.168.1.166"
 #server = "192.168.1.18"
 server = "192.168.1.243"
-port = "1883"
+port = 1883
 
 videoStats = {  1: {"player_status": False},
                 2: {"player_status": False},
              }
 loop = True
 
+debug = False
+#debug = True
+
 waitForReset = False
 
 messagelog = []
 
 def on_message(client, userdata, msg):
-        global videoStats
+  global videoStats
 	#print "Topic: ", msg.topic+'\nMessage: '+str(msg.payload)
-        junk, player, key = msg.topic.split("/", 3)
+  junk, player, key = msg.topic.split("/", 3)
 	#print "%s/%s = %s" % (player, key, msg.payload)
-	try:
-		videoStats[int(player)][key] = json.loads(msg.payload)
-	except:
-		videoStats[int(player)][key] = msg.payload
+  try:
+    videoStats[int(player)][key] = json.loads(msg.payload)
+  except:
+    videoStats[int(player)][key] = msg.payload
 
-print 'Launching mqtt client'
+print('Launching mqtt client')
 
 # Socket to talk to server
 mqttc = mqtt.Client("mgr")
@@ -50,10 +53,10 @@ mqttc.loop_start()
 if len(sys.argv) > 1:
     currentplaylist = int(sys.argv[1])
 else:
-    currentplaylist=1
+    currentplaylist=0
 
-playlist = { 
-      1: {  			# playlist 1
+playlist = [ 
+      {  			# playlist 1
         "master": 1,
 	        1: {			# player 1
             "file": "/home/pi/videos/Jack-O-Lantern\ -\ Songs\ -\ Window/Jack-O-Lantern\ -\ Songs\ -\ Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4",
@@ -64,7 +67,7 @@ playlist = {
 		      },
 	        2: {			# player 2
             "file": "/home/pi/videos/Bone\ Chillers\ -\ Numskulls/Wall/BC_Numskulls_Wall_H.mp4",
-            "args": "-o local --no-osd",
+            "args": "-o local --loop --no-osd",
 		        "wait": 15,
             "vol": -7,
 		      },
@@ -79,7 +82,7 @@ playlist = {
 		        "b": 0,
 		      },
 	   },
-     2: {  			# playlist 2
+     {  			# playlist 2
        "master": 2,
 	       1: {			# player 1
            "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
@@ -104,7 +107,7 @@ playlist = {
 		       "b": 89,
 		     },
 	   },
-     3: {  			# playlist 3
+     {  			# playlist 3
        "master": 1,
 	       1: {			# player 1
            "file": "/home/pi/videos/Jack-O-Lantern\ -\ Stories\ -\ Window/Jack-O-Lantern\ -\ Stories\ -\ Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4",
@@ -130,7 +133,33 @@ playlist = {
 		       "b": 0,
 		     },
 	   },
-     4: {  			# playlist 4
+     {        # playlist 14
+       "master": 1,
+       1: {     # player 2
+         #"file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         "file": "/home/pi/videos/DJ-Cummerbund-DragulAPT.mp4",
+         #"args": "--no-osd -o local -l 410",
+         "args": "--no-osd -o local --orientation 180",
+         "vol": 10,
+       },
+       2: {     # player 2
+         "file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         "args": "-o local --no-osd",
+         "vol": -99,
+       },
+       "front_lights": {
+         "r": 147,
+         "g": 112,
+         "b": 219,
+       },
+       "graveyard": {
+         "r": 200,
+         "g": 200,
+         "b": 0,
+       },
+     },
+
+     {  			# playlist 4
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/TnT\ -\ Vampire\ Scenes\ -\ Window/TnT_BatsAndBrooms_Win_H.mp4",
@@ -155,7 +184,7 @@ playlist = {
 		     "b": 89,
 		   },
 	   },
-     5: {  			# playlist 5
+     {  			# playlist 5
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/Tricks\ and\ Treats-Frankenstein.mp4",
@@ -180,7 +209,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     6: {  			# playlist 6
+     {  			# playlist 6
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/Thriller/thriller_video.mp4",
@@ -206,7 +235,7 @@ playlist = {
 		     "b": 64,
 		   },
 	   },
-     7: {  			# playlist 7
+     {  			# playlist 7
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/JOLJ_InTheHallSong_Trio_Win_BG_H.mp4",
@@ -230,7 +259,33 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-      8: {  			# playlist 8
+     {        # playlist 13
+       "master": 2,
+       1: {     # player 1
+         "file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         #"file": "/home/pi/videos/Ghostbusters_LilJon-clean.mp4",
+         #"args": "--no-osd -o local -l 410",
+         "args": "--no-osd -o local --loop --orientation 180",
+         "vol": -75,
+       },
+       2: {     # player 2
+         #"file": "/home/pi/videos/EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4",
+         "file": "/home/pi/videos/Ghostbusters_LilJon-clean.mp4",
+         "args": "-o local --no-osd",
+         "vol": -50,
+       },
+       "front_lights": {
+         "r": 147,
+         "g": 112,
+         "b": 219,
+       },
+       "graveyard": {
+         "r": 200,
+         "g": 200,
+         "b": 0,
+       },
+     },
+     {  			# playlist 8
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/Bone\ Chillers-Dancing\ Dead.mp4",
@@ -241,7 +296,7 @@ playlist = {
 	     2: {			# player 2
          "file": "/home/pi/videos/Spooly\ Scarry\ Skel.mp4",
          "args": "-o local --no-osd",
-         "vol": 0,
+         "vol": 30,
 		   },
 	     "front_lights": {
 		     "r": 0,
@@ -254,7 +309,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     9: {  			# playlist 9
+     {  			# playlist 9
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/Ghostly\ Apparitions-Beckoning\ Beauty.mp4",
@@ -278,7 +333,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     10: {  			# playlist 10
+     {  			# playlist 10
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/BOO_BooTime_Holl_H.mp4",
@@ -302,7 +357,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-     11: {  			# playlist 10
+     {  			# playlist 10
        "master": 1,
 	     1: {			# player 1
          "file": "/home/pi/videos/Guardians_inferno.mp4",
@@ -326,7 +381,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-	     12: {  			# playlist 10
+	   {  			# playlist 10
        "master": 2,
 	     1: {			# player 1
          "file": "/home/pi/videos/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/Jack-O-Lantern\ -\ Funny\ Faces\ -\ Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4",
@@ -350,7 +405,7 @@ playlist = {
 		     "b": 0,
 		   },
 	   },
-		}
+		]
 
 
 def timeNow():
@@ -361,9 +416,9 @@ def nextPlayList():
     global playlist
     global messagelog
     currentplaylist += 1
-    if len(playlist) < currentplaylist:
-        messagelog.append("%s : at last playlist %d, starting over at 1" % (timeNow(), currentplaylist))
-        currentplaylist = 1
+    if len(playlist) < currentplaylist+1:
+        messagelog.append("%s : at last playlist %d, starting over at 0" % (timeNow(), currentplaylist))
+        currentplaylist = 0
 
 
 state = "init";
@@ -388,7 +443,7 @@ def checkPlayerStatus():
 
     # keep resetting until all players are in reset state
     for player in videoStats:
-        if videoStats[player]["player_status"] != "reset" and waitForReset == True:
+        if videoStats[player]["player_status"] != b"reset" and waitForReset == True:
           messagelog.append("%s : not all players ready, sending new reset %d" % (timeNow(), player))
           resetAllPlayers()
           return
@@ -400,16 +455,20 @@ def checkPlayerStatus():
         #pprint(videoStats[player])
 
     for player in videoStats:
-      if videoStats[player]["player_status"] == "False":
+      if debug: print("player %d\n" % player)
+      if videoStats[player]["player_status"] == b"False":
+        if debug: print("player %d is false\n" % player)
         videoStats[player] = False
 
-      elif videoStats[player]["player_status"] == "standby":
+      elif videoStats[player]["player_status"] == b"standby":
+        if debug: print("player %d is standby\n" % player)
         #messagelog.append("%s : resetting %d" % (timeNow(), player))
         #mqttc.publish("player/%d/command" % player, "reset")
         mqttc.publish("player/%d/0_last_standby" % player, timeNow())
         resetAllPlayers()
 
-      elif videoStats[player]["player_status"] == "reset":
+      elif videoStats[player]["player_status"] == b"reset":
+        if debug: print("player %d is reset\n" % player)
         #pprint(playlist[currentplaylist][int(player)])
         #sleep(3)
         messagelog.append("%s : queuing %d with %s" % (timeNow(), player, json.dumps(playlist[currentplaylist][int(player)])))
@@ -420,9 +479,11 @@ def checkPlayerStatus():
         mqttc.publish("player/%d/2_last_queue" % player, timeNow())
 
       elif master == int(player) and \
-          videoStats[player][u"player_status"] == "queued" and \
-          videoStats[player]["paused"] == "True":
+          videoStats[player][u"player_status"] == b"queued" and \
+          videoStats[player]["paused"] == b"True":
+        if debug: print("player %d is master and queued and paused\n" % player)
         messagelog.append("%s : unpausing %d" % (timeNow(), player))
+        sleep(.5)
         mqttc.publish("player/%d/command" % player, "unpause")
         mqttc.publish("player/%d/3_last_master_unpause" % player, timeNow())
         #mqttc.publish("front_lights/command", "on")
@@ -438,22 +499,22 @@ def checkPlayerStatus():
         mqttc.publish("front_lights/command", "go")
         mqttc.publish("graveyard/command", "go")
       elif master != int(player) and \
-          videoStats[player][u"player_status"] == "queued" and \
-          videoStats[master].has_key("paused") and videoStats[master]["paused"] == "False" and \
-          videoStats[player].has_key("paused") and videoStats[player]["paused"] == "True" and \
-          (not playlist[currentplaylist][player].has_key("wait") or playlist[currentplaylist][player]["wait"] < videoStats[master]["position"]):
+          videoStats[player][u"player_status"] == b"queued" and \
+          "paused" in videoStats[master] and videoStats[master]["paused"] == b"False" and \
+          "paused" in videoStats[player] and videoStats[player]["paused"] == b"True" and \
+          (not "wait" in playlist[currentplaylist][player] or playlist[currentplaylist][player]["wait"] < videoStats[master]["position"]):
         messagelog.append("%s : unpausing %d" % (timeNow(), player))
         mqttc.publish("player/%d/command" % player, "unpause")
         mqttc.publish("player/%d/3_last_slave_unpause" % player, timeNow())
       elif master == int(player) and \
-          videoStats[player].has_key("player_running") and \
-          videoStats[player]["player_running"] == "False":
+          "player_running" in videoStats[player] and \
+          videoStats[player]["player_running"] == b"False":
         messagelog.append("%s : Master is done, resetting all players, next playlist" % timeNow())
         nextPlayList()
         resetAllPlayers()
       elif master == int(player) and \
-          videoStats[master].has_key("duration") and \
-          playlist[currentplaylist][master].has_key("endtime") and \
+          "duration" in videoStats[master] and \
+          "endtime" in playlist[currentplaylist][master] and \
           videoStats[master]["position"] >= playlist[currentplaylist][master]["endtime"]:
         messagelog.append("%s : Master reached endtime, resetting all players, next playlist" % timeNow())
         nextPlayList()
@@ -486,7 +547,7 @@ def resetAllPlayers():
     messagelog.append("%s :   resetAllPlayers exit" % (timeNow()))
 
 def queuePlayers():
-    print "queue players here"
+    print("queue players here")
     
 
 def commandControl():
@@ -520,14 +581,14 @@ try:
     while True:
         os.system('clear')
         printlog()
-        print "current playlist : %d" % currentplaylist
-        print "master player : %d" % playlist[currentplaylist]["master"]
+        print("current playlist : %d" % currentplaylist)
+        print("master player : %d" % playlist[currentplaylist]["master"])
         pprint(videoStats)
         sleep(1)
 except KeyboardInterrupt:
-    print "exiting"
+    print("exiting")
     loop = False
-    resetAllPlayers(cmd_send)
+    resetAllPlayers()
     mqttc.disconect()
     mqttc.stop()
     #t.stop()
