@@ -1,0 +1,245 @@
+# The Halloween show. This file is the playlist: edit it, then press R in the
+# console (or restart the director) to load the changes.
+#
+#   python3 -m haunt check show.yaml       validate it
+#   python3 -m haunt demo show.yaml        rehearse it with pretend players
+#
+# Converted from the playlist that was embedded in playlistManager-mqtt.py.
+# See docs/SHOW-FILE.md for every setting.
+
+name: Halloween
+
+mqtt:
+  host: 192.168.1.243
+  port: 1883
+  username: home-pi
+  # The password is NOT kept here (this repo is public). Put it in
+  # /etc/haunt/env as HAUNT_MQTT_PASSWORD=..., or point password_file at a file.
+  prefix: haunt
+
+players:
+  1: {name: Window}     # the Pi that used "--orientation 180"; rotation now lives in its player.yaml
+  2: {name: Wall}
+
+lights:
+  front_lights: {type: wled, topic: front_lights}
+  graveyard: {type: particle, topic: graveyard}
+
+defaults:
+  fade_in: 1.0        # seconds; picture and sound fade up from black
+  fade_out: 1.5       # seconds; at the natural end of a clip
+  skip_fade: 0.6      # seconds; when you press next / prev / stop
+  gap: 0.5            # seconds of black between scenes
+  target_lufs: -18    # every clip is normalised to this loudness
+
+# In each scene the MASTER's clip decides how long the scene lasts. The other
+# player is a follower: it can start late (start_after = position of the
+# master, in seconds) and is faded out when the master finishes.
+#
+# level is "how loud should this be", 0-150, AFTER loudness normalisation, so
+# 100 means the same loudness for every clip. The numbers below are a first
+# guess from the old omxplayer vol values (kept in the comments); tune them by
+# ear from the console with [ and ], and they are remembered.
+
+scenes:
+  - name: Pumpkin Song
+    master: 1
+    end_at: 100
+    players:
+      1:
+        file: "Jack-O-Lantern - Songs - Window/Jack-O-Lantern - Songs - Window/JOLJ_PumpkinSong_Trio_Win_BG_H.mp4"
+        level: 100  # old omxplayer vol: 5
+      2:
+        file: "Bone Chillers - Numskulls/Wall/BC_Numskulls_Wall_H.mp4"
+        level: 60   # old omxplayer vol: -7
+        loop: true
+        start_after: 15
+    lights:
+      front_lights: "#722800"
+      graveyard: "#007200"
+
+  - name: Wicked Brew
+    master: 2
+    players:
+      1:
+        file: "Jack-O-Lantern - Funny Faces - Window/Jack-O-Lantern - Funny Faces - Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4"
+        level: 60   # old omxplayer vol: -18
+        loop: true
+        start_after: 8
+      2:
+        file: "WH - Spell2 - Wicked Brew - Hollusion+TV+Window/WH_Spell 2_WickedBrew_Holl_H.mp4"
+        level: 100  # old omxplayer vol: 10
+    lights:
+      front_lights: "#0000be"
+      graveyard: "#310059"
+
+  - name: Twas the Night
+    master: 1
+    players:
+      1:
+        file: "Jack-O-Lantern - Stories - Window/Jack-O-Lantern - Stories - Window/JOLJ_TwasTheNight_Trio_Win_BG_H.mp4"
+        level: 100  # old omxplayer vol: 0
+      2:
+        file: "Bone Chillers - Jittery Bones/Wall/BC_JitteryBones_Wall_H.mp4"
+        level: 75   # old omxplayer vol: -7
+        start_after: 20
+    lights:
+      front_lights: "#ffa500"
+      graveyard: "#ffa500"
+
+  - name: Dragula APT
+    master: 1
+    players:
+      1:
+        file: "DJ-Cummerbund-DragulAPT.mp4"
+        level: 100  # old omxplayer vol: 10
+      2:
+        file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
+        level: 0    # old omxplayer vol: -99
+    lights:
+      front_lights: "#9370db"
+      graveyard: "#c8c800"
+
+  - name: Cat Crow Canzonet
+    master: 2
+    players:
+      1:
+        file: "TnT - Vampire Scenes - Window/TnT_BatsAndBrooms_Win_H.mp4"
+        level: 60   # old omxplayer vol: -7
+        start_after: 20
+      2:
+        file: "WH - Song2 - Cat Crow Canzonet - Hollusion-TV-Window/WH_Song 2_CatCrow_Holl_H.mp4"
+        level: 100  # old omxplayer vol: 10
+    lights:
+      front_lights: "#808080"
+      graveyard: "#310059"
+
+  - name: Frankenstein
+    master: 1
+    players:
+      1:
+        file: "Tricks and Treats-Frankenstein.mp4"
+        level: 100  # old omxplayer vol: 10
+        start: 37
+      2:
+        file: "Phantasms-Rise Of The Wraiths.mp4"
+        level: 100  # old omxplayer vol: 10
+        start_after: 40
+    lights:
+      front_lights: "#404040"
+      graveyard: "#004000"
+
+  - name: Thriller
+    master: 1
+    players:
+      1:
+        file: "Thriller/thriller_video.mp4"
+        level: 100  # old omxplayer vol: 15
+        start: 244
+      2:
+        file: "Thriller/thriller_anim.mp4"
+        level: 0    # old omxplayer vol: -100 (--vol -4000)
+        start_after: 420
+        end_at: 225
+    lights:
+      front_lights: "#ff2631"
+      graveyard: "#400040"
+
+  - name: In the Hall
+    master: 1
+    players:
+      1:
+        file: "JOLJ_InTheHallSong_Trio_Win_BG_H.mp4"
+        level: 100  # old omxplayer vol: 10
+      2:
+        file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
+        level: 60   # old omxplayer vol: 0
+        loop: true
+    lights:
+      front_lights: "#ff8a14"
+      graveyard: "#ffa500"
+
+  - name: Ghostbusters
+    master: 2
+    players:
+      1:
+        file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
+        level: 0    # old omxplayer vol: -75
+        loop: true
+      2:
+        file: "Ghostbusters_LilJon-clean.mp4"
+        level: 100  # old omxplayer vol: -50
+    lights:
+      front_lights: "#9370db"
+      graveyard: "#c8c800"
+
+  - name: Spooky Scary Skeletons
+    master: 2
+    players:
+      1:
+        file: "Bone Chillers-Dancing Dead.mp4"
+        level: 0    # old omxplayer vol: -100 (--vol -4000)
+        loop: true
+      2:
+        file: "Spooly Scarry Skel.mp4"
+        level: 100  # old omxplayer vol: 30
+    lights:
+      front_lights: "#0000c8"
+      graveyard: "#400000"
+
+  - name: Seance
+    master: 2
+    players:
+      1:
+        file: "Ghostly Apparitions-Beckoning Beauty.mp4"
+        level: 60   # old omxplayer vol: -15
+        loop: true
+      2:
+        file: "WH_Spell 3_Seance_Holl_H.mp4"
+        level: 100  # old omxplayer vol: 0
+    lights:
+      front_lights: "#f700ff"
+      graveyard: "#00c800"
+
+  - name: Witching Hour
+    master: 2
+    players:
+      1:
+        file: "BOO_BooTime_Holl_H.mp4"
+        level: 60   # old omxplayer vol: -15
+        loop: true
+      2:
+        file: "WH - Song1 - Witching Hour - Hollusion-TV-Window/WH_Song 1_WitchingHour_Holl_H.mp4"
+        level: 100  # old omxplayer vol: 0
+    lights:
+      front_lights: "#f700ff"
+      graveyard: "#c80000"
+
+  - name: Guardians Inferno
+    master: 1
+    players:
+      1:
+        file: "Guardians_inferno.mp4"
+        level: 100  # old omxplayer vol: 0
+      2:
+        file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
+        level: 100  # old omxplayer vol: 0
+        loop: true
+    lights:
+      front_lights: "#c8c800"
+      graveyard: "#c8c800"
+
+  - name: Ghosts n Stuff
+    master: 2
+    players:
+      1:
+        file: "Jack-O-Lantern - Funny Faces - Window/Jack-O-Lantern - Funny Faces - Window/JOLJ_FunnyFaces_Trio_Win_BG_H.mp4"
+        level: 100  # old omxplayer vol: 0
+        loop: true
+      2:
+        file: "deadmou5_ghostsnstuff.mp4"
+        level: 100  # old omxplayer vol: 0
+    lights:
+      front_lights: "#00c800"
+      graveyard: "#c80000"
+

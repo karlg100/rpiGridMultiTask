@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+# written by the director: levels and skips set from the console
+*.state.json
+*.state.json.tmp
+# local secrets
+/env

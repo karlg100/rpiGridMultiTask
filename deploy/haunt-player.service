@@ -1,0 +1,19 @@
+# Installed by deploy/install.sh, which fills in @USER@ and @DIR@.
+[Unit]
+Description=Halloween show video player (haunt)
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+User=@USER@
+SupplementaryGroups=video render audio
+WorkingDirectory=@DIR@
+EnvironmentFile=-/etc/haunt/env
+# Blank the text console so nothing shows before mpv takes the screen.
+ExecStartPre=+/bin/sh -c 'printf "\033[2J\033[H\033[?25l" > /dev/tty1 || true'
+ExecStart=/usr/bin/python3 -m haunt player -c /etc/haunt/player.yaml
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

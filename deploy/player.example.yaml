@@ -1,0 +1,24 @@
+# One of these per player Pi, as /etc/haunt/player.yaml
+
+id: 1                          # must match the id used in show.yaml
+
+mqtt:
+  host: 192.168.1.243
+  username: home-pi
+  # password comes from HAUNT_MQTT_PASSWORD in /etc/haunt/env
+
+media_root: /home/pi/videos    # file names in show.yaml are relative to this
+
+rotate: 0                      # 180 for the upside-down projector (was --orientation 180)
+
+# Where the sound goes. `mpv --audio-device=help` lists the choices.
+#   headphone jack on current Raspberry Pi OS:  alsa/plughw:CARD=Headphones,DEV=0
+audio_device: auto
+
+trim: 100                      # percent; evens out two players with different amps
+normalize: true                # measure each file's loudness once and even them out
+video_fade: true               # fade picture to/from black. Needs --vo=gpu (the default)
+
+# Extra mpv options. The defaults are fine on a Pi 4. See docs/INSTALL.md
+# for what to try on a Pi 3.
+mpv_args: []

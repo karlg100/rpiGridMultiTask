@@ -1,0 +1,3 @@
+#!/bin/sh
+# Run haunt straight from this checkout: ./haunt.sh console, ./haunt.sh demo ...
+cd "$(dirname "$0")" && exec python3 -m haunt "$@"
