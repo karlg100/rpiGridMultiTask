@@ -1,9 +1,36 @@
 # Installing
 
-**None of this has been run on a real Pi yet.** The software is tested (see
-docs/DESIGN.md), but the steps on this page are written from knowledge of
-Raspberry Pi OS, not from doing them. Expect to adjust `mpv_args` and
-`audio_device`. Try one player on the bench before Halloween week.
+## What the 2026 setup actually is
+
+Done on 2026-10-29 and running:
+
+| Machine | Hardware / OS | Role |
+|---|---|---|
+| home-pi (`pi@home-pi`, wired 192.168.1.45, wifi 192.168.1.18) | Pi 3B, Raspberry Pi OS 12 (bookworm) 32-bit | mosquitto broker + `haunt-director.service` |
+| client1 (`karlg@client1.local`) | Pi 4, Raspberry Pi OS 13 (trixie) 64-bit | player 1 "Window", `rotate: 180` |
+| client2 (`karlg@client2.local`) | Pi 4, Raspberry Pi OS 13 (trixie) 64-bit | player 2 "Wall" |
+
+- Broker: mosquitto on home-pi, `/etc/mosquitto/conf.d/haunt.conf`, listening
+  on every interface, login required, user `home-pi`. Everything in the show
+  connects to the **wired** address, 192.168.1.45. The password is in
+  `/etc/haunt/env` on each machine.
+- The players were imaged with the **desktop** version of Raspberry Pi OS.
+  They now boot to the console (`systemctl set-default multi-user.target`) so
+  mpv can own the screen. `sudo systemctl set-default graphical.target`
+  brings the desktop back.
+- Videos are in `/home/karlg/videos` on both players (`media_root`).
+- Sound goes to the headphone jack: `alsa/plughw:CARD=Headphones,DEV=0`.
+- Learned on the real Pi 4s and now in `player.yaml`:
+  - `--profile=fast`: with mpv's default scaler the Pi 4 dropped about 15
+    frames a second on the 1080p clips; with it, none. Software decoding is
+    fine (about one core); hardware decoding made no difference.
+  - `--vo=gpu --gpu-context=drm`: with no display connected mpv otherwise
+    falls back to a slow software window and stays there after the projector
+    is plugged in. Pinned, it refuses to start, the player shows
+    "mpv will not start - is the projector connected?" in the console, and
+    it starts by itself within 5 s of a display appearing.
+
+The rest of this page is the general procedure.
 
 ## 0. Rehearse on the Mac first
 

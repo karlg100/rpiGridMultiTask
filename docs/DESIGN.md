@@ -199,9 +199,10 @@ Tested here, on x86 Linux:
   software-GL X server: black while loaded and paused, linear ramp to full.
 - Python 3.9 + paho-mqtt 1.6 and Python 3.13 + paho-mqtt 2.1.
 
-**Not tested: anything on a Raspberry Pi.** Specifically mpv's DRM/KMS output
-without a desktop, hardware decoding, audio device selection, and the systemd
-units. docs/INSTALL.md says what to check first and which knobs to turn.
+Since then it has been installed on the real machines (two Pi 4s on
+Raspberry Pi OS trixie, a Pi 3 on bookworm for the director): DRM/KMS output,
+the systemd units, `deploy/install.sh`, loudness measurement and reboot
+autostart all work. See docs/INSTALL.md for what had to be tuned.
 
 ## Not done (ideas)
 

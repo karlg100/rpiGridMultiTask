@@ -279,6 +279,8 @@ class MpvBackend(Backend):
     # -- IPC -------------------------------------------------------------
 
     def _command(self, *cmd):
+        if self.sock is None:          # mpv not running; the agent is restarting it
+            return
         with self._wlock:
             self._req += 1
             rid = self._req

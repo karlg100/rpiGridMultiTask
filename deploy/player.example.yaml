@@ -19,6 +19,8 @@ trim: 100                      # percent; evens out two players with different a
 normalize: true                # measure each file's loudness once and even them out
 video_fade: true               # fade picture to/from black. Needs --vo=gpu (the default)
 
-# Extra mpv options. The defaults are fine on a Pi 4. See docs/INSTALL.md
-# for what to try on a Pi 3.
-mpv_args: []
+# Extra mpv options. These are what the Pi 4s run:
+#   --profile=fast       mpv's default GPU scaler dropped ~15 frames/s on a Pi 4
+#   --vo=gpu, --gpu-context=drm   with no display connected mpv otherwise falls
+#                        back to a slow software window and never recovers
+mpv_args: ["--profile=fast", "--vo=gpu", "--gpu-context=drm"]

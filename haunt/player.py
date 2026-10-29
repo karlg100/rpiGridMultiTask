@@ -99,6 +99,7 @@ class PlayerAgent:
         self._last_pub = None
         self._last_pub_t = -1e9
         self._restart_after = 0.0
+        self._start_failures = 0
         self._probe = None        # the last probe request, to re-answer as scans finish
 
         bus.subscribe(self.topics.player(self.id, "cmd"))
@@ -136,6 +137,9 @@ class PlayerAgent:
         self.pos, self.dur = 0.0, None
         file = str(cmd.get("file", ""))
         self.path = self.resolve(file)
+        if not self.backend.alive():
+            self._fail(self.error or "mpv is not running")
+            return
         if self.backend.name != "fake" and not os.path.isfile(self.path):
             self._fail("file not found: %s" % self.path)
             return
@@ -260,10 +264,15 @@ class PlayerAgent:
                     self.backend.close()
                     self.backend.start()
                     self.state, self.error = "idle", None
-                    log.info("backend restarted")
+                    self._start_failures = 0
+                    log.info("backend started")
                 except Exception as exc:
-                    self.error = "cannot start mpv: %s" % exc
-                    log.error("%s", self.error)
+                    # Usually: no display. mpv on DRM needs a connected
+                    # screen, so this clears itself once the projector is on.
+                    self.error = "mpv will not start - is the projector connected? (retrying)"
+                    if self._start_failures % 12 == 0:      # once a minute, not every 5 s
+                        log.error("cannot start mpv: %s", exc)
+                    self._start_failures += 1
             self.publish_state()
             return
 
@@ -400,7 +409,12 @@ def main(cfg: dict) -> None:
     topics = Topics(cfg["mqtt"].get("prefix", "haunt"))
     online = topics.player(cfg["id"], "online")
     backend = build_backend(cfg)
-    backend.start()
+    try:
+        backend.start()
+    except Exception as exc:
+        # Keep going: the agent retries every few seconds and reports the
+        # problem over MQTT, so the console shows why this player is dark.
+        log.error("cannot start mpv yet: %s", exc)
     bus = MqttBus(cfg["mqtt"], "player%s" % cfg["id"], will=(online, "0"), birth=(online, "1"))
     loud = LoudnessCache(cfg["cache_dir"]) if cfg["backend"] != "fake" else None
     PlayerAgent(cfg, bus, backend, loudness=loud).run()
