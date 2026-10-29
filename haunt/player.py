@@ -37,6 +37,7 @@ log = logging.getLogger("haunt.player")
 LOAD_TIMEOUT = 15.0      # seconds for mpv to produce a first frame
 HEARTBEAT = 0.25         # seconds between state reports while nothing changes
 LEVEL_RAMP = 0.3         # seconds to glide to a new level
+NO_MPV = "mpv is not running - is the projector connected? (retrying)"
 
 
 class Ramp:
@@ -138,7 +139,7 @@ class PlayerAgent:
         file = str(cmd.get("file", ""))
         self.path = self.resolve(file)
         if not self.backend.alive():
-            self._fail(self.error or "mpv is not running")
+            self._fail(NO_MPV)
             return
         if self.backend.name != "fake" and not os.path.isfile(self.path):
             self._fail("file not found: %s" % self.path)
@@ -256,8 +257,9 @@ class PlayerAgent:
         now = self.clock()
 
         if not self.backend.alive():
-            if self.state != "error" or "mpv" not in (self.error or ""):
-                self._fail("mpv is not running; restarting it")
+            if self.state != "error" or self.error != NO_MPV:
+                log.error("mpv is not running")
+                self.state, self.error = "error", NO_MPV
             if now >= self._restart_after:
                 self._restart_after = now + 5
                 try:
@@ -265,11 +267,10 @@ class PlayerAgent:
                     self.backend.start()
                     self.state, self.error = "idle", None
                     self._start_failures = 0
-                    log.info("backend started")
+                    log.info("mpv started")
                 except Exception as exc:
                     # Usually: no display. mpv on DRM needs a connected
                     # screen, so this clears itself once the projector is on.
-                    self.error = "mpv will not start - is the projector connected? (retrying)"
                     if self._start_failures % 12 == 0:      # once a minute, not every 5 s
                         log.error("cannot start mpv: %s", exc)
                     self._start_failures += 1

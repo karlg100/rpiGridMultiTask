@@ -245,6 +245,17 @@ class MpvBackend(Backend):
                     raise RuntimeError("mpv did not open its IPC socket")
                 time.sleep(0.05)
 
+        # mpv opens its IPC socket before the video output. If there is no
+        # display it exits a moment later, so make sure it stays up.
+        settle = time.monotonic() + 1.5
+        while time.monotonic() < settle:
+            if self.proc.poll() is not None:
+                code = self.proc.returncode
+                self.close()
+                raise RuntimeError("mpv exited at startup (code %s), usually because no "
+                                   "display is connected" % code)
+            time.sleep(0.05)
+
         self._props = {}
         self._ready = False
         self._error = None
