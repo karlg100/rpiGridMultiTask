@@ -3,7 +3,7 @@
 id: 1                          # must match the id used in show.yaml
 
 mqtt:
-  host: 192.168.1.45
+  host: 192.168.1.244
   username: home-pi
   # password comes from HAUNT_MQTT_PASSWORD in /etc/haunt/env
 

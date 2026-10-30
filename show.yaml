@@ -10,7 +10,7 @@
 name: Halloween
 
 mqtt:
-  host: 192.168.1.45     # home-pi, wired interface (mosquitto runs there)
+  host: 192.168.1.244    # Home Assistant (Mosquitto add-on)
   port: 1883
   username: home-pi
   # The password is NOT kept here (this repo is public). Put it in

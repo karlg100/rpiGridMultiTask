@@ -6,14 +6,18 @@ Done on 2026-10-29 and running:
 
 | Machine | Hardware / OS | Role |
 |---|---|---|
-| home-pi (`pi@home-pi`, wired 192.168.1.45, wifi 192.168.1.18) | Pi 3B, Raspberry Pi OS 12 (bookworm) 32-bit | mosquitto broker + `haunt-director.service` |
+| home-pi (`pi@home-pi`, wired 192.168.1.45) | Pi 3B, Raspberry Pi OS 12 (bookworm) 32-bit | `haunt-director.service` |
 | client1 (`karlg@client1.local`) | Pi 4, Raspberry Pi OS 13 (trixie) 64-bit | player 1 "Window", `rotate: 180` |
 | client2 (`karlg@client2.local`) | Pi 4, Raspberry Pi OS 13 (trixie) 64-bit | player 2 "Wall" |
 
-- Broker: mosquitto on home-pi, `/etc/mosquitto/conf.d/haunt.conf`, listening
-  on every interface, login required, user `home-pi`. Everything in the show
-  connects to the **wired** address, 192.168.1.45. The password is in
-  `/etc/haunt/env` on each machine.
+- Broker: Home Assistant's Mosquitto at 192.168.1.244, user `home-pi`, the
+  same broker the WLED front lights use. The password is in `/etc/haunt/env`
+  on each machine. (While HA was being restored, a temporary mosquitto ran on
+  home-pi; it is stopped and disabled, config left in
+  `/etc/mosquitto/conf.d/haunt.conf`.)
+- home-pi is wired only (192.168.1.45); its wifi is off via
+  `dtoverlay=disable-wifi` in `/boot/config.txt`.
+- Players: client1 192.168.1.50, client2 192.168.1.51.
 - The players were imaged with the **desktop** version of Raspberry Pi OS.
   They now boot to the console (`systemctl set-default multi-user.target`) so
   mpv can own the screen. `sudo systemctl set-default graphical.target`
