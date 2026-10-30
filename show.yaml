@@ -243,3 +243,17 @@ scenes:
       front_lights: "#00c800"
       graveyard: "#c80000"
 
+
+  - name: Stayin' Undead
+    master: 1
+    players:
+      1:
+        file: "Stayin-Undead-fast-cut-v2.mp4"
+        level: 100
+      2:
+        file: "Bone Chillers - Numskulls/Wall/BC_Numskulls_Wall_H.mp4"
+        level: 60
+        loop: true
+    lights:
+      front_lights: "#9370db"
+      graveyard: "#00c800"
