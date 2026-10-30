@@ -142,6 +142,11 @@ def test_wled_effect_names_are_checked():
     with pytest.raises(ValueError):
         parse_light({"effect": "Candle", "colour": "#ffffff"})
     assert parse_light({"fx": 74, "pal": 2})["fx"] == 74     # numbers work too
+    # WLED 16: Meteor Smooth is Meteor with option 3 ("Smooth") on
+    seg = lights.wled_json(parse_light({"effect": "Meteor", "o3": True}))["seg"][0]
+    assert seg["fx"] == 76 and seg["o3"] is True
+    with pytest.raises(ValueError):
+        parse_light({"effect": "Meteor", "c3": 40})          # c3 is 0-31
     # an effect without a palette resets the palette to the effect's default
     assert lights.wled_json(parse_light({"effect": "Juggle"}))["seg"][0]["pal"] == 0
 

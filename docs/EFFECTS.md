@@ -1,5 +1,15 @@
 # Lights and effects per scene
 
+## The controller
+
+WLED 16.0.0 on an ESP32 at 192.168.1.186, 650 LEDs (segment 0 covers
+LEDs 0-630), MQTT device topic `front_lights`. Its MQTT broker was still set
+to 192.168.1.243, Home Assistant's old address, which is why it showed
+offline; it now points at 192.168.1.244. The effect and palette tables in
+`haunt/lights.py` were read from this controller. WLED 16 renumbered a few
+effects (77 is now "Copy Segment"; Meteor Smooth became Meteor's "Smooth"
+option, `o3: true` in show.yaml).
+
 ## What the eaves strip was doing
 
 The WLED strip's last reported state (its retained `front_lights/v` message)
@@ -25,7 +35,7 @@ per-scene colours.
 | 6 | Frankenstein | **Lightning**, blue-white over dark green | Random lightning strikes for the lab scene; the Wraiths appear in the flashes. | | 6 s at start |
 | 7 | Thriller | **Colorwaves**, Magred palette | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. | | 8 s at start, 6 s at 7:00 when the zombie animation starts |
 | 8 | In the Hall (Mountain King) | **Running**, orange on black | Marching waves along the eaves. Speed is a slider, so it could be cued to accelerate with the music. | | |
-| 9 | Ghostbusters | **Meteor Smooth**, green | Green streaks with fading tails: slimers zipping along the roof. | | |
+| 9 | Ghostbusters | **Meteor** with "Smooth" on, green | Green streaks with fading tails: slimers zipping along the roof. | | |
 | 10 | Spooky Scary Skeletons | **Bouncing Balls**, white on dark purple | Bone-white balls bouncing to a bouncy song. | | |
 | 11 | Seance | **Aurora**, purple and teal | A slow, shifting spirit glow. | on | 5 s at start |
 | 12 | Witching Hour | **Fairytwinkle**, purple and green | Witchy sparkle that starts from a lit strip. | on | |

@@ -78,7 +78,8 @@ def parse_light(value) -> dict:
         return {"on": False, "color": None}
     if isinstance(value, dict) and not ({"r", "g", "b"} <= set(value)):
         known = {"on", "color", "colors", "bri", "preset", "api", "transition",
-                 "effect", "fx", "speed", "sx", "intensity", "ix", "palette", "pal"}
+                 "effect", "fx", "speed", "sx", "intensity", "ix", "palette", "pal",
+                 "c1", "c2", "c3", "o1", "o2", "o3"}
         unknown = sorted(set(value) - known)
         if unknown:
             raise ValueError("unknown setting(s) %s" % ", ".join(map(repr, unknown)))
@@ -102,6 +103,15 @@ def parse_light(value) -> dict:
                 if not 0 <= v <= 255:
                     raise ValueError("%s %r is out of range 0-255" % (alias, v))
                 out[key] = v
+        for k, top in (("c1", 255), ("c2", 255), ("c3", 31)):
+            if value.get(k) is not None:
+                v = int(value[k])
+                if not 0 <= v <= top:
+                    raise ValueError("%s %r is out of range 0-%d" % (k, v, top))
+                out[k] = v
+        for k in ("o1", "o2", "o3"):
+            if value.get(k) is not None:
+                out[k] = bool(value[k])
         if value.get("transition") is not None:
             out["transition"] = float(value["transition"])
         for k in ("preset", "api"):

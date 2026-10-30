@@ -114,6 +114,7 @@ front_lights: {effect: Fire 2012, palette: Fire, speed: 120, intensity: 160,
 | `speed`, `intensity` | The effect's two sliders, 0-255. What they do differs per effect. |
 | `bri` | Brightness 0-255. Left out = unchanged. |
 | `transition` | Seconds to blend from the previous look. |
+| `c1`, `c2`, `c3`, `o1`, `o2`, `o3` | WLED's extra effect sliders (c1/c2 0-255, c3 0-31) and checkboxes (true/false). Their meaning depends on the effect, e.g. for Meteor `o3` is "Smooth". |
 
 A setting with an effect goes to WLED as one JSON-API message on
 `<topic>/api`, so the strip changes in one step. It applies to segment 0,

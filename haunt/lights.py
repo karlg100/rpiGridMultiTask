@@ -19,8 +19,8 @@ that are not given are sent black, so nothing carries over from the scene
 before.
 
 Effect and palette numbers are WLED's built-in ones (kno.wled.ge/features/effects,
-kno.wled.ge/interfaces/json-api). They have been stable since WLED 0.14 for
-everything below; names can be used in show.yaml instead of numbers.
+kno.wled.ge/interfaces/json-api), taken from the eaves controller itself.
+Names can be used in show.yaml instead of numbers.
 """
 
 from __future__ import annotations
@@ -28,54 +28,96 @@ from __future__ import annotations
 import json
 from typing import Optional
 
-# WLED effect IDs (1-D effects; the 2-D and audio-reactive ones are left out).
+# Effect and palette IDs as reported by the eaves controller itself
+# (WLED 16.0.0, /json/eff and /json/pal on 192.168.1.186, 2026-10-30).
+# Note WLED 16 changed a few slots: 48 is Rolling Balls, 53 Image,
+# 77 Copy Segment (Meteor Smooth is now Meteor with option 3 "Smooth").
 EFFECTS = {
     "solid": 0, "blink": 1, "breathe": 2, "wipe": 3, "wipe random": 4,
     "random colors": 5, "sweep": 6, "dynamic": 7, "colorloop": 8, "rainbow": 9,
-    "scan": 10, "scan dual": 11, "fade": 12, "theater": 13, "theater rainbow": 14,
-    "running": 15, "saw": 16, "twinkle": 17, "dissolve": 18, "dissolve rnd": 19,
-    "sparkle": 20, "sparkle dark": 21, "sparkle+": 22, "strobe": 23,
-    "strobe rainbow": 24, "strobe mega": 25, "blink rainbow": 26, "android": 27,
-    "chase": 28, "chase random": 29, "chase rainbow": 30, "chase flash": 31,
-    "chase flash rnd": 32, "rainbow runner": 33, "colorful": 34,
-    "traffic light": 35, "sweep random": 36, "chase 2": 37, "aurora": 38,
-    "stream": 39, "scanner": 40, "lighthouse": 41, "fireworks": 42, "rain": 43,
-    "tetrix": 44, "fire flicker": 45, "gradient": 46, "loading": 47,
+    "scan": 10, "scan dual": 11, "fade": 12, "theater": 13,
+    "theater rainbow": 14, "running": 15, "saw": 16, "twinkle": 17,
+    "dissolve": 18, "dissolve rnd": 19, "sparkle": 20, "sparkle dark": 21,
+    "sparkle+": 22, "strobe": 23, "strobe rainbow": 24, "strobe mega": 25,
+    "blink rainbow": 26, "android": 27, "chase": 28, "chase random": 29,
+    "chase rainbow": 30, "chase flash": 31, "chase flash rnd": 32,
+    "rainbow runner": 33, "colorful": 34, "traffic light": 35,
+    "sweep random": 36, "chase 2": 37, "aurora": 38, "stream": 39,
+    "scanner": 40, "lighthouse": 41, "fireworks": 42, "rain": 43, "tetrix": 44,
+    "fire flicker": 45, "gradient": 46, "loading": 47, "rolling balls": 48,
     "fairy": 49, "two dots": 50, "fairytwinkle": 51, "running dual": 52,
-    "chase 3": 54, "tri wipe": 55, "tri fade": 56, "lightning": 57, "icu": 58,
-    "multi comet": 59, "scanner dual": 60, "stream 2": 61, "oscillate": 62,
-    "pride 2015": 63, "juggle": 64, "palette": 65, "fire 2012": 66,
-    "colorwaves": 67, "bpm": 68, "fill noise": 69, "noise 1": 70, "noise 2": 71,
-    "noise 3": 72, "noise 4": 73, "colortwinkles": 74, "lake": 75, "meteor": 76,
-    "meteor smooth": 77, "railway": 78, "ripple": 79, "twinklefox": 80,
-    "twinklecat": 81, "halloween eyes": 82, "solid pattern": 83,
-    "solid pattern tri": 84, "spots": 85, "spots fade": 86, "glitter": 87,
-    "candle": 88, "fireworks starburst": 89, "fireworks 1d": 90,
-    "bouncing balls": 91, "sinelon": 92, "sinelon dual": 93,
-    "sinelon rainbow": 94, "popcorn": 95, "drip": 96, "plasma": 97,
-    "percent": 98, "ripple rainbow": 99, "heartbeat": 100, "pacifica": 101,
-    "candle multi": 102, "solid glitter": 103, "sunrise": 104, "phased": 105,
-    "twinkleup": 106, "noise pal": 107, "sine": 108, "phased noise": 109,
-    "flow": 110, "chunchun": 111, "dancing shadows": 112,
-    "washing machine": 113, "blends": 115, "tv simulator": 116,
-    "dynamic smooth": 117,
+    "image": 53, "chase 3": 54, "tri wipe": 55, "tri fade": 56, "lightning": 57,
+    "icu": 58, "multi comet": 59, "scanner dual": 60, "stream 2": 61,
+    "oscillate": 62, "pride 2015": 63, "juggle": 64, "palette": 65,
+    "fire 2012": 66, "colorwaves": 67, "bpm": 68, "fill noise": 69,
+    "noise 1": 70, "noise 2": 71, "noise 3": 72, "noise 4": 73,
+    "colortwinkles": 74, "lake": 75, "meteor": 76, "copy segment": 77,
+    "railway": 78, "ripple": 79, "twinklefox": 80, "twinklecat": 81,
+    "halloween eyes": 82, "solid pattern": 83, "solid pattern tri": 84,
+    "spots": 85, "spots fade": 86, "glitter": 87, "candle": 88,
+    "fireworks starburst": 89, "fireworks 1d": 90, "bouncing balls": 91,
+    "sinelon": 92, "sinelon dual": 93, "sinelon rainbow": 94, "popcorn": 95,
+    "drip": 96, "plasma": 97, "percent": 98, "ripple rainbow": 99,
+    "heartbeat": 100, "pacifica": 101, "candle multi": 102,
+    "solid glitter": 103, "sunrise": 104, "phased": 105, "twinkleup": 106,
+    "noise pal": 107, "sine": 108, "phased noise": 109, "flow": 110,
+    "chunchun": 111, "dancing shadows": 112, "washing machine": 113,
+    "rotozoomer": 114, "blends": 115, "tv simulator": 116,
+    "dynamic smooth": 117, "spaceships": 118, "crazy bees": 119,
+    "ghost rider": 120, "blobs": 121, "scrolling text": 122, "drift rose": 123,
+    "distortion waves": 124, "soap": 125, "octopus": 126, "waving cell": 127,
+    "pixels": 128, "pixelwave": 129, "juggles": 130, "matripix": 131,
+    "gravimeter": 132, "plasmoid": 133, "puddles": 134, "midnoise": 135,
+    "noisemeter": 136, "freqwave": 137, "freqmatrix": 138, "geq": 139,
+    "waterfall": 140, "freqpixels": 141, "noisefire": 143, "puddlepeak": 144,
+    "noisemove": 145, "noise2d": 146, "perlin move": 147, "ripple peak": 148,
+    "firenoise": 149, "squared swirl": 150, "pacman": 151, "dna": 152,
+    "matrix": 153, "metaballs": 154, "freqmap": 155, "gravcenter": 156,
+    "gravcentric": 157, "gravfreq": 158, "dj light": 159, "funky plank": 160,
+    "shimmer": 161, "pulser": 162, "blurz": 163, "drift": 164, "waverly": 165,
+    "sun radiation": 166, "colored bursts": 167, "julia": 168,
+    "game of life": 172, "tartan": 173, "polar lights": 174, "swirl": 175,
+    "lissajous": 176, "frizzles": 177, "plasma ball": 178, "flow stripe": 179,
+    "hiphotic": 180, "sindots": 181, "dna spiral": 182, "black hole": 183,
+    "wavesins": 184, "rocktaves": 185, "akemi": 186, "ps volcano": 187,
+    "ps fire": 188, "ps fireworks": 189, "ps vortex": 190,
+    "ps fuzzy noise": 191, "ps ballpit": 192, "ps box": 193,
+    "ps attractor": 194, "ps impact": 195, "ps waterfall": 196, "ps spray": 197,
+    "ps geq 2d": 198, "ps geq nova": 199, "ps ghost rider": 200,
+    "ps blobs": 201, "ps dripdrop": 202, "ps pinball": 203,
+    "ps dancing shadows": 204, "ps fireworks 1d": 205, "ps sparkler": 206,
+    "ps hourglass": 207, "ps spray 1d": 208, "ps 1d balance": 209,
+    "ps chase": 210, "ps starburst": 211, "ps geq 1d": 212, "ps fire 1d": 213,
+    "ps sonic stream": 214, "ps sonic boom": 215, "ps springy": 216,
+    "ps galaxy": 217, "color clouds": 218, "slow transition": 219,
 }
 
 PALETTES = {
-    "default": 0, "random cycle": 1, "primary color": 2, "based on primary": 3,
-    "set colors": 4, "based on set": 5, "party": 6, "cloud": 7, "lava": 8,
+    "default": 0, "random cycle": 1, "color 1": 2, "colors 1&2": 3,
+    "color gradient": 4, "colors only": 5, "party": 6, "cloud": 7, "lava": 8,
     "ocean": 9, "forest": 10, "rainbow": 11, "rainbow bands": 12, "sunset": 13,
     "rivendell": 14, "breeze": 15, "red & blue": 16, "yellowout": 17,
-    "analogous": 18, "splash": 19, "pastel": 20, "sunset 2": 21, "beech": 22,
-    "vintage": 23, "departure": 24, "landscape": 25, "beach": 26, "sherbet": 27,
+    "analogous": 18, "splash": 19, "pastel": 20, "sunset 2": 21, "beach": 22,
+    "vintage": 23, "departure": 24, "landscape": 25, "beech": 26, "sherbet": 27,
     "hult": 28, "hult 64": 29, "drywet": 30, "jul": 31, "grintage": 32,
     "rewhi": 33, "tertiary": 34, "fire": 35, "icefire": 36, "cyane": 37,
     "light pink": 38, "autumn": 39, "magenta": 40, "magred": 41, "yelmag": 42,
     "yelblu": 43, "orange & teal": 44, "tiamat": 45, "april night": 46,
+    "orangery": 47, "c9": 48, "sakura": 49, "aurora": 50, "atlantica": 51,
+    "c9 2": 52, "c9 new": 53, "temperature": 54, "aurora 2": 55,
+    "retro clown": 56, "candy": 57, "toxy reaf": 58, "fairy reaf": 59,
+    "semi blue": 60, "pink candy": 61, "red reaf": 62, "aqua flash": 63,
+    "yelblu hot": 64, "lite light": 65, "red flash": 66, "blink red": 67,
+    "red shift": 68, "red tide": 69, "candy2": 70, "traffic light": 71,
 }
+# Older / documentation names for the special palettes 1-5.
+PALETTES.update({"primary color": 2, "based on primary": 3, "set colors": 4,
+                 "based on set": 5})
 
 EFFECT_NAMES = {v: k for k, v in EFFECTS.items()}
-PALETTE_NAMES = {v: k for k, v in PALETTES.items()}
+PALETTE_NAMES = {}
+for _name, _id in PALETTES.items():
+    PALETTE_NAMES.setdefault(_id, _name)
 
 
 def _lookup(table: dict, value, what: str) -> int:
@@ -125,9 +167,12 @@ def wled_json(setting: dict) -> dict:
     if setting.get("transition") is not None:
         state["transition"] = int(round(float(setting["transition"]) * 10))   # 100 ms units
     seg = {}
-    for key in ("fx", "sx", "ix", "pal"):
+    for key in ("fx", "sx", "ix", "pal", "c1", "c2", "c3"):
         if setting.get(key) is not None:
             seg[key] = int(setting[key])
+    for key in ("o1", "o2", "o3"):
+        if setting.get(key) is not None:
+            seg[key] = bool(setting[key])
     if "fx" in seg and "pal" not in seg:
         seg["pal"] = 0        # the effect's own default, not whatever the last scene left
     colors = setting.get("colors") or ([setting["color"]] if setting.get("color") else [])
@@ -150,7 +195,8 @@ def messages(light_cfg: dict, setting: dict):
             out.append((topic + "/api", "PL=%d" % int(setting["preset"])))
             if setting.get("bri") is not None:
                 out.append((topic, str(int(setting["bri"]))))
-        elif any(setting.get(k) is not None for k in ("fx", "sx", "ix", "pal", "colors", "transition")):
+        elif any(setting.get(k) is not None for k in ("fx", "sx", "ix", "pal", "colors", "transition",
+                                                       "c1", "c2", "c3", "o1", "o2", "o3")):
             out.append((topic + "/api", json.dumps(wled_json(setting), separators=(",", ":"))))
         else:
             if setting.get("bri") is not None:

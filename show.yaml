@@ -186,7 +186,7 @@ scenes:
         file: "Ghostbusters_LilJon-clean.mp4"
         level: 100  # old omxplayer vol: -50
     lights:
-      front_lights: {effect: Meteor Smooth, colors: ["#20ff20"], speed: 150, intensity: 128, transition: 1}   # green slimers zipping by
+      front_lights: {effect: Meteor, o3: true, colors: ["#20ff20"], speed: 150, intensity: 128, transition: 1}   # green slimers zipping by (o3 = WLED 16's "Smooth" option)
       graveyard: "#c8c800"
 
   - name: Spooky Scary Skeletons
