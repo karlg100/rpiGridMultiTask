@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import queue
 import re
@@ -78,6 +79,14 @@ def gain_db(lufs, target: float, max_boost: float = 9.0, max_cut: float = 30.0) 
     if lufs is None or lufs == NO_AUDIO:
         return 0.0
     return max(-max_cut, min(max_boost, target - float(lufs)))
+
+
+def percent_to_db(percent: float) -> float:
+    """A level in percent (mpv's cubic scale) as dB: 100 -> 0, 50 -> -18.
+    0 or less is treated as silence (-60 dB)."""
+    if percent <= 0.1:
+        return -60.0
+    return 60.0 * math.log10(percent / 100.0)
 
 
 def db_to_factor(db: float) -> float:

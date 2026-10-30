@@ -37,7 +37,7 @@ scenes: [ ... ]
 | `skip_fade` | 0.6 | Fade used when you press next / prev / stop. |
 | `gap` | 0.5 | Seconds of black between scenes. |
 | `level` | 100 | Level for clips that do not set one. |
-| `target_lufs` | -18 | Loudness every clip is normalised to. |
+| `target_lufs` | -14 | Loudness every clip is normalised to. A limiter catches peaks, so quiet clips can be boosted safely. |
 | `ready_timeout` | 10 | Seconds to wait for players to load a scene before going on without them. |
 | `follower_preroll` | 5 | A late-starting follower is loaded this long before its cue. |
 | `sync_lead` | 0 | If above 0, clips that start together are told to start at a shared wall-clock time this many seconds ahead. Needs the Pis' clocks in sync (NTP). 0 = start on receipt, which is within a few milliseconds on a LAN. |
@@ -74,7 +74,7 @@ A player left out of a scene stays black for that scene.
 | Setting | Meaning | Old equivalent |
 |---|---|---|
 | `file` | Path relative to the player's `media_root`. Plain text, no backslashes. | `file` |
-| `level` | 0 to 150. 100 = normal loudness after normalisation. | `vol` |
+| `level` | 0 to 150. 100 = the normalised loudness; 50 is 18 dB quieter. | `vol` |
 | `mute: true` | Same as `level: 0`. | `--vol -4000`, `vol: -100` |
 | `loop: true` | Loop until the scene ends. | `--loop` |
 | `start` | Seek this many seconds into the file before playing. | `-l N` |

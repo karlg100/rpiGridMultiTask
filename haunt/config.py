@@ -32,7 +32,7 @@ DEFAULTS = {
     "gap": 0.5,             # seconds of black between scenes
     "level": 100,           # per-clip loudness, percent
     "ready_timeout": 10.0,  # seconds to wait for players to load a scene
-    "target_lufs": -18.0,   # loudness every clip is normalised to
+    "target_lufs": -14.0,   # loudness every clip is normalised to
     "sync_lead": 0.0,       # >0: start clips at a shared wall-clock time (needs NTP)
     "follower_preroll": 5.0,  # load late-starting followers this long before their cue
 }
@@ -355,7 +355,7 @@ PLAYER_DEFAULTS = {
     "trim": 100,               # percent; evens out two players with different amps
     "video_fade": True,        # fade the picture to/from black (needs --vo=gpu)
     "normalize": True,         # measure each file's loudness once and even them out
-    "max_boost_db": 9.0,       # never amplify a quiet file by more than this
+    "max_boost_db": 18.0,      # never amplify a quiet file by more than this (a limiter catches the peaks)
     "mpv_path": "mpv",
     "mpv_args": [],            # extra mpv options, e.g. ["--hwdec=v4l2m2m-copy"]
     "cache_dir": "~/.cache/haunt",

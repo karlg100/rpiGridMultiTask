@@ -125,6 +125,12 @@ def test_gain_is_clamped_and_silent_files_get_none():
     assert loudness.gain_db(loudness.NO_AUDIO, -18.0) == 0.0
 
 
+def test_percent_and_db():
+    assert loudness.percent_to_db(100) == 0
+    assert loudness.percent_to_db(50) == pytest.approx(-18.06, abs=0.01)
+    assert loudness.percent_to_db(0) == -60.0
+
+
 def test_db_maps_onto_mpvs_cubic_volume():
     # mpv: gain = (volume/100)^3. -6 dB should halve the amplitude.
     factor = loudness.db_to_factor(-6.0206)
@@ -173,9 +179,10 @@ def test_clip_is_black_and_silent_until_play_then_fades_in():
     rig.cmd(cmd="play", cue="c1")
     rig.run(1.0)
     assert 0.4 < rig.backend.fade < 0.6                           # half way up
-    assert 30 < rig.backend.volume < 50
+    assert 40 < rig.backend.volume < 60                           # the fade rides mpv's volume
     rig.run(1.5)
-    assert rig.backend.fade == 1 and rig.backend.volume == pytest.approx(80)
+    assert rig.backend.fade == 1 and rig.backend.volume == 100
+    assert rig.backend.gain == pytest.approx(loudness.percent_to_db(80))   # the level is gain
 
 
 def test_fades_out_by_itself_before_the_end_and_reports_ended():
@@ -230,7 +237,24 @@ def test_trim_and_normalisation_gain_scale_the_volume():
     rig.run(0.5)
     rig.cmd(cmd="play", cue="c")
     rig.run(0.5)
-    assert rig.backend.volume == pytest.approx(100 * 0.5 * loudness.db_to_factor(-6.0), rel=1e-3)
+    # level 100 x trim 50% = -18 dB, plus the -6 dB loudness correction, all
+    # in the gain stage ahead of the limiter; mpv's volume stays at 100.
+    assert rig.backend.gain == pytest.approx(-6.0 + loudness.percent_to_db(50), abs=0.01)
+    assert rig.backend.volume == 100
+    assert rig.agent.volume == pytest.approx(100 * 0.5 * loudness.db_to_factor(-6.0), rel=1e-3)
+
+
+def test_quiet_clip_is_boosted_up_to_the_limit_and_muted_clip_is_silent():
+    rig = Rig()
+    rig.cmd(cmd="load", cue="c", file="ten.mp4", level=100, fade_in=0, target_lufs=-14)
+    rig.agent.gain_db = loudness.gain_db(-40.0, -14.0, max_boost=18.0)
+    rig.run(0.5)
+    rig.cmd(cmd="play", cue="c")
+    rig.run(0.5)
+    assert rig.backend.gain == 18.0
+    rig.cmd(cmd="level", value=0, ramp=0)
+    rig.run(0.2)
+    assert rig.backend.volume == 0 and rig.backend.gain == -60.0
 
 
 def test_video_fade_can_be_switched_off():

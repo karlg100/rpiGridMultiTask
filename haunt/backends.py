@@ -76,6 +76,12 @@ class Backend:
         raise NotImplementedError
 
     def set_volume(self, percent: float) -> None:
+        """Output volume 0-100. Used for fades only."""
+        raise NotImplementedError
+
+    def set_gain(self, db: float) -> None:
+        """Gain in dB applied before a peak limiter: loudness normalisation
+        plus the clip's level. Can be positive without clipping."""
         raise NotImplementedError
 
     def set_fade(self, amount: float) -> None:
@@ -100,6 +106,7 @@ class FakeBackend(Backend):
         self.durations = durations or {}   # basename -> seconds
         self.load_time = load_time
         self.volume = 0.0
+        self.gain = 0.0
         self.fade = 1.0
         self._path = None
         self._loop = False
@@ -147,6 +154,9 @@ class FakeBackend(Backend):
     def set_volume(self, percent):
         self.volume = percent
 
+    def set_gain(self, db):
+        self.gain = db
+
     def set_fade(self, amount):
         self.fade = amount
 
@@ -179,11 +189,17 @@ class MpvBackend(Backend):
         "--no-osc", "--no-osd-bar", "--osd-level=0",
         "--no-input-default-bindings", "--no-input-terminal",
         "--cursor-autohide=always",
-        "--volume-max=200",           # head-room for loudness normalisation
+        "--volume-max=100",           # volume is only used for fades; gain is in AUDIO_FILTER
         "--volume=0",
         "--hr-seek=yes",
         "--msg-level=all=warn",
     ]
+
+    # Gain first, then a peak limiter at -1 dBFS, so quiet clips can be
+    # brought up to the loudness target without clipping on their peaks.
+    # The label lets the gain be changed later with af-command.
+    AUDIO_FILTER = ("@haunt:lavfi=[volume=%.2fdB,"
+                    "alimiter=limit=0.891:level=0:attack=5:release=100]")
 
     def __init__(self, mpv_path: str = "mpv", rotate: int = 0,
                  audio_device: str = "auto", extra_args=None,
@@ -208,6 +224,8 @@ class MpvBackend(Backend):
         self._sent = {}                    # request_id -> command, for error logs
         self._last_volume = None
         self._last_brightness = None
+        self._gain = 0.0
+        self._gain_sent = None
 
     # -- process ---------------------------------------------------------
 
@@ -366,6 +384,9 @@ class MpvBackend(Backend):
         self._command("set", "pause", "yes")
         self._command("set", "start", "%.3f" % start if start else "none")
         self._command("set", "loop-file", "inf" if loop else "no")
+        # The filter chain is rebuilt for each file; start it at the right gain.
+        self._command("set", "af", self.AUDIO_FILTER % self._gain)
+        self._gain_sent = self._gain
         self._command("loadfile", path, "replace")
 
     def play(self):
@@ -380,8 +401,18 @@ class MpvBackend(Backend):
             self._awaiting_start = False
         self._command("stop")
 
+    def set_gain(self, db):
+        self._gain = max(-60.0, min(30.0, float(db)))
+        if self._gain_sent is not None and abs(self._gain - self._gain_sent) < 0.05:
+            return
+        with self._lock:
+            playing = not self._awaiting_start and not self._props.get("idle-active", True)
+        if playing:   # with nothing loaded there is no filter to talk to; load() applies it
+            self._gain_sent = self._gain
+            self._command("af-command", "haunt", "volume", "%.2fdB" % self._gain, "volume")
+
     def set_volume(self, percent):
-        v = round(max(0.0, min(200.0, percent)), 1)
+        v = round(max(0.0, min(100.0, percent)), 1)
         if v != self._last_volume:
             self._last_volume = v
             self._command("set_property", "volume", v)

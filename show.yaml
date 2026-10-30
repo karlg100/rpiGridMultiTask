@@ -30,7 +30,7 @@ defaults:
   fade_out: 1.5       # seconds; at the natural end of a clip
   skip_fade: 0.6      # seconds; when you press next / prev / stop
   gap: 0.5            # seconds of black between scenes
-  target_lufs: -18    # every clip is normalised to this loudness
+  target_lufs: -14    # every clip is normalised to this loudness (a limiter catches the peaks)
 
 # In each scene the MASTER's clip decides how long the scene lasts. The other
 # player is a follower: it can start late (start_after = position of the
@@ -149,7 +149,7 @@ scenes:
     master: 1
     players:
       1:
-        file: "JOLJ_InTheHallSong_Trio_Win_BG_H.mp4"
+        file: "Jack-O-Lantern - Songs - Window/Jack-O-Lantern - Songs - Window/JOLJ_InTheHallSong_Trio_Win_BG_H.mp4"
         level: 100  # old omxplayer vol: 10
       2:
         file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
@@ -195,7 +195,7 @@ scenes:
         level: 60   # old omxplayer vol: -15
         loop: true
       2:
-        file: "WH_Spell 3_Seance_Holl_H.mp4"
+        file: "WH - Spell3 - Seance - Hollusion-TV-Window/WH_Spell 3_Seance_Holl_H.mp4"
         level: 100  # old omxplayer vol: 0
     lights:
       front_lights: "#f700ff"

@@ -29,7 +29,7 @@ from typing import Optional
 from . import __version__
 from .backends import Backend, FakeBackend, MpvBackend
 from .bus import Bus
-from .loudness import LoudnessCache, db_to_factor, gain_db, have_ffmpeg
+from .loudness import LoudnessCache, db_to_factor, gain_db, have_ffmpeg, percent_to_db
 from .topics import Topics
 
 log = logging.getLogger("haunt.player")
@@ -86,6 +86,7 @@ class PlayerAgent:
         self.path = None
         self.error = None
         self.gain_db = 0.0
+        self.total_db = 0.0
         self.lufs = None
         self.fade = Ramp(0.0)     # 0 = black + silent, 1 = full
         self.level = Ramp(100.0)  # what the director asked for, percent
@@ -149,7 +150,7 @@ class PlayerAgent:
         self.gain_db = 0.0
         if self.cfg.get("normalize", True) and cmd.get("target_lufs") is not None:
             self.gain_db = gain_db(self.lufs, float(cmd["target_lufs"]),
-                                   max_boost=float(self.cfg.get("max_boost_db", 9.0)))
+                                   max_boost=float(self.cfg.get("max_boost_db", 18.0)))
             if self.lufs is None and self.loudness:
                 self.loudness.request(self.path)   # ready for next time round
 
@@ -244,11 +245,19 @@ class PlayerAgent:
         self.state = "playing"
 
     def _apply(self, now: float) -> None:
-        """Push the current fade and level to the backend."""
+        """Push the current fade and level to the backend.
+
+        Loudness correction and level go into a gain stage that feeds a
+        peak limiter, so turning a quiet clip up cannot clip it. mpv's own
+        volume (0-100) is only used for the fades.
+        """
         f = self.fade.value(now)
-        trim = float(self.cfg.get("trim", 100)) / 100.0
-        self.volume = self.level.value(now) * trim * db_to_factor(self.gain_db) * f
-        self.backend.set_volume(self.volume)
+        amount = self.level.value(now) * float(self.cfg.get("trim", 100)) / 100.0   # percent
+        self.total_db = self.gain_db + percent_to_db(amount) if amount > 0.1 else -60.0
+        self.backend.set_gain(self.total_db)
+        self.backend.set_volume(100.0 * f if amount > 0 else 0.0)
+        # The same thing as one "equivalent volume" number, for display.
+        self.volume = amount * db_to_factor(self.gain_db) * f
         self.backend.set_fade(f if self.cfg.get("video_fade", True) else 1.0)
 
     # -- main loop -------------------------------------------------------
@@ -340,6 +349,8 @@ class PlayerAgent:
             "level": round(self.level.b, 1),
             "volume": round(self.volume, 1),
             "gain_db": round(self.gain_db, 1),
+            "total_db": round(self.total_db, 1),
+            "lufs": self.lufs,
             "fade": round(self.fade.value(now), 2),
             "error": self.error,
             "backend": self.backend.name,

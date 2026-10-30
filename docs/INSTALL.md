@@ -24,6 +24,11 @@ Done on 2026-10-29 and running:
   brings the desktop back.
 - Videos are in `/home/karlg/videos` on both players (`media_root`).
 - Sound goes to the headphone jack: `alsa/plughw:CARD=Headphones,DEV=0`.
+  The jack's hardware level was at -19.9 dB out of the box; it is set to 0 dB
+  and saved (`amixer -c Headphones sset PCM 0dB && sudo alsactl store`).
+  PipeWire/WirePlumber are masked for karlg on the players
+  (`systemctl --user mask ...`) since mpv talks to ALSA directly and nothing
+  else should grab the sound card.
 - Learned on the real Pi 4s and now in `player.yaml`:
   - `--profile=fast`: with mpv's default scaler the Pi 4 dropped about 15
     frames a second on the 1080p clips; with it, none. Software decoding is

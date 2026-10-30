@@ -107,7 +107,7 @@ def test_mpv_backend_load_play_eof_loop_and_errors(tmp_path):
 def test_two_scenes_over_real_mqtt_with_real_mpv(tmp_path, broker):
     media = tmp_path / "media"
     media.mkdir()
-    make_clip(media / "lead.mp4", 8, gain=2.0)           # loud
+    make_clip(media / "lead.mp4", 8, gain=6.0)           # loud: above the -14 LUFS target
     make_clip(media / "bg loop.mp4", 2, tone=300, gain=0.2)   # quiet, space in the name
     make_clip(media / "second.mp4", 6)
 

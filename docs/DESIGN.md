@@ -60,25 +60,33 @@ mpv (`PR_SET_PDEATHSIG`) so an orphan can never keep hold of the display.
 
 ## Volume
 
-Three things multiply into the volume mpv is given:
-
 ```
-mpv volume = level (show.yaml, or console override)
-           x master fader (console)
-           x trim (player.yaml, per Pi)
-           x loudness correction for that file
-           x fade (0..1)
+file ──► gain stage ──► peak limiter (-1 dBFS) ──► mpv volume ──► ALSA PCM (0 dB) ──► line out
+          │                                          │
+          loudness correction                        fades only (0-100%)
+          + clip level (show.yaml / console)
+          + master fader (console)
+          + trim (player.yaml)
 ```
 
-The loudness correction is what makes the numbers meaningful. The first time
-a player is asked about a file it measures the integrated loudness with
-`ffmpeg -af ebur128` (audio only, niced, in a background thread) and caches
-the result in `~/.cache/haunt/loudness.json`. At load time it applies
-`target_lufs - measured`, limited to +9 dB of boost. A clip that has not been
-measured yet plays uncorrected that once.
+- **Loudness correction.** The first time a player is asked about a file it
+  measures the integrated loudness with `ffmpeg -af ebur128` (audio only,
+  niced, in a background thread) and caches it in
+  `~/.cache/haunt/loudness.json`. At load time it adds
+  `target_lufs - measured` dB (target -14 LUFS; boosts capped at +18 dB).
+  The clips range from -24 to -7.5 LUFS, see docs/LOUDNESS.md.
+- **Levels** are percentages on mpv's cubic scale, turned into dB
+  (`60*log10(level/100)`: 50% is -18 dB) and added to the same gain.
+- **The limiter** (`alimiter`, limit -1 dBFS) comes after all of that, so a
+  quiet clip can be pushed up to the target without its peaks clipping, and a
+  master above 100% cannot clip either.
+- **mpv's own volume** only does the fades, and never goes above 100%.
+- **The Pi's analog output** has its own hardware level (ALSA `PCM` on the
+  `Headphones` card). It defaulted to -19.9 dB, which made everything quiet;
+  it is now set to 0 dB and saved with `alsactl store`.
 
-mpv's volume scale is cubic (`gain = (volume/100)^3`), so percentages behave
-roughly the way ears expect: 50% is about -18 dB.
+Gain changes while a clip plays are sent with mpv's `af-command`, so there is
+no dropout.
 
 ## The protocol
 
