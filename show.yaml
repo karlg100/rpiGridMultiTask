@@ -95,7 +95,7 @@ scenes:
         level: 100  # old omxplayer vol: 10
       2:
         file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
-        level: 0    # old omxplayer vol: -99
+        level: 50   # eyes loop at 50% in every scene (was 0; old omxplayer vol -99)
     lights:
       front_lights: "#9370db"
       graveyard: "#c8c800"
@@ -153,7 +153,7 @@ scenes:
         level: 100  # old omxplayer vol: 10
       2:
         file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
-        level: 60   # old omxplayer vol: 0
+        level: 50   # eyes loop at 50% in every scene (was 60; old omxplayer vol 0)
         loop: true
     lights:
       front_lights: "#ff8a14"
@@ -164,7 +164,7 @@ scenes:
     players:
       1:
         file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
-        level: 0    # old omxplayer vol: -75
+        level: 50   # eyes loop at 50% in every scene (was 0; old omxplayer vol -75)
         loop: true
       2:
         file: "Ghostbusters_LilJon-clean.mp4"
@@ -223,7 +223,7 @@ scenes:
         level: 100  # old omxplayer vol: 0
       2:
         file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
-        level: 100  # old omxplayer vol: 0
+        level: 50   # eyes loop at 50% in every scene (was 100; old omxplayer vol 0)
         loop: true
     lights:
       front_lights: "#c8c800"
