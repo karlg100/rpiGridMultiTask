@@ -27,6 +27,7 @@ import time
 from typing import Optional
 
 from . import __version__, lights
+from .outputs import Outputs
 from .bus import Bus
 from .config import ConfigError, Show, load_show
 from .topics import Topics
@@ -114,6 +115,9 @@ class Director:
 
         bus.subscribe(self.topics.all_players)
         bus.subscribe(self.topics.director_cmd)
+
+        self.outputs = Outputs(show.outputs, bus, clock, self.note)
+        self.outputs.all_off(force=True)
 
         if start_index is not None:
             self.index = max(0, min(len(show.scenes) - 1, start_index))
@@ -260,6 +264,7 @@ class Director:
                 if self.players[pid].at(self.cue) == "ready":
                     self._play(pid)
         self.set_lights(scene.lights)
+        self.outputs.scene(scene.outputs)
 
     def end_scene(self, target, fade: float, why: str = "") -> None:
         """Fade everything out, then go to ``target``: a scene index, an
@@ -273,6 +278,10 @@ class Director:
         self.ending_fade = fade
         self.next = target
         self.paused = False
+        if target is None:
+            self.outputs.all_off()
+        else:
+            self.outputs.resume()   # if we were paused, the next scene decides
         for pid in self.show.players:
             self.send(pid, {"cmd": "stop", "fade": fade})
 
@@ -283,6 +292,7 @@ class Director:
             self.send(pid, {"cmd": "stop", "fade": 0})
         if self.skips >= sum(1 for i in range(len(self.show.scenes)) if self.enabled(i)):
             self.note("no scene can run right now; retrying in %ds" % RETRY_WAIT, "warning")
+            self.outputs.all_off()
             self.phase = "waiting"
             self.t_phase = self.clock()
         else:
@@ -320,6 +330,8 @@ class Director:
             if self.phase in ("preparing", "waiting"):
                 self.t_phase = now
             self.want_loaded = {pid: now - RESEND_AFTER for pid in self.want_loaded}
+            self.outputs.republish()
+        self.outputs.tick()
         handler = getattr(self, "_tick_" + self.phase)
         handler(now)
         if self._dirty_at is not None and now - self._dirty_at >= SAVE_DELAY:
@@ -441,6 +453,7 @@ class Director:
             cue = scene.cues[self.cue_idx]
             self.cue_idx += 1
             self.set_lights(cue.lights)
+            self.outputs.apply(cue.outputs)
             if cue.mqtt:
                 self.bus.publish(cue.mqtt["topic"], cue.mqtt.get("payload", ""))
             self.note("cue at %ds" % cue.at)
@@ -458,6 +471,7 @@ class Director:
             return
         if self.next is None:
             self.phase = "stopped"
+            self.outputs.all_off()
             self.note("show stopped")
         else:
             self.start_scene(self.next[0] % len(self.show.scenes), self.next[1])
@@ -562,6 +576,7 @@ class Director:
         self.paused = True
         for pid in self.show.players:
             self.send(pid, {"cmd": "pause"})
+        self.outputs.suspend()
         self.note("paused")
 
     def _cmd_resume(self, cmd):
@@ -573,6 +588,7 @@ class Director:
         self.players[self.scene.master].seen = self.clock()
         for pid in self.show.players:
             self.send(pid, {"cmd": "resume"})
+        self.outputs.resume()
         self.note("resumed")
 
     def _cmd_toggle(self, cmd):
@@ -591,6 +607,7 @@ class Director:
             self.next = None
             if self.phase == "waiting":
                 self.phase = "stopped"
+                self.outputs.all_off()
 
     def _cmd_start(self, cmd):
         if self.phase in ("stopped", "waiting"):
@@ -676,6 +693,11 @@ class Director:
             self.note("players or MQTT settings changed: restart the director to apply", "warning")
             return
         current = self.scene.name
+        if new.outputs != self.show.outputs:
+            # Switch the old ones off before forgetting them.
+            self.outputs.all_off()
+            self.outputs = Outputs(new.outputs, self.bus, self.clock, self.note)
+            self.outputs.all_off(force=True)
         self.show = new
         names = [s.name for s in new.scenes]
         if current in names:
@@ -711,6 +733,7 @@ class Director:
             "name": self.show.name,
             "players": self.show.players,
             "lights": {k: {"type": v["type"]} for k, v in self.show.lights.items()},
+            "outputs": {k: {"label": v["label"], "max_on": v["max_on"]} for k, v in self.show.outputs.items()},
             "defaults": self.show.defaults,
             "scenes": scenes,
         }
@@ -744,6 +767,7 @@ class Director:
             "master_level": round(self.master_level, 1),
             "players": players,
             "lights": self.current_lights,
+            "outputs": self.outputs.snapshot(),
             "log": list(self.logbuf),
             "ver": __version__,
         }
@@ -773,6 +797,7 @@ class Director:
             log.info("director shutting down; blacking out the players")
             for pid in self.show.players:
                 self.send(pid, {"cmd": "stop", "fade": float(self.show.defaults["skip_fade"])})
+            self.outputs.all_off()
             self._save_state()
             time.sleep(0.3)
             self.bus.close()

@@ -98,19 +98,69 @@ front_lights: "#ff8800"
 front_lights: [255, 136, 0]
 front_lights: off
 front_lights: {color: "#ff8800", bri: 128}     # WLED brightness 0-255
-front_lights: {preset: 3}                      # WLED preset
+front_lights: {preset: 3}                      # a preset saved in WLED
 front_lights: {api: "FX=73&SX=120"}            # anything WLED's HTTP API takes
+
+# a WLED effect:
+front_lights: {effect: Fire 2012, palette: Fire, speed: 120, intensity: 160,
+               colors: ["#ff6a00", "#300060"], bri: 200, transition: 1}
 ```
 
-`type: wled` publishes `ON`/`OFF`/brightness to `<topic>`, the colour to
-`<topic>/col` and presets/raw strings to `<topic>/api`.
+| Key | Meaning |
+|---|---|
+| `effect` | WLED effect by name ("Candle Multi") or number (102). List: <https://kno.wled.ge/features/effects> and `EFFECTS` in `haunt/lights.py`. |
+| `palette` | WLED palette by name ("Fire", "Party", "Set Colors") or number. Left out = the effect's own default. |
+| `colors` | Up to 3 colours: primary, secondary (usually the background), third. Slots not given are sent black. |
+| `speed`, `intensity` | The effect's two sliders, 0-255. What they do differs per effect. |
+| `bri` | Brightness 0-255. Left out = unchanged. |
+| `transition` | Seconds to blend from the previous look. |
+
+A setting with an effect goes to WLED as one JSON-API message on
+`<topic>/api`, so the strip changes in one step. It applies to segment 0,
+which is the whole strip unless it has been split into segments in WLED.
+`type: wled` otherwise publishes `ON`/`OFF`/brightness to `<topic>` and the
+colour to `<topic>/col`.
+
 `type: particle` publishes `<topic>/color/r|g|b` then `<topic>/command go`,
-which is what the firmware in `Particle/` expects.
+which is what the firmware in `Particle/` expects. It only does a colour; with
+`colors`, it takes the first.
 
 A light not mentioned in a scene keeps whatever it had.
+
+### Outputs (mister, fog machine, ...)
+
+Defined once at the top of the file:
+
+```yaml
+outputs:
+  pond_mister: {label: mister}
+  fog_machine: {label: fog, max_on: 10}
+```
+
+| Key | Meaning |
+|---|---|
+| `topic` | Default `haunt/output/<name>`. The director publishes `ON`/`OFF` to `<topic>/set`, retained. |
+| `label` | Name shown in the console; its first letter marks scenes in the playlist. |
+| `max_on` | Never on for longer than this many seconds in one go, whatever a scene says. |
+
+Then in a scene, or in a cue:
+
+```yaml
+    outputs: {pond_mister: on, fog_machine: 5}   # mister for the whole scene, a 5 s fog burst
+    cues:
+      - {at: 90, outputs: {fog_machine: 4}}      # another burst 90 s into the master clip
+      - {at: 120, outputs: {pond_mister: off}}
+```
+
+`on` = on until the scene ends; a number = a burst of that many seconds;
+`off`. Outputs a scene does not mention are off during it. Everything is
+switched off when the show is paused, stopped or the director shuts down.
+
+Something else does the actual switching by listening on `<topic>/set`. For a
+plug in Home Assistant, see `deploy/home-assistant/haunt-outputs.yaml`.
 
 ### Cues
 
 Fire once when the master's position passes `at`. A cue can change lights,
-publish any MQTT message, or both. The Particle graveyard firmware already
+switch outputs, publish any MQTT message, or all three. The Particle graveyard firmware already
 listens for `ghosts/command` = `startle`.

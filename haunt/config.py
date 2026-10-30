@@ -68,17 +68,64 @@ def parse_light(value) -> dict:
         "#ff8800"            colour, on
         [255, 136, 0]        colour, on
         off / false          switch it off
-        {color: "#ff8800", bri: 128, preset: 3, api: "FX=12"}   WLED extras
+        {color: "#ff8800", bri: 128, preset: 3, api: "FX=12"}
+        {effect: "Fire 2012", palette: "Fire", speed: 120, intensity: 200,
+         colors: ["#ff6a00", "#300060"], bri: 200, transition: 1.0}
+    Effects and palettes can be WLED names or numbers (see haunt/lights.py).
     """
+    from . import lights as _lights
     if value is False or (isinstance(value, str) and value.strip().lower() == "off"):
         return {"on": False, "color": None}
     if isinstance(value, dict) and not ({"r", "g", "b"} <= set(value)):
+        known = {"on", "color", "colors", "bri", "preset", "api", "transition",
+                 "effect", "fx", "speed", "sx", "intensity", "ix", "palette", "pal"}
+        unknown = sorted(set(value) - known)
+        if unknown:
+            raise ValueError("unknown setting(s) %s" % ", ".join(map(repr, unknown)))
         out = {"on": bool(value.get("on", True)), "color": parse_color(value.get("color"))}
-        for k in ("bri", "preset", "api"):
+        if value.get("colors") is not None:
+            cols = value["colors"]
+            if not isinstance(cols, list) or not 1 <= len(cols) <= 3:
+                raise ValueError("colors must be a list of 1 to 3 colours")
+            out["colors"] = [parse_color(c) for c in cols]
+            out["color"] = out["colors"][0]
+        fx = value.get("effect", value.get("fx"))
+        if fx is not None:
+            out["fx"] = _lights.effect_id(fx)
+        pal = value.get("palette", value.get("pal"))
+        if pal is not None:
+            out["pal"] = _lights.palette_id(pal)
+        for key, alias in (("sx", "speed"), ("ix", "intensity"), ("bri", "bri")):
+            v = value.get(alias, value.get(key))
+            if v is not None:
+                v = int(v)
+                if not 0 <= v <= 255:
+                    raise ValueError("%s %r is out of range 0-255" % (alias, v))
+                out[key] = v
+        if value.get("transition") is not None:
+            out["transition"] = float(value["transition"])
+        for k in ("preset", "api"):
             if value.get(k) is not None:
                 out[k] = value[k]
         return out
     return {"on": True, "color": parse_color(value)}
+
+
+def parse_output_value(value):
+    """An output setting: True (on for the scene), False (off), or a number of
+    seconds (a burst)."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in ("on", "true", "yes"):
+            return True
+        if v in ("off", "false", "no"):
+            return False
+        raise ValueError("%r is not on, off or a number of seconds" % value)
+    if isinstance(value, (int, float)) and value > 0:
+        return float(value)
+    raise ValueError("%r is not on, off or a number of seconds" % (value,))
 
 
 @dataclass
@@ -101,9 +148,10 @@ class Cue:
     at: float
     lights: Dict[str, dict] = field(default_factory=dict)
     mqtt: Optional[dict] = None
+    outputs: Dict[str, object] = field(default_factory=dict)
 
     def as_dict(self) -> dict:
-        return {"at": self.at, "lights": self.lights, "mqtt": self.mqtt}
+        return {"at": self.at, "lights": self.lights, "mqtt": self.mqtt, "outputs": self.outputs}
 
 
 @dataclass
@@ -115,6 +163,7 @@ class Scene:
     cues: List[Cue] = field(default_factory=list)
     end_at: Optional[float] = None
     enabled: bool = True
+    outputs: Dict[str, object] = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {
@@ -125,6 +174,7 @@ class Scene:
             "players": {pid: c.as_dict() for pid, c in self.clips.items()},
             "lights": self.lights,
             "cues": [c.as_dict() for c in self.cues],
+            "outputs": self.outputs,
         }
 
 
@@ -137,6 +187,7 @@ class Show:
     defaults: dict
     scenes: List[Scene]
     path: Optional[str] = None
+    outputs: Dict[str, dict] = field(default_factory=dict)   # name -> {"topic", "max_on"}
 
     @property
     def prefix(self) -> str:
@@ -195,7 +246,7 @@ def _num(value, what, problems, minimum=None):
 
 _CLIP_KEYS = {"file", "level", "loop", "start", "start_after", "end_at",
               "fade_in", "fade_out", "mute"}
-_SCENE_KEYS = {"name", "master", "players", "lights", "cues", "end_at", "enabled"}
+_SCENE_KEYS = {"name", "master", "players", "lights", "cues", "end_at", "enabled", "outputs"}
 
 
 def parse_show(data: dict, path: Optional[str] = None) -> Show:
@@ -225,6 +276,34 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
         if l["type"] not in ("wled", "particle"):
             problems.append("lights.%s: type %r is not 'wled' or 'particle'" % (name, l["type"]))
         lights[str(name)] = l
+
+    outputs = {}
+    for name, o in (data.get("outputs") or {}).items():
+        o = dict(o or {})
+        prefix = (data.get("mqtt") or {}).get("prefix", "haunt")
+        o.setdefault("topic", "%s/output/%s" % (prefix, name))
+        try:
+            o["max_on"] = float(o.get("max_on") or 0)
+        except (TypeError, ValueError):
+            problems.append("outputs.%s: max_on must be a number of seconds" % name)
+            o["max_on"] = 0.0
+        o.setdefault("label", str(name).replace("_", " "))
+        for k in o:
+            if k not in ("topic", "max_on", "label"):
+                problems.append("outputs.%s: unknown setting %r" % (name, k))
+        outputs[str(name)] = o
+
+    def parse_outputs(raw, where):
+        out = {}
+        for oname, val in (raw or {}).items():
+            if str(oname) not in outputs:
+                problems.append("%s: output %r is not defined under 'outputs'" % (where, oname))
+                continue
+            try:
+                out[str(oname)] = parse_output_value(val)
+            except ValueError as exc:
+                problems.append("%s: output %s: %s" % (where, oname, exc))
+        return out
 
     def parse_lights(raw, where):
         out = {}
@@ -310,13 +389,18 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
             if m is not None and not (isinstance(m, dict) and m.get("topic")):
                 problems.append("%s: mqtt needs a 'topic'" % cw)
                 m = None
-            cues.append(Cue(at=at, lights=parse_lights(cue.get("lights"), cw), mqtt=m))
+            for k in cue:
+                if k not in ("at", "lights", "mqtt", "outputs"):
+                    problems.append("%s: unknown setting %r" % (cw, k))
+            cues.append(Cue(at=at, lights=parse_lights(cue.get("lights"), cw), mqtt=m,
+                            outputs=parse_outputs(cue.get("outputs"), cw)))
         cues.sort(key=lambda c: c.at)
 
         scenes.append(Scene(
             name=name, master=master, clips=clips,
             lights=parse_lights(raw.get("lights"), where),
             cues=cues, end_at=end_at, enabled=bool(raw.get("enabled", True)),
+            outputs=parse_outputs(raw.get("outputs"), where),
         ))
 
     if not scenes:
@@ -328,6 +412,7 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
         name=str(data.get("name", "Halloween")),
         mqtt=resolve_mqtt(data.get("mqtt")),
         players=players, lights=lights, defaults=defaults, scenes=scenes, path=path,
+        outputs=outputs,
     )
 
 

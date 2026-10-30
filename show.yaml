@@ -25,6 +25,13 @@ lights:
   front_lights: {type: wled, topic: front_lights}
   graveyard: {type: particle, topic: graveyard}
 
+# Things the show switches on and off. The director publishes ON/OFF to
+# haunt/output/<name>/set (retained); something else does the switching.
+# In a scene:  on = on for the scene, a number = a burst of that many seconds.
+outputs:
+  pond_mister: {label: mister}           # Tapo plug in Home Assistant: deploy/home-assistant/haunt-outputs.yaml
+  fog_machine: {label: fog, max_on: 10}  # control not decided yet; bursts only, never on longer than 10 s
+
 defaults:
   fade_in: 1.0        # seconds; picture and sound fade up from black
   fade_out: 1.5       # seconds; at the natural end of a clip
@@ -32,6 +39,9 @@ defaults:
   gap: 0.5            # seconds of black between scenes
   target_lufs: -14    # every clip is normalised to this loudness (a limiter catches the peaks)
 
+# front_lights effects are WLED effect/palette names from
+# https://kno.wled.ge/features/effects (or their numbers); see docs/SHOW-FILE.md.
+#
 # In each scene the MASTER's clip decides how long the scene lasts. The other
 # player is a follower: it can start late (start_after = position of the
 # master, in seconds) and is faded out when the master finishes.
@@ -55,7 +65,7 @@ scenes:
         loop: true
         start_after: 15
     lights:
-      front_lights: "#722800"
+      front_lights: {effect: Candle Multi, colors: ["#ff6a00"], speed: 96, intensity: 200, transition: 1}      # candle-lit jack-o-lanterns
       graveyard: "#007200"
 
   - name: Wicked Brew
@@ -70,8 +80,9 @@ scenes:
         file: "WH - Spell2 - Wicked Brew - Hollusion+TV+Window/WH_Spell 2_WickedBrew_Holl_H.mp4"
         level: 100  # old omxplayer vol: 10
     lights:
-      front_lights: "#0000be"
+      front_lights: {effect: Popcorn, colors: ["#00ff40", "#3a0066"], speed: 80, intensity: 100, transition: 1}   # bubbling cauldron
       graveyard: "#310059"
+    outputs: {pond_mister: on}
 
   - name: Twas the Night
     master: 1
@@ -84,7 +95,7 @@ scenes:
         level: 75   # old omxplayer vol: -7
         start_after: 20
     lights:
-      front_lights: "#ffa500"
+      front_lights: {effect: Halloween Eyes, colors: ["#ff2000", "#000000"], speed: 128, intensity: 128, transition: 1}   # eyes blinking in the dark under the story
       graveyard: "#ffa500"
 
   - name: Dragula APT
@@ -97,7 +108,7 @@ scenes:
         file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
         level: 50   # eyes loop at 50% in every scene (was 0; old omxplayer vol -99)
     lights:
-      front_lights: "#9370db"
+      front_lights: {effect: Fire 2012, palette: Fire, speed: 120, intensity: 160, transition: 1}   # "burn through the witches"
       graveyard: "#c8c800"
 
   - name: Cat Crow Canzonet
@@ -111,8 +122,9 @@ scenes:
         file: "WH - Song2 - Cat Crow Canzonet - Hollusion-TV-Window/WH_Song 2_CatCrow_Holl_H.mp4"
         level: 100  # old omxplayer vol: 10
     lights:
-      front_lights: "#808080"
+      front_lights: {effect: Dancing Shadows, palette: Set Colors, colors: ["#7a00ff", "#00ff60"], speed: 90, intensity: 128, transition: 1}   # cat and crow flitting
       graveyard: "#310059"
+    outputs: {pond_mister: on}
 
   - name: Frankenstein
     master: 1
@@ -126,8 +138,9 @@ scenes:
         level: 100  # old omxplayer vol: 10
         start_after: 40
     lights:
-      front_lights: "#404040"
+      front_lights: {effect: Lightning, colors: ["#c8d8ff", "#001a08"], speed: 150, intensity: 150, transition: 1}   # the lab coming alive
       graveyard: "#004000"
+    outputs: {fog_machine: 6}
 
   - name: Thriller
     master: 1
@@ -142,8 +155,11 @@ scenes:
         start_after: 420
         end_at: 225
     lights:
-      front_lights: "#ff2631"
+      front_lights: {effect: Colorwaves, palette: Magred, speed: 70, intensity: 128, transition: 1}   # red/magenta dance floor
       graveyard: "#400040"
+    outputs: {fog_machine: 8}
+    cues:
+      - {at: 420, outputs: {fog_machine: 6}}   # the zombies rise (the animation starts at 420 s)
 
   - name: In the Hall
     master: 1
@@ -156,7 +172,7 @@ scenes:
         level: 50   # eyes loop at 50% in every scene (was 60; old omxplayer vol 0)
         loop: true
     lights:
-      front_lights: "#ff8a14"
+      front_lights: {effect: Running, colors: ["#ff6a00", "#000000"], speed: 140, intensity: 80, transition: 1}   # Mountain King march
       graveyard: "#ffa500"
 
   - name: Ghostbusters
@@ -170,7 +186,7 @@ scenes:
         file: "Ghostbusters_LilJon-clean.mp4"
         level: 100  # old omxplayer vol: -50
     lights:
-      front_lights: "#9370db"
+      front_lights: {effect: Meteor Smooth, colors: ["#20ff20"], speed: 150, intensity: 128, transition: 1}   # green slimers zipping by
       graveyard: "#c8c800"
 
   - name: Spooky Scary Skeletons
@@ -184,7 +200,7 @@ scenes:
         level: 0    # old omxplayer vol: -100 (--vol -4000)
         loop: true
     lights:
-      front_lights: "#0000c8"
+      front_lights: {effect: Bouncing Balls, colors: ["#ffffff", "#200040"], speed: 128, intensity: 100, transition: 1}   # dancing bones
       graveyard: "#400000"
 
   - name: Seance
@@ -198,8 +214,9 @@ scenes:
         file: "WH - Spell3 - Seance - Hollusion-TV-Window/WH_Spell 3_Seance_Holl_H.mp4"
         level: 100  # old omxplayer vol: 0
     lights:
-      front_lights: "#f700ff"
+      front_lights: {effect: Aurora, palette: Set Colors, colors: ["#6a00ff", "#00c8a0"], speed: 60, intensity: 150, transition: 1}   # spirit glow
       graveyard: "#00c800"
+    outputs: {pond_mister: on, fog_machine: 5}
 
   - name: Witching Hour
     master: 2
@@ -212,8 +229,9 @@ scenes:
         file: "WH - Song1 - Witching Hour - Hollusion-TV-Window/WH_Song 1_WitchingHour_Holl_H.mp4"
         level: 100  # old omxplayer vol: 0
     lights:
-      front_lights: "#f700ff"
+      front_lights: {effect: Fairytwinkle, colors: ["#9d00ff", "#20ff40"], speed: 100, intensity: 128, transition: 1}   # witch sparkle
       graveyard: "#c80000"
+    outputs: {pond_mister: on}
 
   - name: Guardians Inferno
     master: 1
@@ -226,7 +244,7 @@ scenes:
         level: 50   # eyes loop at 50% in every scene (was 100; old omxplayer vol 0)
         loop: true
     lights:
-      front_lights: "#c8c800"
+      front_lights: {effect: Bpm, palette: Party, speed: 128, intensity: 128, transition: 1}   # disco
       graveyard: "#c8c800"
 
   - name: Ghosts n Stuff
@@ -240,7 +258,7 @@ scenes:
         file: "deadmou5_ghostsnstuff.mp4"
         level: 100  # old omxplayer vol: 0
     lights:
-      front_lights: "#00c800"
+      front_lights: {effect: Juggle, speed: 160, intensity: 128, transition: 1}   # EDM
       graveyard: "#c80000"
 
 
@@ -255,5 +273,5 @@ scenes:
         level: 60
         loop: true
     lights:
-      front_lights: "#9370db"
+      front_lights: {effect: Glitter, palette: Party, speed: 128, intensity: 128, transition: 1}   # disco-ball sparkle
       graveyard: "#00c800"

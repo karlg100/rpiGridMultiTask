@@ -17,6 +17,7 @@ import time
 from typing import List, Optional, Tuple
 
 from .bus import Bus
+from .lights import effect_label
 from .topics import Topics
 
 Seg = Tuple[str, object]      # (text, style)
@@ -256,7 +257,7 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         lines.append(detail)
 
     # ---- lights --------------------------------------------------------
-    lines.append(rule("LIGHTS", w, sym["rule"]))
+    lines.append(rule("LIGHTS & EFFECTS", w, sym["rule"]))
     lseg: Line = [(" ", "")]
     for name in (model.playlist.get("lights") or {}):
         cur = (st.get("lights") or {}).get(name)
@@ -267,10 +268,21 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
             lseg.append(("off", "dim"))
         else:
             color = cur.get("color")
-            lseg.append((sym["swatch"] * 2, ("rgb", color) if color else "dim"))
-            lseg.append((" " + (color or "on"), ""))
+            for c in (cur.get("colors") or [color])[:3]:
+                lseg.append((sym["swatch"] * 2, ("rgb", c) if c else "dim"))
+            label = effect_label(cur)
+            lseg.append((" " + (label or color or "on"), ""))
             if cur.get("preset") is not None:
                 lseg.append((" preset %s" % cur["preset"], "dim"))
+        lseg.append(("    ", ""))
+    outs = st.get("outputs") or {}
+    for name, o in outs.items():
+        on = o.get("on")
+        lseg.append((o.get("label", name) + " ", ""))
+        txt = "ON" if on else "off"
+        if on and o.get("burst") is not None:
+            txt = "ON %ds" % max(0, round(o["burst"]))
+        lseg.append((sym["dot"] + " " + txt, "warn" if on else "dim"))
         lseg.append(("    ", ""))
     lines.append(lseg)
 
@@ -331,6 +343,14 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
             else:
                 row.append(("  ", base))
             row.append((" ", base))
+        # one letter per output this scene uses (M = mister, F = fog ...)
+        used = dict(sc.get("outputs") or {})
+        for cue in sc.get("cues") or []:
+            used.update({k: v for k, v in (cue.get("outputs") or {}).items() if v})
+        marks = "".join(model.playlist.get("outputs", {}).get(k, {}).get("label", k)[:1].upper()
+                        for k, v in used.items() if v)
+        if marks:
+            row.append((marks, "warn" if not is_sel else base))
         lines.append(row)
     for _ in range(list_rows - len(scenes[top:top + list_rows])):
         lines.append([])
@@ -363,13 +383,22 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         if sc.get("end_at") is not None:
             extra.append("scene ends at %s" % mmss(sc["end_at"]))
         for lname, setting in (sc.get("lights") or {}).items():
-            extra.append("%s %s" % (lname, setting.get("color") if setting.get("on", True) else "off"))
+            desc = effect_label(setting) or setting.get("color") if setting.get("on", True) else "off"
+            extra.append("%s %s" % (lname, desc))
+        out_labels = {k: v.get("label", k) for k, v in (model.playlist.get("outputs") or {}).items()}
+        for oname, val in (sc.get("outputs") or {}).items():
+            if val is True:
+                extra.append("%s on" % out_labels.get(oname, oname))
+            elif val:
+                extra.append("%s %gs burst" % (out_labels.get(oname, oname), val))
         for cue in sc.get("cues") or []:
             what = []
             if cue.get("mqtt"):
                 what.append("%s=%s" % (cue["mqtt"]["topic"], cue["mqtt"].get("payload", "")))
             for lname, setting in (cue.get("lights") or {}).items():
-                what.append("%s %s" % (lname, setting.get("color") or "off"))
+                what.append("%s %s" % (lname, effect_label(setting) or setting.get("color") or "off"))
+            for oname, val in (cue.get("outputs") or {}).items():
+                what.append("%s %s" % (oname, "on" if val is True else ("off" if not val else "%gs" % val)))
             extra.append("cue @%s %s" % (mmss(cue["at"]), ", ".join(what)))
         rows.append([(" " + clip_text("   ".join(extra), w - 2, ell), "dim")])
         rows = rows[:detail_rows]

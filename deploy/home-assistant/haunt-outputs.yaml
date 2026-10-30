@@ -1,0 +1,66 @@
+# Home Assistant automations that let the show switch things through HA.
+#
+# The director publishes ON / OFF (retained) to haunt/output/<name>/set.
+# Paste these into Settings > Automations > (new) > ... > Edit in YAML,
+# one automation per block, and change the entity_id to your switch.
+#
+# Written for the Home Assistant 2024.10+ YAML style (triggers/actions).
+
+# --- Pond mister on the Tapo smart plug --------------------------------------
+alias: "Haunt: pond mister follows the show"
+description: >
+  Turns the pond mister plug on and off when the Halloween show says so,
+  and off if the show director goes offline.
+mode: queued
+triggers:
+  - trigger: mqtt
+    topic: haunt/output/pond_mister/set
+  - trigger: mqtt
+    topic: haunt/director/online
+    payload: "0"
+actions:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.topic == 'haunt/output/pond_mister/set' and trigger.payload == 'ON' }}
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.pond_mister      # <-- your Tapo plug's entity id
+    default:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.pond_mister          # <-- same entity id
+
+# --- Fog machine (template, for when its control is decided) -----------------
+# Do NOT run a 3000 W fog machine through a smart plug: the heater draws far
+# more than a plug like the Tapo is rated for (15 A / 1800 W), and cutting the
+# heater's power is not how you make fog anyway. Leave the machine powered and
+# switch its *fire* input instead: a relay (Shelly 1 / ESPHome) across the
+# button contacts of its wired remote. Then the same pattern works:
+#
+# alias: "Haunt: fog machine follows the show"
+# mode: restart          # an OFF cancels the 15 s safety delay and switches off now
+# triggers:
+#   - trigger: mqtt
+#     topic: haunt/output/fog_machine/set
+#   - trigger: mqtt
+#     topic: haunt/director/online
+#     payload: "0"
+# actions:
+#   - choose:
+#       - conditions:
+#           - condition: template
+#             value_template: >
+#               {{ trigger.topic == 'haunt/output/fog_machine/set' and trigger.payload == 'ON' }}
+#         sequence:
+#           - action: switch.turn_on
+#             target: {entity_id: switch.fog_trigger}
+#           # belt and braces: never fire for more than 15 s whatever happens
+#           - delay: {seconds: 15}
+#           - action: switch.turn_off
+#             target: {entity_id: switch.fog_trigger}
+#     default:
+#       - action: switch.turn_off
+#         target: {entity_id: switch.fog_trigger}

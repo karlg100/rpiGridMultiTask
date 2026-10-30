@@ -5,6 +5,8 @@ import json
 
 import pytest
 
+from haunt.config import ConfigError, parse_show
+
 from sim import SHOW, Sim
 
 
@@ -300,3 +302,68 @@ def test_followers_fade_out_together_with_the_master():
     # by the time the master is black, the looping follower is too
     assert sim.agents["2"].state in ("idle", "stopping")
     assert sim.agents["2"].backend.fade <= 0.1
+
+
+# -- fog machine, mister and other switched outputs -------------------------
+
+def effects_show():
+    show = copy.deepcopy(SHOW)
+    show["outputs"] = {"pond_mister": {}, "fog_machine": {"max_on": 8}}
+    show["scenes"][0]["outputs"] = {"pond_mister": "on", "fog_machine": 3}
+    show["scenes"][0]["cues"] = [{"at": 10, "outputs": {"fog_machine": 30}}]   # clamped to 8
+    show["scenes"][1]["outputs"] = {"fog_machine": "on"}                       # cut off by max_on
+    return show
+
+
+def out(sim, name):
+    sent = sim.sent("haunt/output/%s/set" % name)
+    return sent[-1] if sent else None
+
+
+def test_outputs_start_off_and_follow_the_scenes():
+    sim = Sim(effects_show())
+    assert out(sim, "pond_mister") == "OFF" and out(sim, "fog_machine") == "OFF"
+    sim.run_until(running(sim, "A"))
+    assert out(sim, "pond_mister") == "ON" and out(sim, "fog_machine") == "ON"
+    sim.run(3.2)
+    assert out(sim, "fog_machine") == "OFF" and out(sim, "pond_mister") == "ON"   # 3 s burst over
+    sim.run_until(lambda: sim.director.pos >= 10.2)
+    assert out(sim, "fog_machine") == "ON"                                      # cue burst
+    sim.run(8.2)
+    assert out(sim, "fog_machine") == "OFF"                                     # max_on 8 s, not 30
+    assert out(sim, "pond_mister") == "ON"
+    sim.run_until(running(sim, "B"))
+    assert out(sim, "pond_mister") == "OFF"                                     # B does not use it
+    assert out(sim, "fog_machine") == "ON"
+    sim.run(8.5)
+    assert out(sim, "fog_machine") == "OFF"                                     # "on" still limited
+    assert any("fog machine switched off after its 8s limit" in l[2] for l in sim.state()["log"])
+    assert sim.state()["outputs"]["fog_machine"]["on"] is False
+
+
+def test_outputs_off_when_paused_or_stopped():
+    sim = Sim(effects_show())
+    sim.run_until(running(sim, "A"))
+    sim.cmd("pause")
+    assert out(sim, "pond_mister") == "OFF" and out(sim, "fog_machine") == "OFF"
+    sim.cmd("resume")
+    assert out(sim, "pond_mister") == "ON"
+    assert out(sim, "fog_machine") == "OFF"          # a burst is not replayed
+    sim.cmd("stop")
+    sim.run_until(lambda: sim.director.phase == "stopped")
+    assert out(sim, "pond_mister") == "OFF"
+
+
+def test_outputs_are_retained_so_a_late_listener_sees_the_state():
+    sim = Sim(effects_show())
+    sim.run_until(running(sim, "A"))
+    assert sim.hub.retained["haunt/output/pond_mister/set"] == "ON"
+
+
+def test_bad_output_settings_are_reported():
+    show = effects_show()
+    show["scenes"][2]["outputs"] = {"smoke_machine": "on", "pond_mister": "maybe"}
+    with pytest.raises(ConfigError) as err:
+        parse_show(show)
+    assert "output 'smoke_machine' is not defined" in str(err.value)
+    assert "pond_mister: 'maybe' is not on, off or a number" in str(err.value)

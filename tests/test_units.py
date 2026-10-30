@@ -74,7 +74,8 @@ def test_password_is_read_from_the_systemd_env_file(tmp_path):
 def test_the_real_show_file_loads():
     import os
     show = load_show(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "show.yaml"))
-    assert len(show.scenes) == 14
+    assert len(show.scenes) >= 14
+    assert all(s.lights["front_lights"].get("fx") is not None for s in show.scenes)   # every scene has an effect
     thriller = [s for s in show.scenes if s.name == "Thriller"][0]
     assert thriller.clips["1"].start == 244
     assert thriller.clips["2"].start_after == 420 and thriller.clips["2"].level == 0
@@ -109,11 +110,40 @@ def test_wled_and_particle_messages():
         ("front_lights", "ON"), ("front_lights/col", "#0000BE")]
     assert lights.messages(wled, {"on": False}) == [("front_lights", "OFF")]
     assert lights.messages(wled, {"on": True, "color": None, "bri": 80, "preset": 2}) == [
-        ("front_lights", "80"), ("front_lights/api", "PL=2")]
+        ("front_lights/api", "PL=2"), ("front_lights", "80")]
     part = {"type": "particle", "topic": "graveyard"}
     assert lights.messages(part, {"on": True, "color": "#310059"}) == [
         ("graveyard/command", "on"), ("graveyard/color/r", "49"),
         ("graveyard/color/g", "0"), ("graveyard/color/b", "89"), ("graveyard/command", "go")]
+
+
+def test_wled_effect_is_one_json_api_message():
+    wled = {"type": "wled", "topic": "front_lights"}
+    setting = parse_light({"effect": "Fire 2012", "palette": "Fire", "speed": 120,
+                           "intensity": 200, "colors": ["#ff6a00", [48, 0, 96]],
+                           "bri": 200, "transition": 1.5})
+    msgs = lights.messages(wled, setting)
+    assert len(msgs) == 1 and msgs[0][0] == "front_lights/api"
+    assert json.loads(msgs[0][1]) == {
+        "on": True, "bri": 200, "transition": 15,
+        "seg": [{"fx": 66, "sx": 120, "ix": 200, "pal": 35,
+                 "col": [[255, 106, 0], [48, 0, 96], [0, 0, 0]]}]}
+    assert lights.effect_label(setting) == "Fire 2012 / Fire"
+    # The Particle graveyard just takes the first colour.
+    assert lights.messages({"type": "particle", "topic": "g"}, setting)[1] == ("g/color/r", "255")
+
+
+def test_wled_effect_names_are_checked():
+    with pytest.raises(ValueError) as err:
+        parse_light({"effect": "Fire 2013"})
+    assert "fire 2012" in str(err.value)
+    with pytest.raises(ValueError):
+        parse_light({"effect": "Candle", "speed": 300})
+    with pytest.raises(ValueError):
+        parse_light({"effect": "Candle", "colour": "#ffffff"})
+    assert parse_light({"fx": 74, "pal": 2})["fx"] == 74     # numbers work too
+    # an effect without a palette resets the palette to the effect's default
+    assert lights.wled_json(parse_light({"effect": "Juggle"}))["seg"][0]["pal"] == 0
 
 
 # -- loudness ---------------------------------------------------------------------
