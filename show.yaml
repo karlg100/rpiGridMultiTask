@@ -174,15 +174,15 @@ scenes:
       graveyard: "#c8c800"
 
   - name: Spooky Scary Skeletons
-    master: 2
+    master: 1
     players:
       1:
+        file: "Spooly Scarry Skel.mp4"
+        level: 100  # old omxplayer vol: 30
+      2:
         file: "Bone Chillers-Dancing Dead.mp4"
         level: 0    # old omxplayer vol: -100 (--vol -4000)
         loop: true
-      2:
-        file: "Spooly Scarry Skel.mp4"
-        level: 100  # old omxplayer vol: 30
     lights:
       front_lights: "#0000c8"
       graveyard: "#400000"
