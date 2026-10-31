@@ -626,9 +626,11 @@ class FloodAgent:
             if self.desired.get(e, "unset") != "unset":
                 self.since[e] = self.clock()
         self.skip = skip
-        # Put right lights that changed by themselves (timer off, motion on).
+        # Put right lights that changed by themselves (timer off, motion on),
+        # only while the show (or test mode) has them: otherwise they are
+        # ordinary motion lights again and are left to it.
         now = self.clock()
-        for e, want in self.desired.items():
+        for e, want in (self.desired.items() if self.show_running() else ()):
             st = (states.get(e) or {}).get("state")
             if e in skip or e in self.busy or want == "unset" or st not in ("on", "off"):
                 continue
@@ -796,7 +798,7 @@ class FloodAgent:
                 scale = self.max_bri / 255.0
                 for e, (color, bri) in zip(ents, row.frame(now)):
                     self._want(e, light_state(color, bri * scale), now, fade)
-            if self.keepalive:
+            if self.keepalive and self.show_running():
                 for e, want in self.desired.items():
                     if (want not in ("unset", OFF) and e not in self.busy and e not in self.skip
                             and self.sent.get(e, "unset") == want

@@ -456,3 +456,16 @@ def test_lights_that_change_by_themselves_are_put_right():
     ha.light[ENTS[5]] = ((255, 0, 0), 20)            # someone walked past: on by itself
     run(agent, clock, 6.0)
     assert ha.light[ENTS[5]] is None and agent.corrected == 2
+
+
+def test_left_alone_as_motion_lights_when_the_show_is_stopped():
+    agent, ha, bus, clock = make(keepalive=20.0, resolve_every=5.0)
+    go(agent, "#ff6a00")
+    run(agent, clock, 3.0)
+    agent.handle("haunt/director/state", json.dumps({"phase": "stopped"}))
+    run(agent, clock, 6.0)
+    assert all(ha.light[e] is None for e in ENTS)            # idle: off
+    n = len(ha.calls)
+    ha.light[ENTS[2]] = ((255, 255, 255), 255)                # motion turns one on
+    run(agent, clock, 40.0)
+    assert len(ha.calls) == n and ha.light[ENTS[2]] is not None
