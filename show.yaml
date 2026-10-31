@@ -128,7 +128,7 @@ scenes:
         file: "EE_OminousOculi_Swarm_Eyes+Mouths_H.mp4"
         level: 50   # eyes loop at 50% in every scene (was 0; old omxplayer vol -99)
     lights:
-      front_lights: {effect: Fire 2012, palette: Fire, speed: 80, intensity: 180, grouping: 4, mirror: true, transition: 1}   # "burn through the witches": flames up from both corners, meeting in the middle
+      front_lights: {effect: Fire 2012, palette: Fire, speed: 30, intensity: 180, grouping: 5, mirror: true, transition: 1}   # "burn through the witches": flames up from both corners, meeting in the middle
       floods: {colors: ["#ff2000", "#ff8000"], animation: flicker, period: 1.5, low: 0.3}         # the house on fire
       graveyard: "#c8c800"
       living_room: {colors: ["#ff3000", "#ff8000"], effect: fire}                                  # burn through the witches
