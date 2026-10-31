@@ -28,20 +28,34 @@ per-scene colours.
 | # | Scene | Front lights | Why | Mister | Fog |
 |---|---|---|---|---|---|
 | 1 | Pumpkin Song | **Candle Multi**, orange | Each LED flickers like its own candle: a row of lit jack-o-lanterns under the singing pumpkins. | | 3 s every 40 s |
-| 2 | Wicked Brew | **Popcorn**, green on purple | Pops of green rising and falling: the cauldron bubbling. | on | 3 s every 35 s |
-| 3 | Twas the Night | **Halloween Eyes**, red on black | Pairs of eyes open and blink at random along the eaves while the pumpkins tell the story. | | 3 s every 30 s |
+| 2 | Wicked Brew | **Popcorn**, green on a lit purple | Pops of green over a lit purple brew: the cauldron bubbling. | on | 3 s every 35 s |
+| 3 | Twas the Night | **Halloween Eyes**, yellow on an orange glow | Eyes blink along the eaves over a jack-o-lantern glow (on black the strip was dark). | | 3 s every 30 s |
 | 4 | Dragula APT | **Fire 2012**, Fire palette, grouping 5, mirrored, speed (cooling) 30 | "Burn through the witches": a real fire simulation, flames rising from both corners of the house to meet in the middle. Measured on the strip (WLED live view, 10 s): plain Fire 2012 lit only the left 26% (31% of the length), grouping 4 + mirror 73%, grouping 5 + mirror + cooling 30 lights 97%, brightest at the corners with flame tips flickering in the middle. | | 4 s every 35 s |
-| 5 | Cat Crow Canzonet | **Dancing Shadows**, purple and green | Spotlights sweeping past each other, like the cat and crow flitting around the witch. | on | 3 s every 30 s |
-| 6 | Frankenstein | **Lightning**, blue-white over dark green | Random lightning strikes for the lab scene; the Wraiths appear in the flashes. | | 6 s every 25 s |
-| 7 | Thriller | **Colorwaves**, Magred palette | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. | | 6 s every 45 s, + 6 s at 7:00 |
+| 5 | Cat Crow Canzonet | **Colorwaves**, purple and green | Purple and green waves, the cat and crow flitting around the witch. | on | 3 s every 30 s |
+| 6 | Frankenstein | **Lightning**, over storm blue | Strikes over a stormy blue sky; the Wraiths appear in the flashes. | | 6 s every 25 s |
+| 7 | Thriller | **Colorwaves**, red/magenta | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. | | 6 s every 45 s, + 6 s at 7:00 |
 | 8 | Witching Hour | **Fairytwinkle**, purple and green | Witchy sparkle that starts from a lit strip. | on | 3 s every 35 s |
-| 9 | In the Hall (Mountain King) | **Running**, orange on black | Marching waves along the eaves. Speed is a slider, so it could be cued to accelerate with the music. | | 3 s every 30 s |
+| 9 | In the Hall (Mountain King) | **Running**, orange over red | Marching waves along the eaves, never dark between them. | | 3 s every 30 s |
 | 10 | Ghostbusters | **Meteor** with "Smooth" on, green | Green streaks with fading tails: slimers zipping along the roof. | | 4 s every 35 s |
-| 11 | Spooky Scary Skeletons | **Bouncing Balls**, white on dark purple | Bone-white balls bouncing to a bouncy song. | | 4 s every 35 s |
+| 11 | Spooky Scary Skeletons | **Bouncing Balls**, white over purple | Bone-white balls bouncing over a lit purple. | | 4 s every 35 s |
 | 12 | Seance | **Aurora**, purple and teal | A slow, shifting spirit glow. | on | 5 s every 30 s |
-| 13 | Guardians Inferno | **Bpm**, Party palette | Pulses on the beat across a party palette: disco. | | 4 s every 30 s |
-| 14 | Ghosts n Stuff | **Juggle** | Eight coloured dots chasing with trails: EDM energy. | | 4 s every 30 s |
+| 13 | Guardians Inferno | **Pride 2015** | A moving rainbow: disco. | | 4 s every 30 s |
+| 14 | Ghosts n Stuff | **Colorwaves**, blue and pink | Club colours in waves (Juggle lit 8 dots on 631 LEDs). | | 4 s every 30 s |
 | 15 | Stayin' Undead | **Glitter**, Party palette | Rainbow with white sparkles: a disco ball. | | 4 s every 30 s |
+
+## Brightness (2026-10-31)
+
+Every scene was checked with WLED's live view (8 s per scene, average of the
+whole strip) and by replaying the Hue and floods settings through their
+agents. The eaves were dark in Twas the Night (0%), Cat Crow Canzonet (3%),
+Ghosts n Stuff (2%) and Frankenstein (10%), and dim in Thriller (22%) and
+Skeletons (25%); those now use effects that fill the strip and lit
+backgrounds instead of black: 47-97% in every scene. The Hue rooms, porch and
+lamp post run at full power (`full: true` for all four in hue.yaml) and never
+dip below 60%; the graveyard colours are at full strength; the floods run at
+full brightness with calm drifts instead of chases and deep pulses, which also
+cut their commands from about 225 a minute to about 88 (the AiDot hub manages
+about 300 a minute, and every command wakes a light's radio).
 
 ## Hue rooms (living room, front bedroom)
 
@@ -62,7 +76,7 @@ any `bri` in show.yaml is ignored for them.
 | 4 | Dragula APT | fire | fire |
 | 5 | Cat Crow Canzonet | drift purple/green, 3 s | the same, colours swapped |
 | 6 | Frankenstein | lightning over dark blue, ~7 s | lightning over dark green, ~9 s (out of step) |
-| 7 | Thriller | drift red/magenta; **at 7:00 sickly green flicker** as the zombies rise | magenta pulse; green flicker at 7:00 |
+| 7 | Thriller | **Colorwaves**, red/magenta | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. |
 | 8 | Witching Hour | sparkle (drift on bulbs without it) | purple/green drift |
 | 9 | In the Hall | orange/red pulse, 2.5 s (the march) | the same, alternate colours |
 | 10 | Ghostbusters | slime-green drift | flickering slimer green |

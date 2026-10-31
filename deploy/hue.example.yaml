@@ -25,5 +25,5 @@ rate: 10                     # light commands a second (Hue's guidance; lower if
 rooms:
   living_room: {room: Living room, full: true}     # indoors: full brightness so it shows outside
   front_bedroom: {room: Main Bedroom, full: true}  # the front bedroom is "Main Bedroom" in the Hue app
-  porch: {lights: [Porch 1, Porch 2]}     # the two porch lights (in the "Front yard" room)
-  lamp_post: {lights: [Side Pole Light]}  # by the driveway
+  porch: {lights: [Porch 1, Porch 2], full: true}     # the two porch lights (in the "Front yard" room)
+  lamp_post: {lights: [Side Pole Light], full: true}  # by the driveway

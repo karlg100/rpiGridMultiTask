@@ -71,12 +71,12 @@ scenes:
         start_after: 15
     lights:
       front_lights: {effect: Candle Multi, colors: ["#ff6a00"], speed: 96, intensity: 200, transition: 1}      # candle-lit jack-o-lanterns
-      floods: {color: "#ff6a00", animation: flicker, period: 5, low: 0.45, bri: 230}          # a row of jack-o-lanterns
-      graveyard: "#007200"
-      living_room: {color: "#ff6a00", effect: candle, bri: 220}                                    # candle-lit, like the jack-o-lanterns
-      front_bedroom: {color: "#ff5000", effect: candle, bri: 160}
-      porch: {color: "#ff6a00", bri: 180}                                          # accent: pumpkin orange
-      lamp_post: {color: "#ff7a00", animation: flicker, period: 1.2, low: 0.6}          # an old gas lamp
+      floods: {color: "#ff6a00"}   # a row of lit pumpkins, steady
+      graveyard: "#00ff00"
+      living_room: {color: "#ff6a00", effect: candle}   # candle-lit, full power
+      front_bedroom: {color: "#ff5000", effect: candle}
+      porch: {color: "#ff6a00"}   # accent: pumpkin orange
+      lamp_post: {color: "#ff7a00", animation: flicker, period: 1.2, low: 0.7}   # an old gas lamp
     outputs: {fog_machine: {burst: 3, every: 40, first: 5}}   # fog: a light haze for the opener
 
   - name: Wicked Brew
@@ -91,13 +91,13 @@ scenes:
         file: "WH - Spell2 - Wicked Brew - Hollusion+TV+Window/WH_Spell 2_WickedBrew_Holl_H.mp4"
         level: 100  # old omxplayer vol: 10
     lights:
-      front_lights: {effect: Popcorn, colors: ["#00ff40", "#3a0066"], speed: 80, intensity: 100, transition: 1}   # bubbling cauldron
-      floods: {colors: ["#00ff40", "#3a0066"], animation: sparkle, period: 7, low: 0.35, flash: "#a0ff60"}   # bubbles popping
-      graveyard: "#310059"
-      living_room: {colors: ["#20ff40", "#5a00a0"], animation: pulse, period: 4, low: 0.25}          # the cauldron glowing and fading
+      front_lights: {effect: Popcorn, colors: ["#00ff40", "#6000c0"], speed: 80, intensity: 180, transition: 1}   # bubbles popping over a lit purple brew (measured 73%)
+      floods: {colors: ["#00ff40", "#7a00ff"], animation: drift, period: 10}   # potion green and purple, slowly changing places
+      graveyard: "#8c00ff"
+      living_room: {colors: ["#20ff40", "#5a00a0"], animation: pulse, period: 4, low: 0.6}   # the cauldron glowing and fading
       front_bedroom: {colors: ["#5a00a0", "#20ff40"], animation: drift, period: 5}
-      porch: {color: "#20ff40", bri: 170}
-      lamp_post: {color: "#7a00ff", animation: flicker, period: 1.2, low: 0.5}
+      porch: {color: "#20ff40"}
+      lamp_post: {color: "#7a00ff", animation: flicker, period: 1.2, low: 0.7}
     outputs: {pond_mister: on, fog_machine: {burst: 3, every: 35, first: 3}}   # fog: the cauldron steaming, with the mister
 
   - name: Twas the Night
@@ -111,13 +111,13 @@ scenes:
         level: 75   # old omxplayer vol: -7
         start_after: 20
     lights:
-      front_lights: {effect: Halloween Eyes, colors: ["#ff2000", "#000000"], speed: 128, intensity: 128, transition: 1}   # eyes blinking in the dark under the story
-      floods: {color: "#2a0050", animation: sparkle, flash: "#ff2000", period: 7, low: 0.5, bri: 160}   # red eyes opening in the dark
+      front_lights: {effect: Halloween Eyes, colors: ["#ffff40", "#c03000"], speed: 128, intensity: 200, transition: 1}   # eyes blinking over an orange glow (measured 73%; on black it was dark)
+      floods: {color: "#ff3000"}   # story-time glow, steady
       graveyard: "#ffa500"
-      living_room: {color: "#ff5000", effect: candle, bri: 110}                                    # low firelight for the story
-      front_bedroom: {color: "#600000", animation: pulse, period: 6, low: 0.2, bri: 160}            # something red breathing upstairs
-      porch: {color: "#ff2000", bri: 150}                                          # red eyes in the dark
-      lamp_post: {color: "#ff8a30", animation: flicker, period: 1.4, low: 0.5}
+      living_room: {color: "#ff5000", effect: candle}   # low firelight for the story
+      front_bedroom: {color: "#ff2000", animation: pulse, period: 6, low: 0.6}   # something red breathing upstairs
+      porch: {color: "#ff2000"}   # red eyes in the dark
+      lamp_post: {color: "#ff8a30", animation: flicker, period: 1.4, low: 0.7}
     outputs: {fog_machine: {burst: 3, every: 30, first: 5}}   # fog: night mist while the story is told
 
   - name: Dragula APT
@@ -131,12 +131,12 @@ scenes:
         level: 50   # eyes loop at 50% in every scene (was 0; old omxplayer vol -99)
     lights:
       front_lights: {effect: Fire 2012, palette: Fire, speed: 30, intensity: 180, grouping: 5, mirror: true, transition: 1}   # "burn through the witches": flames up from both corners, meeting in the middle
-      floods: {colors: ["#ff2000", "#ff8000"], animation: flicker, period: 5, low: 0.3}         # the house on fire
-      graveyard: "#c8c800"
+      floods: {colors: ["#ff2000", "#ff8000"], animation: drift, period: 8}   # fire colours rolling along the house
+      graveyard: "#ffff00"
       living_room: {colors: ["#ff3000", "#ff8000"], effect: fire}                                  # burn through the witches
-      front_bedroom: {colors: ["#ff2000", "#ff7000"], effect: fire, bri: 200}
+      front_bedroom: {colors: ["#ff2000", "#ff7000"], effect: fire}
       porch: {color: "#ff3000", effect: fire}
-      lamp_post: {color: "#ff4000", animation: flicker, period: 0.6, low: 0.4}
+      lamp_post: {color: "#ff4000", animation: flicker, period: 0.8, low: 0.6}
     outputs: {fog_machine: {burst: 4, every: 35, first: 2}}   # fog: smoke from the fire
 
   - name: Cat Crow Canzonet
@@ -150,13 +150,13 @@ scenes:
         file: "WH - Song2 - Cat Crow Canzonet - Hollusion-TV-Window/WH_Song 2_CatCrow_Holl_H.mp4"
         level: 100  # old omxplayer vol: 10
     lights:
-      front_lights: {effect: Dancing Shadows, palette: Set Colors, colors: ["#7a00ff", "#00ff60"], speed: 90, intensity: 128, transition: 1}   # cat and crow flitting
-      floods: {colors: ["#7a00ff", "#00ff60"], animation: drift, period: 4}                   # purple/green crawling along
-      graveyard: "#310059"
+      front_lights: {effect: Colorwaves, palette: Color Gradient, colors: ["#7a00ff", "#00ff60", "#7a00ff"], speed: 90, intensity: 128, transition: 1}   # purple and green waves (measured 51%; Dancing Shadows was 3%)
+      floods: {colors: ["#7a00ff", "#00ff60"], animation: drift, period: 10}   # purple/green crawling along
+      graveyard: "#8c00ff"
       living_room: {colors: ["#7a00ff", "#00ff60"], animation: drift, period: 3}                   # cat and crow chasing round the room
       front_bedroom: {colors: ["#00ff60", "#7a00ff"], animation: drift, period: 3}
       porch: {colors: ["#7a00ff", "#00ff60"], animation: drift, period: 6}
-      lamp_post: {color: "#00ff60", bri: 160}
+      lamp_post: {color: "#00ff60"}
     outputs: {pond_mister: on, fog_machine: {burst: 3, every: 30, first: 3}}   # fog: short: the witch is on the wall, keep her visible
 
   - name: Frankenstein
@@ -171,13 +171,13 @@ scenes:
         level: 100  # old omxplayer vol: 10
         start_after: 40
     lights:
-      front_lights: {effect: Lightning, colors: ["#c8d8ff", "#001a08"], speed: 150, intensity: 150, transition: 1}   # the lab coming alive
-      floods: {color: "#003010", animation: lightning, period: 4, low: 0.3}                     # storm over the lab
-      graveyard: "#004000"
-      living_room: {color: "#0a1a40", animation: lightning, period: 7, low: 0.3}                  # the lab in a storm
-      front_bedroom: {color: "#0a2a10", animation: lightning, period: 9, low: 0.3}                  # its own strikes, out of step
-      porch: {color: "#0a2a10", animation: lightning, period: 11, low: 0.4}         # strikes of its own
-      lamp_post: {color: "#c8d8ff", animation: flicker, period: 0.5, low: 0.2}          # sputtering in the storm
+      front_lights: {effect: Lightning, colors: ["#e0e8ff", "#1838a0"], speed: 150, intensity: 150, transition: 1}   # strikes over a stormy blue sky (measured 61%; over black it was 10%)
+      floods: {color: "#2050ff", animation: lightning, period: 8, low: 0.6, flash: "#ffffff"}   # storm blue with lightning, lit between strikes
+      graveyard: "#00ff00"
+      living_room: {color: "#2050ff", animation: lightning, period: 7, low: 0.6}   # the lab in a storm, lit between strikes
+      front_bedroom: {color: "#20ff60", animation: lightning, period: 9, low: 0.6}   # its own strikes, out of step
+      porch: {color: "#20ff60", animation: lightning, period: 11, low: 0.6}   # strikes of its own
+      lamp_post: {color: "#c8d8ff", animation: flicker, period: 0.6, low: 0.6}   # sputtering in the storm
     outputs: {fog_machine: {burst: 6, every: 25}}   # fog: the lab storm: a big burst at the start, then more
 
   - name: Thriller
@@ -193,20 +193,20 @@ scenes:
         start_after: 420
         end_at: 225
     lights:
-      front_lights: {effect: Colorwaves, palette: Magred, speed: 70, intensity: 128, transition: 1}   # red/magenta dance floor
-      floods: {colors: ["#ff0040", "#a000ff"], animation: chase, direction: bounce, width: 1, period: 13, low: 0.15}   # dance-floor sweep
-      graveyard: "#400040"
+      front_lights: {effect: Colorwaves, palette: Color Gradient, colors: ["#ff0020", "#c000ff", "#ff0080"], speed: 70, intensity: 128, transition: 1}   # red/magenta waves (measured 60%; the Magred palette was half black)
+      floods: {colors: ["#ff0040", "#a000ff"], animation: drift, period: 10}   # red and magenta, slowly changing places
+      graveyard: "#ff00ff"
       living_room: {colors: ["#ff0020", "#c00080"], animation: drift, period: 5}                   # red/magenta dance floor
-      front_bedroom: {color: "#a00060", animation: pulse, period: 4, low: 0.2}
-      porch: {color: "#ff0020", bri: 180}
-      lamp_post: {color: "#c00080", animation: pulse, period: 4, low: 0.3}
+      front_bedroom: {color: "#a00060", animation: pulse, period: 4, low: 0.6}
+      porch: {color: "#ff0020"}
+      lamp_post: {color: "#c00080", animation: pulse, period: 4, low: 0.6}
     outputs: {fog_machine: {burst: 6, every: 45}}   # fog: graveyard fog all the way through (plus the 7:00 cue)
     cues:
       - {at: 420, outputs: {fog_machine: 6},   # the zombies rise (the animation starts at 420 s)
-         lights: {living_room: {colors: ["#40ff20", "#106000"], animation: flicker, period: 0.7, low: 0.3},
-                  front_bedroom: {color: "#40ff20", animation: flicker, period: 0.9, low: 0.3},
-                  porch: {color: "#40ff20", bri: 200},
-                  lamp_post: {color: "#40ff20", animation: flicker, period: 0.7, low: 0.3}}}
+         lights: {living_room: {colors: ["#40ff20", "#20c000"], animation: flicker, period: 0.9, low: 0.6},
+                  front_bedroom: {color: "#40ff20", animation: flicker, period: 1.1, low: 0.6},
+                  porch: {color: "#40ff20"},
+                  lamp_post: {color: "#40ff20", animation: flicker, period: 0.9, low: 0.6}}}
 
   - name: Witching Hour
     master: 2
@@ -220,12 +220,12 @@ scenes:
         level: 100  # old omxplayer vol: 0
     lights:
       front_lights: {effect: Fairytwinkle, colors: ["#9d00ff", "#20ff40"], speed: 100, intensity: 128, transition: 1}   # witch sparkle
-      floods: {colors: ["#9d00ff", "#20ff40"], pattern: blocks, animation: pulse, period: 8, low: 0.15}   # witchy swell, Window half and Wall half
-      graveyard: "#c80000"
+      floods: {colors: ["#9d00ff", "#20ff40"], animation: drift, period: 10}   # witchy swell, Window half and Wall half
+      graveyard: "#ff0000"
       living_room: {colors: ["#9d00ff", "#20ff40"], effect: sparkle}                               # witch sparkle (drift where a bulb has no sparkle)
       front_bedroom: {colors: ["#20ff40", "#9d00ff"], animation: drift, period: 4}
-      porch: {color: "#9d00ff", bri: 200}
-      lamp_post: {color: "#20ff40", animation: flicker, period: 1.0, low: 0.5}
+      porch: {color: "#9d00ff"}
+      lamp_post: {color: "#20ff40", animation: flicker, period: 1.0, low: 0.7}
     outputs: {pond_mister: on, fog_machine: {burst: 3, every: 35, first: 3}}   # fog: short: the witch is on the wall, keep her visible
 
   - name: In the Hall
@@ -239,13 +239,13 @@ scenes:
         level: 50   # eyes loop at 50% in every scene (was 60; old omxplayer vol 0)
         loop: true
     lights:
-      front_lights: {effect: Running, colors: ["#ff6a00", "#000000"], speed: 140, intensity: 80, transition: 1}   # Mountain King march
-      floods: {color: "#ff6a00", animation: chase, width: 1, period: 7, low: 0.05}             # the march
+      front_lights: {effect: Running, colors: ["#ff8000", "#ff1000"], speed: 140, intensity: 80, transition: 1}   # marching waves, orange over red (measured 97%)
+      floods: {colors: ["#ff6a00", "#ff2000"], animation: drift, period: 6}   # orange and red marching along
       graveyard: "#ffa500"
-      living_room: {colors: ["#ff6a00", "#ff2000"], animation: pulse, period: 2.5, low: 0.1}      # the march
-      front_bedroom: {colors: ["#ff2000", "#ff6a00"], animation: pulse, period: 2.5, low: 0.1}
-      porch: {color: "#ff6a00", animation: pulse, period: 2.5, low: 0.3}           # marching with the rooms
-      lamp_post: {color: "#ff6a00", bri: 200}
+      living_room: {colors: ["#ff6a00", "#ff2000"], animation: pulse, period: 2.5, low: 0.6}   # the march
+      front_bedroom: {colors: ["#ff2000", "#ff6a00"], animation: pulse, period: 2.5, low: 0.6}
+      porch: {color: "#ff6a00", animation: pulse, period: 2.5, low: 0.6}   # marching with the rooms
+      lamp_post: {color: "#ff6a00"}
     outputs: {fog_machine: {burst: 3, every: 30, first: 10}}   # fog: the march into the mountain
 
   - name: Ghostbusters
@@ -260,12 +260,12 @@ scenes:
         level: 100  # old omxplayer vol: -50
     lights:
       front_lights: {effect: Meteor, o3: true, colors: ["#20ff20"], speed: 150, intensity: 128, transition: 1}   # green slimers zipping by (o3 = WLED 16's "Smooth" option)
-      floods: {color: "#20ff20", animation: chase, width: 1, period: 7, low: 0.05}             # slimer zipping across the house
-      graveyard: "#c8c800"
+      floods: {colors: ["#20ff20", "#a0ff00"], animation: drift, period: 10}   # slime green
+      graveyard: "#ffff00"
       living_room: {colors: ["#20ff20", "#a0ff00", "#00c060"], animation: drift, period: 2}        # slime
-      front_bedroom: {color: "#30ff30", animation: flicker, period: 0.8, low: 0.4, bri: 200}        # a slimer in the bedroom
-      porch: {color: "#20ff20", bri: 200}
-      lamp_post: {color: "#30ff30", animation: flicker, period: 0.8, low: 0.4}
+      front_bedroom: {color: "#30ff30", animation: flicker, period: 1.2, low: 0.6}   # a slimer in the bedroom
+      porch: {color: "#20ff20"}
+      lamp_post: {color: "#30ff30", animation: flicker, period: 1.2, low: 0.6}
     outputs: {fog_machine: {burst: 4, every: 35, first: 5}}   # fog: slime haze
 
   - name: Spooky Scary Skeletons
@@ -279,13 +279,13 @@ scenes:
         level: 0    # old omxplayer vol: -100 (--vol -4000)
         loop: true
     lights:
-      front_lights: {effect: Bouncing Balls, colors: ["#ffffff", "#200040"], speed: 128, intensity: 100, transition: 1}   # dancing bones
-      floods: {colors: ["#ffffff", "#200040"], animation: drift, period: 4}                    # bones jiggling
-      graveyard: "#400000"
+      front_lights: {effect: Bouncing Balls, colors: ["#ffffff", "#5000c0"], speed: 128, intensity: 100, transition: 1}   # bone-white balls bouncing over purple (measured 73%)
+      floods: {colors: ["#ffffff", "#7a00ff"], animation: drift, period: 10}   # bones jiggling
+      graveyard: "#ff0000"
       living_room: {colors: ["#ffffff", "#5000a0"], animation: drift, period: 1.5}                 # bone white and purple, bouncing
-      front_bedroom: {color: "#e0e0ff", animation: pulse, period: 2, low: 0.1}
+      front_bedroom: {color: "#e0e0ff", animation: pulse, period: 2, low: 0.6}
       porch: {colors: ["#ffffff", "#5000a0"], animation: drift, period: 3}
-      lamp_post: {color: "#e0e0ff", bri: 200}
+      lamp_post: {color: "#e0e0ff"}
     outputs: {fog_machine: {burst: 4, every: 35, first: 5}}   # fog: graveyard haze for the dancing dead
 
   - name: Seance
@@ -300,11 +300,11 @@ scenes:
         level: 100  # old omxplayer vol: 0
     lights:
       front_lights: {effect: Aurora, palette: Set Colors, colors: ["#6a00ff", "#00c8a0"], speed: 60, intensity: 150, transition: 1}   # spirit glow
-      floods: {colors: ["#6a00ff", "#00c8a0"], animation: pulse, period: 8, low: 0.2}   # spirits breathing
-      graveyard: "#00c800"
-      living_room: {colors: ["#6a00ff", "#00c8a0"], animation: drift, period: 6, bri: 180}         # spirit glow
-      front_bedroom: {color: "#ff7a20", effect: candle, bri: 120}                                   # seance candles
-      porch: {color: "#00c8a0", bri: 150}
+      floods: {colors: ["#6a00ff", "#00c8a0"], animation: drift, period: 12}   # spirits breathing
+      graveyard: "#00ff00"
+      living_room: {colors: ["#6a00ff", "#00c8a0"], animation: drift, period: 6}   # spirit glow
+      front_bedroom: {color: "#ff7a20", effect: candle}   # seance candles
+      porch: {color: "#00c8a0"}
       lamp_post: {color: "#ff7a20", effect: candle}
     outputs: {pond_mister: on, fog_machine: {burst: 5, every: 30}}   # fog: spirits rising
 
@@ -319,9 +319,9 @@ scenes:
         level: 50   # eyes loop at 50% in every scene (was 100; old omxplayer vol 0)
         loop: true
     lights:
-      front_lights: {effect: Bpm, palette: Party, speed: 128, intensity: 128, transition: 1}   # disco
-      floods: {colors: ["#ff0000", "#ffaa00", "#00ff00", "#0060ff", "#c000ff"], animation: drift, period: 4}   # disco
-      graveyard: "#c8c800"
+      front_lights: {effect: Pride 2015, speed: 128, intensity: 128, transition: 1}   # rainbow disco (measured 47%, brighter colours than Bpm)
+      floods: {colors: ["#ff0000", "#ffaa00", "#00ff00", "#0060ff", "#c000ff"], animation: drift, period: 8}   # disco
+      graveyard: "#ffff00"
       living_room: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], animation: drift, period: 1}   # disco
       front_bedroom: {colors: ["#c000ff", "#0060ff", "#00ff80", "#ffaa00", "#ff0040"], animation: drift, period: 1.2}
       porch: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], animation: drift, period: 2}
@@ -339,12 +339,12 @@ scenes:
         file: "deadmou5_ghostsnstuff.mp4"
         level: 100  # old omxplayer vol: 0
     lights:
-      front_lights: {effect: Juggle, speed: 160, intensity: 128, transition: 1}   # EDM
-      floods: {colors: ["#00ffff", "#ff00ff"], pattern: blocks, animation: pulse, period: 8, low: 0.1}   # Window half vs Wall half, swapping
-      graveyard: "#c80000"
-      living_room: {colors: ["#00a0ff", "#ff00c0"], animation: pulse, period: 2, low: 0.1}        # EDM
+      front_lights: {effect: Colorwaves, palette: Color Gradient, colors: ["#00a0ff", "#ff00c0", "#0040ff"], speed: 160, intensity: 128, transition: 1}   # club blue and pink waves (measured 63%; Juggle was 2%)
+      floods: {colors: ["#00ffff", "#ff00ff"], animation: drift, period: 8}   # Window half vs Wall half, swapping
+      graveyard: "#ff0000"
+      living_room: {colors: ["#00a0ff", "#ff00c0"], animation: pulse, period: 2, low: 0.6}   # EDM
       front_bedroom: {colors: ["#00ffff", "#ff00ff", "#0000ff"], animation: drift, period: 1}
-      porch: {colors: ["#00a0ff", "#ff00c0"], animation: pulse, period: 2, low: 0.3}
+      porch: {colors: ["#00a0ff", "#ff00c0"], animation: pulse, period: 2, low: 0.6}
       lamp_post: {colors: ["#00ffff", "#ff00ff"], animation: drift, period: 2}
     outputs: {fog_machine: {burst: 4, every: 30, first: 5}}   # fog: club haze
 
@@ -362,8 +362,8 @@ scenes:
         start_after: 5
     lights:
       front_lights: {effect: Glitter, palette: Party, speed: 128, intensity: 128, transition: 1}   # disco-ball sparkle
-      floods: {colors: ["#ff00ff", "#00ffff", "#ffff00"], animation: sparkle, flash: "#ffffff", period: 7, low: 0.4}   # mirror ball
-      graveyard: "#00c800"
+      floods: {colors: ["#ff00ff", "#00ffff", "#ffff00"], animation: drift, period: 8}   # disco colours
+      graveyard: "#00ff00"
       living_room: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], effect: prism}   # disco ball (drift where a bulb has no prism)
       front_bedroom: {colors: ["#ffaa00", "#ff0040", "#c000ff", "#0060ff", "#00ff80"], animation: drift, period: 1.5}
       porch: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], animation: drift, period: 2}
