@@ -517,6 +517,8 @@ PLAYER_DEFAULTS = {
     "trim": 100,               # percent; evens out two players with different amps
     "mono": True,              # mix every clip to mono on both jack channels (one-speaker PA); the
                                # console can switch it per player, and that choice is remembered
+    "mirror": False,           # flip the picture left-right, for rear projection; the console can
+                               # switch it per player, and that choice is remembered
     "video_fade": True,        # fade the picture to/from black (needs --vo=gpu)
     "normalize": True,         # measure each file's loudness once and even them out
     "max_boost_db": 18.0,      # never amplify a quiet file by more than this (a limiter catches the peaks)

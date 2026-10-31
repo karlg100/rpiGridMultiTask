@@ -546,7 +546,7 @@ def test_player_is_mono_by_default_and_remembers_a_toggle(tmp_path):
     again = Rig(state_file=state)                      # a restart keeps the console's choice
     assert again.backend.mono is False
     again.cmd(cmd="mono", value=True)
-    assert again.backend.mono is True and json.load(open(state)) == {"mono": True}
+    assert again.backend.mono is True and json.load(open(state)) == {"mono": True, "mirror": False}
     assert Rig(mono=False).backend.mono is False       # player.yaml can default to stereo
 
 
@@ -575,6 +575,49 @@ def test_mono_from_the_console_reaches_the_player():
     sim.cmd("mono", player="2", value=True)
     sim.run(0.5)
     assert sim.agents["2"].mono is True
+
+
+# -- mirror (rear projection) ------------------------------------------------------
+
+def test_player_mirror_off_by_default_and_remembers_a_toggle(tmp_path):
+    state = str(tmp_path / "player-state.json")
+    rig = Rig(state_file=state)
+    rig.run(0.2)
+    assert rig.backend.mirror is False and rig.state()["mirror"] is False
+    rig.cmd(cmd="mirror")                              # toggle
+    assert rig.backend.mirror is True and rig.state()["mirror"] is True
+    again = Rig(state_file=state)                      # a restart keeps the console's choice
+    assert again.backend.mirror is True
+    again.cmd(cmd="mirror", value=False)
+    assert again.backend.mirror is False
+    assert Rig(mirror=True).backend.mirror is True     # player.yaml can default to mirrored
+
+
+def test_mpv_mirror_sets_and_clears_the_video_filter():
+    from haunt.backends import MpvBackend
+    b = MpvBackend()
+    sent = []
+    b._command = lambda *c: sent.append(c)
+    b.set_mirror(True)
+    b.set_mirror(True)                                 # no change: nothing sent
+    b.set_mirror(False)
+    assert sent == [("set", "vf", "@mirror:hflip"), ("set", "vf", "")]
+
+
+def test_mirror_from_the_console_reaches_the_player():
+    sim = Sim()
+    sim.run_until(lambda: sim.director.phase == "running")
+    model, ctl, text = console(sim)
+    assert "MIRRORED" not in text
+    ctl.key("v")                                       # focus starts on player 1
+    sim.run(0.5)
+    mirrored = [p for p, a in sim.agents.items() if a.mirror]
+    assert len(mirrored) == 1
+    _, _, text = console(sim)
+    assert "MIRRORED" in text
+    sim.cmd("mirror", player=mirrored[0], value=False)
+    sim.run(0.5)
+    assert not any(a.mirror for a in sim.agents.values())
 
 
 # -- test mode ---------------------------------------------------------------------

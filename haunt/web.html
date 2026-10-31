@@ -306,6 +306,7 @@ document.addEventListener("click", (ev) => {
   if (b.dataset.index) extra.index = Number(b.dataset.index);
   if (b.dataset.name) extra.name = b.dataset.name;
   if (b.dataset.value) extra.value = b.dataset.cmd === "mono" ? b.dataset.value === "mono"
+      : b.dataset.cmd === "mirror" ? b.dataset.value === "on"
       : (b.dataset.cmd === "test" ? b.dataset.value === "enter" : b.dataset.value);
   if (b.dataset.pattern) extra.pattern = b.dataset.pattern;
   send(b.dataset.cmd, extra);
@@ -447,6 +448,9 @@ function render() {
       + (p.mono !== null && p.mono !== undefined ? '<div class="ctl"><span class="hint" style="margin:0;flex:1">Sound: <b>' + (p.mono ? "mono" : "stereo") + "</b>"
         + (p.mono ? "" : " (one-speaker PA hears only one side)") + '</span><button class="mute" data-cmd="mono" data-player="' + p.id + '" data-value="'
         + (p.mono ? "stereo" : "mono") + '">' + (p.mono ? "Make stereo" : "Make mono") + "</button></div>" : "")
+      + (p.mirror !== null && p.mirror !== undefined ? '<div class="ctl"><span class="hint" style="margin:0;flex:1">Picture: <b>' + (p.mirror ? "mirrored" : "normal") + "</b>"
+        + (p.mirror ? " (rear projection)" : "") + '</span><button class="mute' + (p.mirror ? " on" : "") + '" data-cmd="mirror" data-player="' + p.id + '" data-value="'
+        + (p.mirror ? "off" : "on") + '">' + (p.mirror ? "Normal" : "Mirror") + "</button></div>" : "")
       + "</div>";
   }).join("") || '<div class="empty">no players yet</div>');
 

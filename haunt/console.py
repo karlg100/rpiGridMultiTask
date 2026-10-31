@@ -32,7 +32,7 @@ ASCII = {"bar_on": "#", "bar_off": "-", "dot": "*", "swatch": "#",
 
 HELP = [
     "space pause/resume   n next   p previous   r restart scene   enter go to selected",
-    "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo",
+    "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo   v mirror (rear projection)",
     "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
     "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)   o floods on/off   , . floods brightness",
     "t test mode (lights scene by scene, without the videos)   q quit (the show keeps running)",
@@ -287,6 +287,8 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
                       (sym["dot"] + " ", style), ("%-9s" % state, style)]
         if p["online"] and "mono" in ps:
             head.append(("mono   " if ps["mono"] else "STEREO ", "dim" if ps["mono"] else "warn"))
+        if p["online"] and ps.get("mirror"):
+            head.append(("MIRRORED ", "warn"))
         used = sum(len(t) for t, _ in head)
         file = os.path.basename(ps.get("file") or "") if p["online"] else ""
         if state == "error":
@@ -764,6 +766,8 @@ class Controller:
             self.send("mute", player=self.focus)
         elif k == "c" and self.focus:
             self.send("mono", player=self.focus)
+        elif k == "v" and self.focus:
+            self.send("mirror", player=self.focus)
         elif k == "o":
             self.send("floods_on")
         elif k in (",", "<"):

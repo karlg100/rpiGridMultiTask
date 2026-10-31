@@ -40,7 +40,7 @@ COMMANDS = {
     "goto": ("index",), "enable": ("index", "value"),
     "master": ("delta", "value"), "level": ("player", "delta", "value"),
     "mute": ("player",), "reset_levels": (), "output": ("name", "value"),
-    "mono": ("player", "value"), "floods_level": ("value", "delta"), "floods_on": ("value",),
+    "mono": ("player", "value"), "mirror": ("player", "value"), "floods_level": ("value", "delta"), "floods_on": ("value",),
     "test": ("value",), "test_scene": ("index", "delta"), "test_light": ("name", "pattern"),
 }
 
@@ -162,6 +162,7 @@ class WebApp:
                 "start_after": r.get("start_after") or 0,
                 "gain_db": ps.get("gain_db"),
                 "mono": ps.get("mono") if p["online"] else None,
+                "mirror": bool(ps.get("mirror")) if p["online"] and "mirror" in ps else None,
                 "host": ps.get("host"), "ip": ps.get("ip"),
                 # seconds since the player's last report (its own timestamp; it reports
                 # several times a second while up)

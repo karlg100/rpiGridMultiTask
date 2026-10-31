@@ -112,6 +112,11 @@ class PlayerAgent:
         if "mono" in saved:
             self.mono = bool(saved["mono"])
         backend.set_mono(self.mono)
+        # Mirror (rear projection): the same, player.yaml default or the console's choice.
+        self.mirror = bool(cfg.get("mirror", False))
+        if "mirror" in saved:
+            self.mirror = bool(saved["mirror"])
+        backend.set_mirror(self.mirror)
 
         # Which machine this is, for the console and the phone page.
         self.host = socket.gethostname()
@@ -139,7 +144,7 @@ class PlayerAgent:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             tmp = path + ".tmp"
             with open(tmp, "w") as fh:
-                json.dump({"mono": self.mono}, fh)
+                json.dump({"mono": self.mono, "mirror": self.mirror}, fh)
             os.replace(tmp, path)
         except OSError as exc:
             log.warning("cannot save %s: %s", path, exc)
@@ -271,6 +276,14 @@ class PlayerAgent:
         self.backend.set_mono(self.mono)
         self._save_state()
         log.info("audio: %s", "mono" if self.mono else "stereo")
+
+    def _cmd_mirror(self, cmd):
+        """{"cmd": "mirror", "value": true/false}; no value toggles."""
+        value = cmd.get("value")
+        self.mirror = (not self.mirror) if value is None else bool(value)
+        self.backend.set_mirror(self.mirror)
+        self._save_state()
+        log.info("picture: %s", "mirrored (rear projection)" if self.mirror else "normal")
 
     def _cmd_probe(self, cmd):
         self._probe = cmd
@@ -416,6 +429,7 @@ class PlayerAgent:
             "lufs": self.lufs,
             "fade": round(self.fade.value(now), 2),
             "mono": self.mono,
+            "mirror": self.mirror,
             "host": self.host,
             "ip": self._local_ip(),
             "error": self.error,

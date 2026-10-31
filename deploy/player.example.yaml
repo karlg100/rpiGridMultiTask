@@ -10,6 +10,8 @@ mqtt:
 media_root: /home/pi/videos    # file names in show.yaml are relative to this
 
 rotate: 0                      # 180 for the upside-down projector (was --orientation 180)
+mirror: false                  # true = flip left-right for rear projection; the console (v) and phone
+                               # page switch it per player while the show runs, and that is remembered
 
 # Where the sound goes. `mpv --audio-device=help` lists the choices.
 #   headphone jack on current Raspberry Pi OS:  alsa/plughw:CARD=Headphones,DEV=0

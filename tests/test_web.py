@@ -203,3 +203,11 @@ def test_floods_on_off_from_the_phone(web):
     assert post(base + "/api/cmd", {"cmd": "floods_on", "value": True})[0] == 200
     sim.run(0.3)
     assert sim.director.floods_on is True
+
+
+def test_mirror_from_the_phone(web):
+    sim, app, base = web
+    sim.run(0.5)
+    assert post(base + "/api/cmd", {"cmd": "mirror", "player": "2", "value": True})[0] == 200
+    sim.run(0.5)
+    assert sim.agents["2"].mirror is True and sim.agents["1"].mirror is False
