@@ -19,9 +19,11 @@ rate: 10                     # light commands a second (Hue's guidance; lower if
 #   bulbs by name:           porch: {lights: [Porch left, Porch right]}
 #   floor: N                 optional: never dimmer than N % while the show runs
 #                            (e.g. if a light is needed to see by); still off when the show stops
+#   full: true               optional: always full brightness (the scene's bri and dark
+#                            colours' darkness are ignored; pulses/flicker still dip)
 # `--list` prints every room, zone and bulb name, and marks the ones in use.
 rooms:
-  living_room: Living room
-  front_bedroom: Main Bedroom             # the front bedroom is "Main Bedroom" in the Hue app
+  living_room: {room: Living room, full: true}     # indoors: full brightness so it shows outside
+  front_bedroom: {room: Main Bedroom, full: true}  # the front bedroom is "Main Bedroom" in the Hue app
   porch: {lights: [Porch 1, Porch 2]}     # the two porch lights (in the "Front yard" room)
   lamp_post: {lights: [Side Pole Light]}  # by the driveway

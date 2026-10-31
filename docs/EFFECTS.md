@@ -50,7 +50,9 @@ The two front rooms' Philips Hue lights follow each scene too, through
 **off** whenever the show is not running, unless they have been handed to the
 house with `h` in the console, which puts them back as they were. Colours match the eaves; the rooms
 add movement Hue can do smoothly (no strobing: Hue limits how fast bulbs can
-be changed, and it is a house, not a club).
+be changed, and it is a house, not a club). Both indoor rooms run at full
+brightness (`full: true` in hue.yaml): the colours below are the hues, and
+any `bri` in show.yaml is ignored for them.
 
 | # | Scene | Living room | Front bedroom |
 |---|---|---|---|

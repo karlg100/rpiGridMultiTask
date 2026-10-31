@@ -132,7 +132,11 @@ scene's setting as JSON, retained, on `<prefix>/hue/<name>/set`, and
 calls and runs the animation. Which Hue room a light name means is set in
 `/etc/haunt/hue.yaml`: a Hue room or zone, or a list of bulbs by name
 (`porch: {lights: [Porch left, Porch right]}`), with an optional `floor`
-(percent) below which the light never dims while the show runs. The rooms switch **off** whenever the show is not
+(percent) below which the light never dims while the show runs, and an
+optional `full: true` that runs it at full brightness whatever the scene's
+`bri` and however dark its colours (the hue is kept; pulses, flicker and
+lightning still dip by their `low`). The indoor rooms use `full: true` so
+they can be seen from the street. The rooms switch **off** whenever the show is not
 running: show stopped, director offline, or `haunt hue` stopped.
 
 **Handing the rooms back to the house.** Press `h` in the console (or send

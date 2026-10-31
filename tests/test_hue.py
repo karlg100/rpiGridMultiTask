@@ -653,3 +653,47 @@ def test_director_hue_command_is_retained_persisted_and_toggles(tmp_path):
     again.cmd("hue", value=True)
     again.run(0.2)
     assert again.hub.retained["haunt/hue/control"] == "show"
+
+
+# --------------------------------------------------------------------------
+# full: true (indoor rooms at full brightness)
+# --------------------------------------------------------------------------
+
+def test_full_colour_keeps_hue_drops_darkness():
+    assert hue.full_color("#600000") == "#ff0000"
+    assert hue.full_color("#000000") == "#ffffff"
+    assert hue.full_color("#20ff40") == "#20ff40"
+    for c in ("#0a1a40", "#5a00a0", "#a00060"):
+        x1, y1, _ = hue.rgb_to_xy(c)
+        x2, y2, lvl = hue.rgb_to_xy(hue.full_color(c))
+        assert abs(x1 - x2) < 0.001 and abs(y1 - y2) < 0.001 and lvl == 1.0
+
+
+def test_full_room_ignores_bri_and_dark_colours_but_still_pulses():
+    cfg = {"living_room": dict(CFG["living_room"], full=True), "front_bedroom": CFG["front_bedroom"]}
+    bus, clock, br = Bus(), Clock(), FakeBridge()
+    a = HueAgent(cfg, br, bus, clock=clock, rng=random.Random(1), rate=100, group_rate=100)
+    for t, p in (("haunt/hue/control", "show"), ("haunt/director/online", "1"),
+                 ("haunt/director/state", '{"phase": "running"}')):
+        a.handle(t, p)
+    setting(a, "living_room", {"color": "#600000", "bri": 110})
+    setting(a, "front_bedroom", {"color": "#600000", "bri": 110})
+    a.tick()
+    by = dict(br.puts)
+    assert by["/resource/grouped_light/g-lr"]["dimming"] == {"brightness": 100.0}
+    assert by["/resource/light/f1"]["dimming"]["brightness"] < 20            # not full: as the show says
+    br.puts.clear()
+    setting(a, "living_room", {"color": "#5a00a0", "animation": "pulse", "period": 2, "low": 0.25})
+    run(a, clock, 4)
+    levels = {b["dimming"]["brightness"] for p, b in br.puts if p.endswith("g-lr") and "dimming" in b}
+    assert levels == {100.0, 25.0}
+
+
+def test_hue_config_full(tmp_path):
+    f = tmp_path / "hue.yaml"
+    f.write_text("rooms:\n  lr: {room: Living room, full: true}\n  p: Porch\n")
+    cfg = hue.load_config(str(f), need_mqtt=False)
+    assert cfg["rooms"]["lr"]["full"] is True and cfg["rooms"]["p"]["full"] is False
+    f.write_text("rooms:\n  lr: {room: Living room, full: 1}\n")
+    with pytest.raises(Exception, match="full"):
+        hue.load_config(str(f), need_mqtt=False)

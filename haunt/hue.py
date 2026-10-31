@@ -45,7 +45,9 @@ A show light is a Hue room or zone, or a list of bulbs by name (``lights:``
 in hue.yaml), handy when outdoor lights share one Hue room. ``floor: 30``
 (percent) keeps a light from going dimmer than that while the show runs
 (through pulses and lightning); it does not stop the light switching off
-when the show is over. Nothing uses it by default.
+when the show is over. ``full: true`` runs a light at full brightness: the
+scene's ``bri`` is ignored and dark colours keep their hue but not their
+darkness (pulses, flicker and lightning still dip by their ``low``).
 
 Hue asks for no more than about 10 light commands a second and 1 room
 command a second; commands are queued and the newest command for a bulb
@@ -388,10 +390,40 @@ def restore_body(r: dict) -> dict:
     return body
 
 
+def full_color(color: Optional[str]) -> Optional[str]:
+    """The same hue at full strength: scale #rrggbb so its largest channel is ff."""
+    if not color:
+        return color
+    def lin(c):
+        return ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92
+
+    def enc(c):
+        return 1.055 * c ** (1 / 2.4) - 0.055 if c > 0.0031308 else c * 12.92
+    rgb = [lin(int(color[i:i + 2], 16) / 255.0) for i in (1, 3, 5)]
+    top = max(rgb)
+    if top == 0:
+        return "#ffffff"
+    # scaled in linear light, so the chromaticity (the Hue colour) is unchanged
+    return "#%02x%02x%02x" % tuple(int(round(enc(c / top) * 255)) for c in rgb)
+
+
+def at_full(s: dict) -> dict:
+    """A setting at full brightness (see ``full:`` in hue.yaml)."""
+    if not s.get("on", True):
+        return s
+    s = dict(s, bri=255)
+    if s.get("colors"):
+        s["colors"] = [full_color(c) for c in s["colors"]]
+    if s.get("color"):
+        s["color"] = full_color(s["color"])
+    return s
+
+
 class Room:
     def __init__(self, name: str, group: Optional[str], bulbs: List[Bulb], rng=None,
-                 floor: float = 0.0):
+                 floor: float = 0.0, full: bool = False):
         self.floor = float(floor or 0.0)     # minimum brightness %, while on
+        self.full = bool(full)               # ignore bri and colour darkness
         self.name = name
         self.group = group
         self.bulbs = bulbs
@@ -442,6 +474,8 @@ class Room:
     def start(self, s: dict, now: float) -> list:
         """Switch to setting ``s``. Returns the commands to send now."""
         prev_native = set(b.id for b in self.native)
+        if self.full:
+            s = at_full(s)
         self.s = s
         self.events = []
         self.next_bulb = {}
@@ -680,7 +714,7 @@ class HueAgent:
             if old and [b.id for b in old.bulbs] == [b.id for b in info["lights"]]:
                 continue
             self.rooms[name] = Room(real, info["group"], info["lights"], self.rng,
-                                    floor=c.get("floor") or 0.0)
+                                    floor=c.get("floor") or 0.0, full=c.get("full", False))
             if self.applied[name] != "released":
                 self.applied[name] = None      # (re)apply what it should be showing
             log.info("%s -> Hue %s %r: %s", name, info["kind"], real, info["lights"])
@@ -855,9 +889,9 @@ def load_config(path: Optional[str], bridge: Optional[str] = None,
             r = dict(room)
         else:
             r = {"room": str(room)}
-        unknown = set(r) - {"room", "lights", "floor", "topic"}
+        unknown = set(r) - {"room", "lights", "floor", "full", "topic"}
         if unknown:
-            raise ConfigError(["hue config: rooms.%s: unknown setting %r (room, lights, floor)" % (name, k)
+            raise ConfigError(["hue config: rooms.%s: unknown setting %r (room, lights, floor, full)" % (name, k)
                                for k in sorted(unknown)])
         if r.get("lights") is not None:
             if isinstance(r["lights"], str):
@@ -871,6 +905,9 @@ def load_config(path: Optional[str], bridge: Optional[str] = None,
         if isinstance(fl, bool) or not isinstance(fl, (int, float)) or not 0 <= fl <= 100:
             raise ConfigError("hue config: rooms.%s: floor must be 0-100 (percent)" % name)
         r["floor"] = float(fl)
+        if not isinstance(r.get("full", False), bool):
+            raise ConfigError("hue config: rooms.%s: full must be true or false" % name)
+        r["full"] = bool(r.get("full", False))
         r.setdefault("topic", "%s/hue/%s" % (prefix, name))
         rooms[str(name)] = r
     if not rooms:
