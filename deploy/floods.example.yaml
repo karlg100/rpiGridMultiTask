@@ -18,6 +18,7 @@ workers: 3     # light commands in flight at once (more only queues in the hub)
 fps: 5         # animation frames a second; only lights that change are sent
 idle: off      # when the show is not running: off | leave (hands off) | a setting, e.g. "#ff6a00"
 max_bri: 255   # cap every light's brightness (1-255); lower it when the solar batteries are low
+keepalive: 20   # re-send a lit flood this often (s): in motion mode they switch themselves off ~30 s after a command
 
 # show.yaml light name: its Home Assistant lights, in order along the house.
 # First = the Window (player 1) end, last = the Wall (player 2) end.

@@ -494,7 +494,8 @@ class FloodAgent:
     def __init__(self, rows_cfg: Dict[str, dict], ha, bus, prefix: str = "haunt",
                  clock: Callable[[], float] = time.monotonic, rng=None,
                  rate: float = 5.0, workers: int = 3, fps: float = 5.0, idle="off",
-                 executor=None, resolve_every: float = 30.0, max_bri: int = 255):
+                 executor=None, resolve_every: float = 10.0, max_bri: int = 255,
+                 keepalive: float = 20.0):
         self.cfg = rows_cfg              # show light name -> {"entities": [...], "topic": ...}
         self.ha = ha
         self.bus = bus
@@ -532,6 +533,14 @@ class FloodAgent:
         self.retry_at: Dict[str, float] = {}         # a light that failed on its own: wait
         self.fails: Dict[str, int] = {}
         self.max_bri = max(1, min(255, int(max_bri)))
+        # The SL5C floods are in motion mode: each switches itself off about
+        # 30 s after its last command, and on by itself (last colour) when it
+        # sees movement. So a lit light's state is sent again every
+        # `keepalive` seconds, and a light Home Assistant shows in the wrong
+        # state (off by its timer, on by motion) is put right.
+        self.keepalive = float(keepalive or 0)
+        self.sent_at: Dict[str, float] = {}
+        self.corrected = 0
         self.hold_until = 0.0
         self.resolve_every = resolve_every
         self.next_resolve = 0.0
@@ -617,6 +626,20 @@ class FloodAgent:
             if self.desired.get(e, "unset") != "unset":
                 self.since[e] = self.clock()
         self.skip = skip
+        # Put right lights that changed by themselves (timer off, motion on).
+        now = self.clock()
+        for e, want in self.desired.items():
+            st = (states.get(e) or {}).get("state")
+            if e in skip or e in self.busy or want == "unset" or st not in ("on", "off"):
+                continue
+            if self.sent.get(e, "unset") != want or now - self.sent_at.get(e, now) < 5.0:
+                continue                             # in flight, or HA has not caught up yet
+            if (st == "on") != (want is not OFF):
+                self.corrected += 1
+                log.info("%s was %s by itself (%s); sending it again", e, st,
+                         "motion?" if st == "on" else "its 30 s timer?")
+                self.sent[e] = "drifted"
+                self.since[e] = now
 
     def _status(self, name: str, text: str) -> None:
         if self.status.get(name) == text:
@@ -672,6 +695,7 @@ class FloodAgent:
                 self.fails.pop(e, None)
                 self.retry_at.pop(e, None)
                 self.sent[e] = state
+                self.sent_at[e] = now
                 if self.desired.get(e, "unset") == state:
                     self.since.pop(e, None)
                 else:
@@ -772,6 +796,13 @@ class FloodAgent:
                 scale = self.max_bri / 255.0
                 for e, (color, bri) in zip(ents, row.frame(now)):
                     self._want(e, light_state(color, bri * scale), now, fade)
+            if self.keepalive:
+                for e, want in self.desired.items():
+                    if (want not in ("unset", OFF) and e not in self.busy and e not in self.skip
+                            and self.sent.get(e, "unset") == want
+                            and now - self.sent_at.get(e, now) >= self.keepalive):
+                        self.sent[e] = "refresh"        # same state again: restarts its timer
+                        self.since.setdefault(e, now)
         self.dispatch()
 
     def all_off(self, wait: float = 3.0) -> None:
@@ -801,6 +832,8 @@ FLOODS_DEFAULTS = {
     "fps": 5.0,                          # animation frames a second
     "idle": "off",                       # when the show is not running: off | leave | a setting
     "max_bri": 255,                      # cap on every light's brightness (0-255), e.g. to spare batteries
+    "keepalive": 20.0,                   # re-send a lit light this often (s): the floods switch
+                                         # themselves off ~30 s after a command; 0 = never
     "rows": {},
 }
 
@@ -933,7 +966,7 @@ def main(cfg: dict, dry_run: bool = False) -> None:
         bus = MqttBus(cfg["mqtt"], "floods", will=(online, "0"), birth=(online, "1"))
     agent = FloodAgent(cfg["rows"], ha, bus, prefix=prefix, rate=cfg["rate"],
                        workers=cfg["workers"], fps=cfg["fps"], idle=cfg["idle"],
-                       max_bri=cfg["max_bri"])
+                       max_bri=cfg["max_bri"], keepalive=float(cfg["keepalive"] or 0))
     if dry_run:
         agent._status = lambda name, text: log.info("%s: %s", name, text)
     log.info("Home Assistant %s; rows: %s", ha.url,

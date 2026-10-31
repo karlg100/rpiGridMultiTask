@@ -44,7 +44,8 @@ class FakeHA:
         self.light = {}
 
     def states(self):
-        return {e: {"entity_id": e, "state": "unavailable" if e in self.unavailable else "on",
+        return {e: {"entity_id": e, "state": "unavailable" if e in self.unavailable
+                     else ("on" if self.light.get(e) else "off"),
                     "attributes": {"supported_features": self.features}} for e in self.ents}
 
     def turn_on(self, entities, rgb, brightness, transition=None):
@@ -421,3 +422,37 @@ def test_fast_chase_lights_every_light_in_order():
     heads = [c[1][0] for c in ha.calls if c[0] == "on" and c[3] == 255 and len(c[1]) == 1]
     order = [int(e.rsplit("_", 1)[1]) for e in heads]
     assert order[:15] == list(range(1, 16))
+
+
+# --------------------------------------------------------------------------
+# motion mode: the floods switch themselves off after ~30 s, and on with motion
+# --------------------------------------------------------------------------
+
+def test_lit_lights_are_resent_before_their_timer_runs_out():
+    agent, ha, bus, clock = make(keepalive=20.0)
+    go(agent, "#ff6a00")
+    run(agent, clock, 2.0)
+    assert len([c for c in ha.calls if c[0] == "on"]) == len(ENTS)
+    run(agent, clock, 17.0)
+    assert len([c for c in ha.calls if c[0] == "on"]) == len(ENTS)   # nothing yet (19 s in)
+    run(agent, clock, 3.0)
+    assert len([c for c in ha.calls if c[0] == "on"]) == 2 * len(ENTS)   # each once more, same colour
+    go(agent, "off")
+    run(agent, clock, 2.0)
+    n = len(ha.calls)
+    run(agent, clock, 45.0)
+    assert len(ha.calls) == n                                        # off lights are left off
+
+
+def test_lights_that_change_by_themselves_are_put_right():
+    agent, ha, bus, clock = make(keepalive=0, resolve_every=5.0)
+    go(agent, "#ff6a00")
+    run(agent, clock, 8.0)
+    ha.light[ENTS[3]] = None                         # its 30 s timer: off by itself
+    run(agent, clock, 6.0)
+    assert ha.light[ENTS[3]] is not None and agent.corrected == 1
+    go(agent, "off")
+    run(agent, clock, 8.0)
+    ha.light[ENTS[5]] = ((255, 0, 0), 20)            # someone walked past: on by itself
+    run(agent, clock, 6.0)
+    assert ha.light[ENTS[5]] is None and agent.corrected == 2
