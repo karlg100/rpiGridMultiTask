@@ -106,6 +106,9 @@ class Director:
         self.disabled = set()     # scene names
         self.hue = True           # the show drives the Hue rooms (False: left to the house)
         self.forced_off = set()   # outputs forced off from the console (kept across restarts)
+        self.test = None          # test mode: {"scene": i, "light": name|"all", "pattern": ...}
+        self.test_pending = False # enter test mode once the show has stopped
+        self.light_status = {}    # WLED lights: "online" / "offline" from <topic>/status
         self.unmute = {}          # (scene, pid) -> level to return to
         self._dirty_at = None
         self._load_state()
@@ -117,6 +120,8 @@ class Director:
 
         bus.subscribe(self.topics.all_players)
         bus.subscribe(self.topics.director_cmd)
+        self._wled_status = {}
+        self._subscribe_light_status()
 
         self.outputs = Outputs(show.outputs, bus, clock, self.note)
         self._restore_overrides()
@@ -347,6 +352,11 @@ class Director:
         self.publish()
 
     def _tick_stopped(self, now):
+        if self.test_pending:
+            self.test_pending = False
+            self._enter_test()
+
+    def _tick_test(self, now):
         pass
 
     def _tick_waiting(self, now):
@@ -489,9 +499,24 @@ class Director:
 
     # -- incoming --------------------------------------------------------
 
+    def _subscribe_light_status(self) -> None:
+        """WLED controllers report online/offline on <topic>/status (their last will)."""
+        for name, cfg in self.show.lights.items():
+            if cfg.get("type", "wled") == "wled":
+                topic = cfg["topic"] + "/status"
+                if topic not in self._wled_status:
+                    self.bus.subscribe(topic)
+                self._wled_status[topic] = name
+
     def handle(self, topic: str, payload: str) -> None:
         if topic == self.topics.director_cmd:
             return self.command(payload)
+        if topic in self._wled_status:
+            state = payload.strip().lower()
+            if self.light_status.get(self._wled_status[topic]) != state:
+                self.light_status[self._wled_status[topic]] = state
+                self._playlist_dirty = True
+            return
         parsed = self.topics.parse_player(topic)
         if not parsed:
             return
@@ -553,6 +578,13 @@ class Director:
         if fn is None:
             self.note("unknown command %r" % name, "warning")
             return
+        if self.phase == "test" and name == "stop":
+            self._leave_test()
+            self.publish(force=True)
+            return
+        if self.phase == "test" and name in ("start", "goto", "next", "prev", "restart",
+                                             "toggle", "resume"):
+            self._leave_test(lights_off=False)     # the show takes over from test mode
         try:
             fn(cmd)
         except (KeyError, TypeError, ValueError) as exc:
@@ -701,6 +733,100 @@ class Director:
             self.note("%s: %s" % (self.pname(pid), "mono" if now else "stereo"))
         self.send(pid, out)
 
+    # -- test mode -------------------------------------------------------
+
+    TEST_COLORS = {"white": "#ffffff", "red": "#ff0000", "green": "#00ff00", "blue": "#0000ff"}
+    TEST_PATTERNS = ("scene", "white", "red", "green", "blue", "off")
+
+    def _test_setting(self, name: str, pattern: str):
+        """What light ``name`` shows for a test pattern (parsed for its type)."""
+        from . import floods as _floods
+        from . import hue as _hue
+        from .config import parse_light
+        kind = self.show.lights[name].get("type", "wled")
+        if pattern == "scene":
+            scene = self.show.scenes[self.test["scene"]]
+            return scene.lights.get(name, {"on": False, "color": None})
+        if pattern == "off":
+            return {"on": False, "color": None}
+        color = self.TEST_COLORS[pattern]
+        if kind == "hue":
+            return _hue.parse_setting(color)
+        if kind == "floods":
+            return _floods.parse_setting(color)
+        if kind == "wled":
+            return parse_light({"effect": "Solid", "color": color, "bri": 255})
+        return parse_light(color)
+
+    def _enter_test(self) -> None:
+        self.phase = "test"
+        self.t_phase = self.clock()
+        self.paused = False
+        self.outputs.all_off()
+        self.test = {"scene": self.index, "light": "all", "pattern": "scene"}
+        self.note("TEST MODE: lights show scene %d; the videos stay off" % (self.index + 1))
+        self._test_apply("all", "scene")
+
+    def _leave_test(self, lights_off: bool = True) -> None:
+        if self.phase != "test":
+            return
+        if lights_off:
+            self.set_lights({n: {"on": False, "color": None} for n in self.show.lights})
+        self.outputs.all_off()
+        self.test = None
+        self.phase = "stopped"
+        self.t_phase = self.clock()
+        self.note("test mode off")
+
+    def _test_apply(self, light: str, pattern: str) -> None:
+        names = list(self.show.lights) if light == "all" else [light]
+        self.set_lights({n: self._test_setting(n, pattern) for n in names})
+        self.test.update(light=light, pattern=pattern)
+
+    def _cmd_test(self, cmd):
+        """Test mode on/off ({"value": bool}; no value toggles). Turning it on
+        stops the show first if it is running."""
+        on = bool(cmd["value"]) if "value" in cmd else self.phase != "test" and not self.test_pending
+        if not on:
+            self.test_pending = False
+            self._leave_test()
+            return
+        if self.phase == "test":
+            return
+        if self.phase in ("stopped", "waiting"):
+            self.phase = "stopped"
+            self._enter_test()
+        else:
+            self.note("stopping the show for test mode")
+            self.test_pending = True
+            self._cmd_stop({})
+
+    def _cmd_test_scene(self, cmd):
+        """Show a scene's lights in test mode: {"index": i} or {"delta": +1/-1}."""
+        if self.phase != "test":
+            raise ValueError("not in test mode")
+        n = len(self.show.scenes)
+        i = int(cmd["index"]) if "index" in cmd else self.test["scene"] + int(cmd.get("delta", 1))
+        self.test["scene"] = i % n
+        self.index = self.test["scene"]           # "start" from here plays this scene
+        scene = self.show.scenes[self.index]
+        self.note("test: scene %d %s" % (self.index + 1, scene.name))
+        self._test_apply("all", "scene")
+        self._touch()
+
+    def _cmd_test_light(self, cmd):
+        """{"name": light or "all", "pattern": scene|white|red|green|blue|off}"""
+        if self.phase != "test":
+            raise ValueError("not in test mode")
+        name = str(cmd.get("name", "all"))
+        pattern = str(cmd.get("pattern", "scene")).lower()
+        if name != "all" and name not in self.show.lights:
+            raise ValueError("no light called %r" % name)
+        if pattern not in self.TEST_PATTERNS:
+            raise ValueError("pattern must be one of %s" % ", ".join(self.TEST_PATTERNS))
+        self._test_apply(name, pattern)
+        self.note("test: %s %s" % ("all lights" if name == "all" else name, pattern))
+
     def _restore_overrides(self) -> None:
         for name in sorted(self.forced_off):
             if name in self.outputs.defs:
@@ -771,6 +897,9 @@ class Director:
             self._restore_overrides()
             self.outputs.all_off(force=True)
         self.show = new
+        self._subscribe_light_status()
+        if self.test:
+            self.test["scene"] = min(self.test["scene"], len(new.scenes) - 1)
         names = [s.name for s in new.scenes]
         if current in names:
             self.index = names.index(current)
@@ -841,6 +970,10 @@ class Director:
             "lights": self.current_lights,
             "outputs": self.outputs.snapshot(),
             "hue": "show" if self.hue else "released",
+            "test": dict(self.test, scene_name=self.show.scenes[self.test["scene"]].name)
+            if self.test and self.phase == "test" else None,
+            "test_pending": self.test_pending,
+            "light_status": self.light_status,
             "log": list(self.logbuf),
             "ver": __version__,
         }

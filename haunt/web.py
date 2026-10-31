@@ -27,7 +27,7 @@ import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional
 
-from .console import Model, scene_length
+from .console import Model, light_health, scene_length
 from .lights import effect_label
 from .topics import Topics
 
@@ -41,6 +41,7 @@ COMMANDS = {
     "master": ("delta", "value"), "level": ("player", "delta", "value"),
     "mute": ("player",), "reset_levels": (), "output": ("name", "value"),
     "mono": ("player", "value"),
+    "test": ("value",), "test_scene": ("index", "delta"), "test_light": ("name", "pattern"),
 }
 
 PUSH_EVERY = 0.25        # at most this often, while things change
@@ -109,6 +110,8 @@ class WebApp:
                 elif k == "value" and isinstance(v, bool):
                     pass
                 elif k == "value" and name == "output" and v in ("on", "off", "auto"):
+                    pass
+                elif k == "pattern" and v in ("scene", "white", "red", "green", "blue", "off"):
                     pass
                 elif isinstance(v, bool) or not isinstance(v, (int, float)):
                     return "%s: %s must be a number" % (name, k)
@@ -181,6 +184,7 @@ class WebApp:
                 item["text"] = effect_label(cur) or cur.get("color") or "on"
             if name in m.light_online:
                 item["online"] = m.light_online[name]
+            item["health"] = list(light_health(m, name, kind or "wled"))
             lights.append(item)
         out_defs = m.playlist.get("outputs") or {}
         outputs = [{"name": k, "label": o.get("label", k), "on": bool(o.get("on")),
@@ -199,6 +203,7 @@ class WebApp:
             "master_level": st.get("master_level"),
             "hue": st.get("hue") if has_hue else None, "hue_online": m.hue_online,
             "players": players, "scenes": scenes, "lights": lights, "outputs": outputs,
+            "test": st.get("test"), "test_pending": bool(st.get("test_pending")),
             "log": (st.get("log") or [])[-12:],
             "version": self.version,
         }

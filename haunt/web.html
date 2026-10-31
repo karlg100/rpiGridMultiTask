@@ -135,6 +135,23 @@ details summary::-webkit-details-marker { display: none; }
          transition: opacity .2s; pointer-events: none; max-width: 90vw; }
 .toast.show { opacity: 1; }
 .empty { color: var(--dim); font-size: 14px; }
+body.testing .show-only { display: none !important; }
+.test-pill { color: var(--blue); }
+.trow { padding: 12px 0; border-top: 1px solid var(--line); }
+.trow:first-child { border-top: 0; padding-top: 0; }
+.trow .head { display: flex; align-items: baseline; gap: 8px; }
+.trow .head b { font-size: 16px; }
+.trow .head .kind { color: var(--dim); font-size: 12px; }
+.trow .head .now { margin-left: auto; font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 5px; }
+.trow .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex: none; }
+.trow .health { font-size: 13px; margin-top: 3px; display: flex; align-items: center; gap: 6px; color: var(--dim); }
+.trow .health.ok { color: var(--green); } .trow .health.err { color: var(--red); } .trow .health.warn { color: var(--yellow); }
+.pats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+.pats button { border: 0; border-radius: 10px; min-height: 44px; font-size: 13px; font-weight: 600; background: var(--card2); color: var(--text); padding: 0 2px; }
+.pats button.on { outline: 2px solid var(--text); outline-offset: -2px; }
+.pats .p-white { background: #e9e6ef; color: #111; } .pats .p-red { background: #c8202e; }
+.pats .p-green { background: #1d9a45; } .pats .p-blue { background: #2557d6; }
+.pats .p-off { background: #000; color: var(--dim); } .pats .p-scene { background: #3a3446; }
 </style>
 </head>
 <body>
@@ -146,7 +163,26 @@ details summary::-webkit-details-marker { display: none; }
 
 <div class="banner" id="banner"></div>
 
-<section class="card" id="status">
+<section class="card" id="test-card" hidden>
+  <div class="status-top">
+    <span class="pill test-pill">TEST MODE</span>
+    <span class="count" id="t-count"></span>
+  </div>
+  <div class="scene" id="t-scene">&nbsp;</div>
+  <div class="hint" id="t-hint">Every light shows this scene's look; the videos stay off.</div>
+  <div class="transport" style="margin-top:12px">
+    <button class="btn" data-cmd="test_scene" data-delta="-1" aria-label="Previous scene">
+      <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>Prev scene</button>
+    <button class="btn big" data-cmd="start" aria-label="Play this scene">
+      <svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>Play this scene</button>
+    <button class="btn" data-cmd="test_scene" data-delta="1" aria-label="Next scene">
+      <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5l11 7-11 7z"/></svg>Next scene</button>
+  </div>
+  <button class="btn wide" style="width:100%" data-cmd="test" data-value="leave">Leave test mode (lights off)</button>
+</section>
+<section class="card" id="t-lights" hidden></section>
+
+<section class="card show-only" id="status">
   <div class="status-top">
     <span class="pill" id="phase">…</span>
     <span class="count" id="count"></span>
@@ -157,7 +193,7 @@ details summary::-webkit-details-marker { display: none; }
   <div class="times"><span id="pos">--:--</span><span id="dur">--:--</span></div>
 </section>
 
-<div class="transport">
+<div class="transport show-only">
   <button class="btn" data-cmd="prev" aria-label="Previous scene">
     <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>Previous</button>
   <button class="btn big" id="toggle" data-cmd="toggle" aria-label="Pause or resume">
@@ -165,14 +201,14 @@ details summary::-webkit-details-marker { display: none; }
   <button class="btn" data-cmd="next" aria-label="Next scene">
     <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5l11 7-11 7z"/></svg>Next</button>
 </div>
-<div class="row2">
+<div class="row2 show-only">
   <button class="btn wide" data-cmd="restart">
     <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>Restart scene</button>
   <button class="btn wide danger" id="startstop">
     <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg><span>Stop show</span></button>
 </div>
 
-<section class="card">
+<section class="card show-only">
   <div class="stepper">
     <div class="label"><b>Master volume</b><span>all players</span></div>
     <button class="sbtn" data-cmd="master" data-delta="-5" aria-label="Quieter">−</button>
@@ -195,14 +231,14 @@ details summary::-webkit-details-marker { display: none; }
   <div id="outputs"></div>
 </section>
 
-<h2>Players</h2>
-<section class="card" id="players"><div class="empty">waiting for the players…</div></section>
+<h2 class="show-only">Players</h2>
+<section class="card show-only" id="players"><div class="empty">waiting for the players…</div></section>
 
-<h2>Lights &amp; effects</h2>
-<section class="card"><div class="chips" id="lights"></div></section>
+<h2 class="show-only">Lights &amp; effects</h2>
+<section class="card show-only"><div class="chips" id="lights"></div></section>
 
-<h2>Playlist</h2>
-<section class="card list" id="playlist"><div class="empty">waiting for the director…</div></section>
+<h2 class="show-only">Playlist</h2>
+<section class="card list show-only" id="playlist"><div class="empty">waiting for the director…</div></section>
 
 <h2>More</h2>
 <section class="card">
@@ -210,6 +246,7 @@ details summary::-webkit-details-marker { display: none; }
     <button class="btn wide" data-cmd="reset_levels">Undo level changes</button>
     <button class="btn wide" data-cmd="reload">Reload show file</button>
   </div>
+  <button class="btn wide show-only" id="testbtn" style="width:100%;margin-top:10px">Test mode: check the lights scene by scene</button>
   <details id="logbox">
     <summary><h2 style="margin:16px 0 0">Log ▸</h2></summary>
     <div class="log" id="log"></div>
@@ -255,7 +292,9 @@ document.addEventListener("click", (ev) => {
   if (b.dataset.player) extra.player = b.dataset.player;
   if (b.dataset.index) extra.index = Number(b.dataset.index);
   if (b.dataset.name) extra.name = b.dataset.name;
-  if (b.dataset.value) extra.value = b.dataset.cmd === "mono" ? b.dataset.value === "mono" : b.dataset.value;
+  if (b.dataset.value) extra.value = b.dataset.cmd === "mono" ? b.dataset.value === "mono"
+      : (b.dataset.cmd === "test" ? b.dataset.value === "enter" : b.dataset.value);
+  if (b.dataset.pattern) extra.pattern = b.dataset.pattern;
   send(b.dataset.cmd, extra);
   if (b.closest(".acts")) { openRow = null; render(); }
 });
@@ -267,6 +306,17 @@ $("startstop").addEventListener("click", () => {
   if (Date.now() - confirmStop < 4000) { confirmStop = 0; send("stop"); }
   else { confirmStop = Date.now(); setTimeout(render, 4100); }
   render();
+});
+let confirmTest = 0;
+$("testbtn").addEventListener("click", () => {
+  const live = S && S.phase && S.phase !== "stopped" && S.phase !== "waiting";
+  if (live && Date.now() - confirmTest > 4000) {
+    confirmTest = Date.now(); $("testbtn").textContent = "Tap again: this stops the show";
+    setTimeout(() => { confirmTest = 0; render(); }, 4100);
+    return;
+  }
+  confirmTest = 0;
+  send("test", {value: true});
 });
 $("hue-show").addEventListener("click", () => send("hue", {value: true}));
 $("hue-house").addEventListener("click", () => send("hue", {value: false}));
@@ -314,6 +364,31 @@ function render() {
   document.querySelectorAll(".transport .btn, .row2 .btn, .sbtn").forEach(b => b.disabled = !ok);
 
   $("master").textContent = S.master_level === null || S.master_level === undefined ? "--" : Math.round(S.master_level) + "%";
+
+  // test mode
+  const testing = !!(S.test || S.test_pending);
+  document.body.classList.toggle("testing", testing);
+  $("test-card").hidden = !testing;
+  $("t-lights").hidden = !S.test;
+  if (!confirmTest) $("testbtn").textContent = "Test mode: check the lights scene by scene";
+  if (testing) {
+    const T = S.test;
+    $("t-count").textContent = T ? "scene " + (T.scene + 1) + " of " + S.count : "";
+    $("t-scene").textContent = T ? T.scene_name : "Stopping the show…";
+    const PATS = [["white", "White"], ["red", "Red"], ["green", "Green"], ["blue", "Blue"], ["off", "Off"], ["scene", "Scene"]];
+    const pats = (name) => '<div class="pats">' + PATS.map(([p, l]) => '<button class="p-' + p
+      + (T && T.light === name && T.pattern === p ? " on" : "") + '" data-cmd="test_light" data-name="' + esc(name)
+      + '" data-pattern="' + p + '">' + l + "</button>").join("") + "</div>";
+    if (T) setHTML("t-lights", '<div class="trow"><div class="head"><b>All lights</b><span class="kind">every light at once</span></div>'
+      + pats("all") + "</div>" + (S.lights || []).map(l => {
+        const h = l.health || ["dim", ""];
+        const sw = (l.colors || []).map(c => '<span class="sw" style="background:' + esc(c) + '"></span>').join("");
+        return '<div class="trow"><div class="head"><b>' + esc(l.name.replace(/_/g, " ")) + '</b><span class="kind">' + esc(l.type)
+          + '</span><span class="now">' + sw + esc(l.text || "") + "</span></div>"
+          + '<div class="health ' + h[0] + '"><span class="dot ' + (h[0] === "dim" ? "" : h[0]) + '"></span>' + esc(h[1]) + "</div>"
+          + pats(l.name) + "</div>";
+      }).join(""));
+  }
 
   // Hue
   const hc = $("hue-card");

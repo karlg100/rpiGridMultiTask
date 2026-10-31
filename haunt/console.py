@@ -35,7 +35,7 @@ HELP = [
     "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo",
     "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
     "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)",
-    "q quit (the show keeps running)",
+    "t test mode (lights scene by scene, without the videos)   q quit (the show keeps running)",
 ]
 
 
@@ -79,6 +79,8 @@ class Model:
         self.hue_online = None  # the `haunt hue` agent, None = never heard
         self.floods_online = None  # the `haunt floods` agent
         self.light_online = {}     # light name -> bool, for controllers watched by `haunt devwatch`
+        self.hue_status = {}       # Hue room -> "ok: ..." / "error: ..." / "released to the house"
+        self.floods_status = {}    # floods row -> "ok: ..." / "error: ..."
 
     def _player(self, pid):
         return self.players.setdefault(pid, {"online": False, "state": {}, "seen": -1e9})
@@ -97,6 +99,10 @@ class Model:
                 self.hue_online = payload == "1"
             elif topic == t.floods_online:
                 self.floods_online = payload == "1"
+            elif topic.startswith(t.prefix + "/hue/") and topic.endswith("/status"):
+                self.hue_status[topic[len(t.prefix) + 5:-7]] = payload
+            elif topic.startswith(t.prefix + "/floods/") and topic.endswith("/status"):
+                self.floods_status[topic[len(t.prefix) + 8:-7]] = payload
             elif t.parse_light_online(topic):
                 name = t.parse_light_online(topic)
                 if payload.strip():
@@ -140,7 +146,47 @@ STATE_STYLE = {"playing": "ok", "ready": "warn", "loading": "warn", "paused": "i
                "stopping": "warn", "ended": "dim", "idle": "dim", "error": "err"}
 
 PHASE_STYLE = {"running": "ok", "preparing": "warn", "ending": "warn", "gap": "warn",
-               "stopped": "err", "waiting": "err"}
+               "stopped": "err", "waiting": "err", "test": "info"}
+
+TEST_PATTERN_KEYS = {"1": "white", "2": "red", "3": "green", "4": "blue", "0": "off", "s": "scene"}
+
+
+def light_health(model: "Model", name: str, kind: str):
+    """(style, text) for a light's controller: is it there to be tested?"""
+    st = model.state or {}
+    if kind == "wled":
+        s = (st.get("light_status") or {}).get(name)
+        if s == "online":
+            return "ok", "WLED online"
+        if s == "offline":
+            return "err", "WLED OFFLINE"
+        return "dim", "WLED: no status"
+    if kind == "particle":
+        on = model.light_online.get(name)
+        if on is None:
+            return "dim", "no status"
+        return ("ok", "online") if on else ("err", "OFFLINE")
+    if kind == "hue":
+        if model.hue_online is False:
+            return "err", "hue agent OFFLINE"
+        if st.get("hue") == "released":
+            return "warn", "with the house (h gives it to the show)"
+        text = model.hue_status.get(name, "")
+        if text.startswith("ok"):
+            return "ok", text[3:].strip(" :") or "ok"
+        if text.startswith("error"):
+            return "err", text
+        return "dim", text or "no status"
+    if kind == "floods":
+        if model.floods_online is False:
+            return "err", "floods agent OFFLINE"
+        text = model.floods_status.get(name, "")
+        if text.startswith("ok"):
+            return ("warn" if ";" in text else "ok"), text[3:].strip(" :") or "ok"
+        if text.startswith("error"):
+            return "err", text
+        return "dim", text or "no status"
+    return "dim", ""
 
 
 def rule(title: str, width: int, ch: str) -> Line:
@@ -178,7 +224,7 @@ def scene_length(scene: dict):
 
 def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[str] = None,
            unicode: bool = True, broker: str = "", connected: bool = True,
-           wallclock=time.time, show_help: bool = False) -> List[Line]:
+           wallclock=time.time, show_help: bool = False, test_sel: int = 0) -> List[Line]:
     sym = UNICODE if unicode else ASCII
     ell = sym["ell"]
     w = max(40, width)
@@ -217,6 +263,11 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         seg.append((pad(st.get("scene", ""), room, ell), "bold"))
         seg.append((tail, ""))
         lines.append(seg)
+
+    if connected and model.director_online and (st.get("phase") == "test" or st.get("test_pending")):
+        lines += render_test(model, w, height - len(lines) if height else 0, sym, test_sel, wallclock)
+        lines = lines[:height] if height else lines
+        return [_fit(line, w) for line in lines]
 
     # ---- players -------------------------------------------------------
     lines.append(rule("PLAYERS", w, sym["rule"]))
@@ -358,7 +409,7 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
 
     # ---- how much room is left -----------------------------------------
     help_lines = HELP if show_help else [" ? keys   space pause   n next   p prev   r restart   "
-                                         "enter go to   s stop/start   +/- master   [ ] level   h hue   q quit"]
+                                         "enter go to   s stop/start   +/- master   [ ] level   h hue   t test   q quit"]
     logbuf = st.get("log") or []
     fixed = len(lines) + 2 + 1 + len(help_lines)   # playlist rule+header, log rule, help
     spare = max(0, height - fixed)
@@ -497,6 +548,83 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
     return [_fit(line, w) for line in lines]
 
 
+def render_test(model: Model, w: int, height: int, sym: dict, test_sel: int, wallclock) -> List[Line]:
+    """The test-mode screen: a scene's lights without its videos, one light at a time."""
+    st = model.state
+    ell = sym["ell"]
+    t = st.get("test") or {}
+    lines: List[Line] = [rule("TEST MODE", w, sym["rule"])]
+    if not t:
+        lines.append([(" stopping the show for test mode" + ell, "warn")])
+        return lines
+    lines.append([(" scene %d/%d  " % (t.get("scene", 0) + 1, st.get("count", 0)), ""),
+                  (pad(t.get("scene_name", ""), max(10, w - 62), ell), "bold"),
+                  ("  n/p next/prev scene   g play it   t leave test", "dim")])
+    lines.append([(" showing: ", "dim"),
+                  ("all lights" if t.get("light") == "all" else t.get("light", ""), ""),
+                  (" " + t.get("pattern", ""), "bold"), ("    videos stay off", "dim")])
+    lines.append(rule("LIGHTS", w, sym["rule"]))
+    light_types = model.playlist.get("lights") or {}
+    rows = ["all"] + list(light_types)
+    sel = max(0, min(test_sel, len(rows) - 1))
+    name_w = max(12, max(len(r) for r in rows) + 1)
+    for i, name in enumerate(rows):
+        mark = sym["cur"] if i == sel else " "
+        if name == "all":
+            lines.append([(mark, "bold"), (pad("ALL lights", name_w), "bold"),
+                          ("every light below at once", "dim")])
+            continue
+        kind = (light_types.get(name) or {}).get("type", "wled")
+        style, text = light_health(model, name, kind)
+        cur = (st.get("lights") or {}).get(name)
+        seg: Line = [(mark, "bold"), (pad(name, name_w), "bold"), (pad(kind, 9), "dim")]
+        if cur is None:
+            seg.append((pad("?", 26), "dim"))
+        elif not cur.get("on", True):
+            seg.append((pad("off", 26), "dim"))
+        else:
+            sw: Line = []
+            for c in (cur.get("colors") or [cur.get("color")])[:3]:
+                sw.append((sym["swatch"] * 2, ("rgb", c) if c else "dim"))
+            label = effect_label(cur) or cur.get("color") or "on"
+            used = sum(len(x) for x, _ in sw)
+            seg += sw + [(" " + pad(label, max(1, 25 - used)), "")]
+        seg.append((sym["dot"] + " ", style))
+        seg.append((clip_text(text, max(5, w - name_w - 40), ell), style))
+        lines.append(seg)
+    outs = st.get("outputs") or {}
+    if outs:
+        lines.append(rule("FOG & MISTER", w, sym["rule"]))
+        oseg: Line = [(" ", "")]
+        for name, o in outs.items():
+            on = o.get("on")
+            label = o.get("label", name)
+            key = output_key(label)
+            oseg.append((label + (" (%s) " % key if key else " "), "bold"))
+            txt = "ON" if on else "off"
+            if on and o.get("burst") is not None:
+                txt = "ON %ds" % max(0, round(o["burst"]))
+            oseg.append((sym["dot"] + " " + txt, "warn" if on else "dim"))
+            ov = o.get("override")
+            oseg.append(("  FORCED " + ov.upper() if ov else "  auto", "err" if ov == "off" else ("warn" if ov else "dim")))
+            oseg.append(("     ", ""))
+        lines.append(oseg)
+    help_lines = [
+        " up/down pick a light (or ALL)   1 white  2 red  3 green  4 blue  0 off  s the scene's look",
+        " n/p next/prev scene   f fog  w mister  h Hue show/house   g play this scene   t leave test   q quit",
+    ]
+    logbuf = st.get("log") or []
+    room = (height - len(lines) - len(help_lines) - 1) if height else 4
+    if room > 0:
+        lines.append(rule("LOG", w, sym["rule"]))
+        for ts, level, text in logbuf[-room:]:
+            stamp = time.strftime("%H:%M:%S", time.localtime(ts))
+            lines.append([(" " + stamp + " ", "dim"),
+                          (clip_text(text, w - 11, ell), {"warning": "warn", "error": "err"}.get(level, ""))])
+    lines += [[(clip_text(h, w, ell), "dim")] for h in help_lines]
+    return lines
+
+
 def _fit(line: Line, width: int) -> Line:
     """Cut a line of segments to at most ``width`` characters."""
     out, room = [], width
@@ -526,6 +654,7 @@ class Controller:
         self.show_help = False
         self.quit = False
         self._last_index = None
+        self.test_sel = 0          # test mode: 0 = all lights, then each light in show order
 
     def send(self, _cmd: str, **kw) -> None:
         self.bus.publish(self.model.topics.director_cmd, dict(kw, cmd=_cmd))
@@ -544,10 +673,42 @@ class Controller:
         if n:
             self.sel = max(0, min(self.sel, n - 1))
 
+    def test_key(self, k: str) -> bool:
+        """Keys on the test screen. Returns True if handled."""
+        rows = ["all"] + list(self.model.playlist.get("lights") or {})
+        light = rows[max(0, min(self.test_sel, len(rows) - 1))]
+        if k in ("UP", "k"):
+            self.test_sel = (self.test_sel - 1) % len(rows)
+        elif k in ("DOWN", "j"):
+            self.test_sel = (self.test_sel + 1) % len(rows)
+        elif k in ("n", "RIGHT", "]"):
+            self.send("test_scene", delta=1)
+        elif k in ("p", "LEFT", "["):
+            self.send("test_scene", delta=-1)
+        elif k in TEST_PATTERN_KEYS or k == "ENTER":
+            self.send("test_light", name=light, pattern=TEST_PATTERN_KEYS.get(k, "scene"))
+        elif k == "g":
+            self.follow = True
+            self.send("start")
+        elif k in ("t", "ESC"):
+            self.send("test", value=False)
+        else:
+            return False
+        return True
+
     def key(self, k: str) -> None:
-        """k is a single character or one of UP DOWN HOME END ENTER TAB."""
+        """k is a single character or one of UP DOWN LEFT RIGHT HOME END ENTER TAB ESC."""
         n = len(self.model.scenes())
         cur = self.model.state.get("index", 0)
+        st = self.model.state
+        if k in ("q", "Q"):
+            self.quit = True
+            return
+        if st.get("phase") == "test" and self.test_key(k):
+            return
+        if k == "t":
+            self.send("test", value=True)
+            return
         if k in ("q", "Q"):
             self.quit = True
         elif k == "?":
@@ -641,6 +802,10 @@ def run_curses(model: Model, bus: Bus, broker: str = "", unicode: bool = True) -
     ctl = Controller(model, bus)
 
     def main(stdscr):
+        try:
+            curses.set_escdelay(25)       # Esc leaves test mode without a 1 s wait
+        except AttributeError:
+            pass
         curses.curs_set(0)
         stdscr.timeout(100)
         colors = curses.has_colors()
@@ -674,14 +839,15 @@ def run_curses(model: Model, bus: Bus, broker: str = "", unicode: bool = True) -
 
         keymap = {curses.KEY_UP: "UP", curses.KEY_DOWN: "DOWN", curses.KEY_HOME: "HOME",
                   curses.KEY_END: "END", curses.KEY_ENTER: "ENTER", 10: "ENTER", 13: "ENTER",
-                  9: "TAB"}
+                  9: "TAB", curses.KEY_LEFT: "LEFT", curses.KEY_RIGHT: "RIGHT", 27: "ESC"}
         while not ctl.quit:
             for topic, payload in bus.poll():
                 model.handle(topic, payload)
             ctl.sync()
             h, w = stdscr.getmaxyx()
             lines = render(model, w, h, sel=ctl.sel, focus=ctl.focus, unicode=unicode,
-                           broker=broker, connected=bus.connected, show_help=ctl.show_help)
+                           broker=broker, connected=bus.connected, show_help=ctl.show_help,
+                           test_sel=ctl.test_sel)
             stdscr.erase()
             for y, line in enumerate(lines[:h]):
                 x = 0

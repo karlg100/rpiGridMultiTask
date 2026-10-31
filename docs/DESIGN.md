@@ -128,6 +128,12 @@ next  prev  restart  pause  resume  toggle  stop  start  reload
 {"cmd":"enable","index":5,"value":false}
 {"cmd":"reset_levels"}
 hue   or  {"cmd":"hue","value":false}  (Hue rooms to the house; true gives them back)
+{"cmd":"output","name":"fog_machine","value":"on|off|auto"}
+{"cmd":"mono","player":"2","value":false}       (no value toggles; the player keeps it)
+{"cmd":"test","value":true}                      test mode on/off (stops the show first)
+{"cmd":"test_scene","delta":1}  or "index":N     test mode: every light shows that scene's look
+{"cmd":"test_light","name":"front_lights","pattern":"red"}   name or "all";
+                                  pattern: scene white red green blue off
 ```
 
 Player commands (`haunt/player/<id>/cmd`), sent by the director:

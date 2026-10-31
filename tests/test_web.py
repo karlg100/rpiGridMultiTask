@@ -169,3 +169,20 @@ def test_players_say_online_and_which_machine(web):
     s = json.loads(get(base + "/api/state")[2])
     assert s["players"][1]["online"] is False and s["players"][1]["state"] == "offline"
     assert 29 <= s["players"][1]["age"] <= 32       # from the player's own timestamp, not when we heard it
+
+
+def test_test_mode_from_the_phone(web):
+    sim, app, base = web
+    sim.run(1)
+    assert post(base + "/api/cmd", {"cmd": "test", "value": True})[0] == 200
+    sim.run_until(lambda: sim.director.phase == "test", limit=20)
+    assert post(base + "/api/cmd", {"cmd": "test_light", "name": "front_lights", "pattern": "purple"})[0] == 400
+    assert post(base + "/api/cmd", {"cmd": "test_light", "name": "front_lights", "pattern": "blue"})[0] == 200
+    sim.run(0.3)
+    app.pump(0)
+    s = json.loads(get(base + "/api/state")[2])
+    assert s["test"]["light"] == "front_lights" and s["test"]["pattern"] == "blue"
+    assert all("health" in l for l in s["lights"])
+    post(base + "/api/cmd", {"cmd": "test", "value": False})
+    sim.run(0.3)
+    assert sim.director.phase == "stopped"

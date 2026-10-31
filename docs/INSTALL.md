@@ -111,6 +111,19 @@ with a second tap to confirm, master and per-player levels, mute, play or
 skip any scene, Hue show/house, reload); both can be used at once. No
 password: anyone on the home network can use it.
 
+### Test mode (console `t`, or "Test mode" on the phone page)
+
+For checking the lights before the show. It stops the show (the videos stay
+off) and puts every light into a scene's look; `n`/`p` (Next/Prev scene on the
+phone) step through the scenes. Each light cluster is listed with whether its
+controller is answering (WLED online, the graveyard Photon online, the Hue
+room found, how many floods are in Home Assistant), and can be set on its own,
+or all at once, to white, red, green, blue, off or the scene's look (console:
+up/down to pick, `1` white `2` red `3` green `4` blue `0` off `s` scene). Fog
+and mister keep their overrides (`f`, `w`). `g` (Play this scene) starts the
+show at the scene being looked at; `t` or Esc leaves test mode with the
+lights off. The Hue rooms only take part when they are with the show (`h`).
+
 `h` in the console hands the Hue rooms back to the house (and back again);
 see "Handing the rooms back to the house" in SHOW-FILE.md.
 

@@ -575,3 +575,92 @@ def test_mono_from_the_console_reaches_the_player():
     sim.cmd("mono", player="2", value=True)
     sim.run(0.5)
     assert sim.agents["2"].mono is True
+
+
+# -- test mode ---------------------------------------------------------------------
+
+def _test_show():
+    import copy
+    from sim import SHOW
+    show = copy.deepcopy(SHOW)
+    show["lights"]["living_room"] = {"type": "hue"}
+    show["lights"]["floods"] = {"type": "floods"}
+    show["scenes"][0]["lights"]["living_room"] = {"color": "#ff6a00", "effect": "candle"}
+    show["scenes"][1]["lights"]["living_room"] = "#00ff00"
+    return show
+
+
+def test_test_mode_flips_scene_lights_and_patterns():
+    sim = Sim(_test_show())
+    sim.run_until(lambda: sim.director.phase == "running" and sim.director.started)
+    sim.cmd("test")                                   # stops the show first
+    sim.run_until(lambda: sim.director.phase == "test", limit=20)
+    assert all(a.state in ("idle", "ended") for a in sim.agents.values())
+    snap = sim.director.snapshot()
+    assert snap["test"]["scene"] == 0 and snap["test"]["pattern"] == "scene"
+    lr = lambda: json.loads(sim.hub.retained["haunt/hue/living_room/set"])
+    assert lr()["effect"] == "candle"
+    sim.cmd("test_scene", delta=1)
+    sim.run(0.2)
+    assert sim.director.test["scene"] == 1 and lr()["color"] == "#00ff00"
+    sim.cmd("test_light", name="front_lights", pattern="red")
+    sim.run(0.2)
+    api = [p for t, p in sim.hub.history if t == "front_lights/api"][-1]
+    seg = json.loads(api)["seg"][0]
+    assert seg["fx"] == 0 and seg["col"][0] == [255, 0, 0]
+    sim.cmd("test_light", name="all", pattern="white")
+    sim.run(0.2)
+    assert lr()["color"] == "#ffffff"
+    assert json.loads(sim.hub.retained["haunt/floods/floods/set"])["color"] == "#ffffff"
+    assert [p for t, p in sim.hub.history if t == "graveyard/color/g"][-1] == "255"
+    sim.cmd("test_light", name="nope", pattern="red")  # refused, nothing breaks
+    sim.cmd("test")                                    # off: everything dark, show stays stopped
+    sim.run(0.5)
+    assert sim.director.phase == "stopped" and sim.director.test is None
+    assert lr()["on"] is False and [p for t, p in sim.hub.history if t == "front_lights"][-1] == "OFF"
+
+
+def test_start_from_test_mode_plays_the_scene_being_looked_at():
+    sim = Sim(_test_show())
+    sim.run(1)
+    sim.cmd("stop")
+    sim.run_until(lambda: sim.director.phase == "stopped")
+    sim.cmd("test")
+    sim.run(0.2)
+    assert sim.director.phase == "test"
+    sim.cmd("test_scene", index=2)
+    sim.cmd("start")
+    sim.run_until(lambda: sim.director.phase == "running", limit=30)
+    assert sim.director.scene.name == "C" and sim.director.test is None
+
+
+def test_wled_status_is_followed():
+    sim = Sim(_test_show())
+    sim.run(0.5)
+    sim.hub.client().publish("front_lights/status", "offline", retain=True)
+    sim.run(0.3)
+    assert sim.director.snapshot()["light_status"] == {"front_lights": "offline"}
+
+
+def test_console_test_mode_screen_and_keys():
+    sim = Sim(_test_show())
+    sim.run(1)
+    sim.hub.client().publish("front_lights/status", "online", retain=True)
+    sim.hub.client().publish("haunt/hue/living_room/status", "ok: Living room, 4 bulb(s)", retain=True)
+    sim.hub.client().publish("haunt/light/graveyard/online", "0", retain=True)
+    model, ctl, text = console(sim)
+    ctl.key("t")
+    sim.run_until(lambda: sim.director.phase == "test", limit=20)
+    model, ctl2, text = console(sim, width=110, height=40)
+    assert "TEST MODE" in text and "ALL lights" in text
+    assert "WLED online" in text and "graveyard" in text and "OFFLINE" in text and "Living room, 4 bulb(s)" in text
+    ctl2.key("DOWN")                                   # front_lights
+    ctl2.key("2")                                      # red
+    sim.run(0.3)
+    assert sim.director.test["light"] == "front_lights" and sim.director.test["pattern"] == "red"
+    ctl2.key("n")
+    sim.run(0.3)
+    assert sim.director.test["scene"] == 1 and sim.director.test["pattern"] == "scene"
+    ctl2.key("ESC")
+    sim.run(0.3)
+    assert sim.director.phase == "stopped"
