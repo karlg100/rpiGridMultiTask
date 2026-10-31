@@ -34,11 +34,11 @@ per-scene colours.
 | 5 | Cat Crow Canzonet | **Dancing Shadows**, purple and green | Spotlights sweeping past each other, like the cat and crow flitting around the witch. | on | |
 | 6 | Frankenstein | **Lightning**, blue-white over dark green | Random lightning strikes for the lab scene; the Wraiths appear in the flashes. | | 6 s at start |
 | 7 | Thriller | **Colorwaves**, Magred palette | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. | | 8 s at start, 6 s at 7:00 when the zombie animation starts |
-| 8 | In the Hall (Mountain King) | **Running**, orange on black | Marching waves along the eaves. Speed is a slider, so it could be cued to accelerate with the music. | | |
-| 9 | Ghostbusters | **Meteor** with "Smooth" on, green | Green streaks with fading tails: slimers zipping along the roof. | | |
-| 10 | Spooky Scary Skeletons | **Bouncing Balls**, white on dark purple | Bone-white balls bouncing to a bouncy song. | | |
-| 11 | Seance | **Aurora**, purple and teal | A slow, shifting spirit glow. | on | 5 s at start |
-| 12 | Witching Hour | **Fairytwinkle**, purple and green | Witchy sparkle that starts from a lit strip. | on | |
+| 8 | Witching Hour | **Fairytwinkle**, purple and green | Witchy sparkle that starts from a lit strip. | on | |
+| 9 | In the Hall (Mountain King) | **Running**, orange on black | Marching waves along the eaves. Speed is a slider, so it could be cued to accelerate with the music. | | |
+| 10 | Ghostbusters | **Meteor** with "Smooth" on, green | Green streaks with fading tails: slimers zipping along the roof. | | |
+| 11 | Spooky Scary Skeletons | **Bouncing Balls**, white on dark purple | Bone-white balls bouncing to a bouncy song. | | |
+| 12 | Seance | **Aurora**, purple and teal | A slow, shifting spirit glow. | on | 5 s at start |
 | 13 | Guardians Inferno | **Bpm**, Party palette | Pulses on the beat across a party palette: disco. | | |
 | 14 | Ghosts n Stuff | **Juggle** | Eight coloured dots chasing with trails: EDM energy. | | |
 | 15 | Stayin' Undead | **Glitter**, Party palette | Rainbow with white sparkles: a disco ball. | | |
@@ -61,11 +61,11 @@ be changed, and it is a house, not a club).
 | 5 | Cat Crow Canzonet | drift purple/green, 3 s | the same, colours swapped |
 | 6 | Frankenstein | lightning over dark blue, ~7 s | lightning over dark green, ~9 s (out of step) |
 | 7 | Thriller | drift red/magenta; **at 7:00 sickly green flicker** as the zombies rise | magenta pulse; green flicker at 7:00 |
-| 8 | In the Hall | orange/red pulse, 2.5 s (the march) | the same, alternate colours |
-| 9 | Ghostbusters | slime-green drift | flickering slimer green |
-| 10 | Spooky Scary Skeletons | bone white/purple drift, 1.5 s | white pulse |
-| 11 | Seance | slow purple/teal drift | seance candle |
-| 12 | Witching Hour | sparkle (drift on bulbs without it) | purple/green drift |
+| 8 | Witching Hour | sparkle (drift on bulbs without it) | purple/green drift |
+| 9 | In the Hall | orange/red pulse, 2.5 s (the march) | the same, alternate colours |
+| 10 | Ghostbusters | slime-green drift | flickering slimer green |
+| 11 | Spooky Scary Skeletons | bone white/purple drift, 1.5 s | white pulse |
+| 12 | Seance | slow purple/teal drift | seance candle |
 | 13 | Guardians Inferno | five-colour disco drift, 1 s | the same, reversed |
 | 14 | Ghosts n Stuff | blue/pink pulse | cyan/magenta/blue drift, 1 s |
 | 15 | Stayin' Undead | prism (drift on bulbs without it) | disco drift |
@@ -90,11 +90,11 @@ zombie green with the rooms. A white-only bulb just follows the brightness.
 | 5 | Cat Crow Canzonet | slow purple/green drift | green |
 | 6 | Frankenstein | its own lightning | sputtering blue-white |
 | 7 | Thriller | red (green at 7:00) | magenta pulse (green flicker at 7:00) |
-| 8 | In the Hall | orange pulse with the march | orange |
-| 9 | Ghostbusters | slime green | green flicker |
-| 10 | Spooky Scary Skeletons | white/purple drift | bone white |
-| 11 | Seance | teal | candle |
-| 12 | Witching Hour | purple | green flicker |
+| 8 | Witching Hour | purple | green flicker |
+| 9 | In the Hall | orange pulse with the march | orange |
+| 10 | Ghostbusters | slime green | green flicker |
+| 11 | Spooky Scary Skeletons | white/purple drift | bone white |
+| 12 | Seance | teal | candle |
 | 13 | Guardians Inferno | disco drift | disco drift |
 | 14 | Ghosts n Stuff | blue/pink pulse | cyan/magenta drift |
 | 15 | Stayin' Undead | disco drift | prism |

@@ -197,6 +197,25 @@ scenes:
                   porch: {color: "#40ff20", bri: 200},
                   lamp_post: {color: "#40ff20", animation: flicker, period: 0.7, low: 0.3}}}
 
+  - name: Witching Hour
+    master: 2
+    players:
+      1:
+        file: "BOO_BooTime_Holl_H.mp4"
+        level: 60   # old omxplayer vol: -15
+        loop: true
+      2:
+        file: "WH - Song1 - Witching Hour - Hollusion-TV-Window/WH_Song 1_WitchingHour_Holl_H.mp4"
+        level: 100  # old omxplayer vol: 0
+    lights:
+      front_lights: {effect: Fairytwinkle, colors: ["#9d00ff", "#20ff40"], speed: 100, intensity: 128, transition: 1}   # witch sparkle
+      graveyard: "#c80000"
+      living_room: {colors: ["#9d00ff", "#20ff40"], effect: sparkle}                               # witch sparkle (drift where a bulb has no sparkle)
+      front_bedroom: {colors: ["#20ff40", "#9d00ff"], animation: drift, period: 4}
+      porch: {color: "#9d00ff", bri: 200}
+      lamp_post: {color: "#20ff40", animation: flicker, period: 1.0, low: 0.5}
+    outputs: {pond_mister: on}
+
   - name: In the Hall
     master: 1
     players:
@@ -270,25 +289,6 @@ scenes:
       lamp_post: {color: "#ff7a20", effect: candle}
     outputs: {pond_mister: on, fog_machine: 5}
 
-  - name: Witching Hour
-    master: 2
-    players:
-      1:
-        file: "BOO_BooTime_Holl_H.mp4"
-        level: 60   # old omxplayer vol: -15
-        loop: true
-      2:
-        file: "WH - Song1 - Witching Hour - Hollusion-TV-Window/WH_Song 1_WitchingHour_Holl_H.mp4"
-        level: 100  # old omxplayer vol: 0
-    lights:
-      front_lights: {effect: Fairytwinkle, colors: ["#9d00ff", "#20ff40"], speed: 100, intensity: 128, transition: 1}   # witch sparkle
-      graveyard: "#c80000"
-      living_room: {colors: ["#9d00ff", "#20ff40"], effect: sparkle}                               # witch sparkle (drift where a bulb has no sparkle)
-      front_bedroom: {colors: ["#20ff40", "#9d00ff"], animation: drift, period: 4}
-      porch: {color: "#9d00ff", bri: 200}
-      lamp_post: {color: "#20ff40", animation: flicker, period: 1.0, low: 0.5}
-    outputs: {pond_mister: on}
-
   - name: Guardians Inferno
     master: 1
     players:
@@ -333,9 +333,10 @@ scenes:
         file: "Stayin-Undead-fast-cut-v2.mp4"
         level: 100
       2:
-        file: "Bone Chillers - Numskulls/Wall/BC_Numskulls_Wall_H.mp4"
-        level: 60
+        file: "Stayin-Undead-scrim-loop-78s.mp4"
+        level: 0    # muted; the window carries the song
         loop: true
+        start_after: 5
     lights:
       front_lights: {effect: Glitter, palette: Party, speed: 128, intensity: 128, transition: 1}   # disco-ball sparkle
       graveyard: "#00c800"
