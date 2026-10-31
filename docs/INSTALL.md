@@ -97,6 +97,20 @@ too, or list the bulbs by name: `porch: {lights: [Porch left, Porch right]}`).
 `--list` prints every name the bridge has. Each room reports
 `ok: ...` or the error on `haunt/hue/<name>/status`.
 
+### Phone console, also on home-pi
+
+```sh
+sudo deploy/install.sh web && sudo systemctl start haunt-web
+```
+
+Then open **http://home-pi.local:8080** (or http://192.168.1.45:8080) on the
+phone, on the home Wi-Fi. In Safari, Share > Add to Home Screen makes it an
+app with its own icon. It shows the same things as the terminal console and
+has the same controls (pause/resume, next, previous, restart, stop/start
+with a second tap to confirm, master and per-player levels, mute, play or
+skip any scene, Hue show/house, reload); both can be used at once. No
+password: anyone on the home network can use it.
+
 `h` in the console hands the Hue rooms back to the house (and back again);
 see "Handing the rooms back to the house" in SHOW-FILE.md.
 

@@ -1,0 +1,17 @@
+# Installed by deploy/install.sh, which fills in @USER@ and @DIR@.
+# The phone console: http://home-pi.local:8080 on the home network.
+[Unit]
+Description=Halloween show phone console (haunt web)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USER@
+WorkingDirectory=@DIR@
+EnvironmentFile=-/etc/haunt/env
+ExecStart=/usr/bin/python3 -m haunt web show.yaml --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

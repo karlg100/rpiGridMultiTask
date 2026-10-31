@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Haunt">
+<meta name="theme-color" content="#0c0a10">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<title>Haunt</title>
+<style>
+:root {
+  --bg: #0c0a10; --card: #17141d; --card2: #201c28; --line: #2c2735;
+  --text: #ece8f2; --dim: #8f879c; --orange: #ff7a1a; --green: #3ccf6e;
+  --yellow: #f1c232; --red: #ff4d5e; --blue: #6aa8ff; --purple: #a77bff;
+  --r: 14px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body {
+  font: 16px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 14px)
+           calc(env(safe-area-inset-bottom) + 24px) calc(env(safe-area-inset-left) + 14px);
+  max-width: 640px; margin: 0 auto; -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+header { display: flex; align-items: center; gap: 10px; padding: 4px 2px 10px; }
+header h1 { font-size: 20px; margin: 0; letter-spacing: .08em; color: var(--orange); }
+header .show { color: var(--dim); font-size: 14px; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); display: inline-block; flex: none; }
+.dot.ok { background: var(--green); } .dot.warn { background: var(--yellow); } .dot.err { background: var(--red); }
+.dot.info { background: var(--blue); }
+.card { background: var(--card); border-radius: var(--r); padding: 14px; margin-bottom: 12px; }
+.banner { background: #3a1218; color: #ffc9cf; border-radius: var(--r); padding: 12px 14px; margin-bottom: 12px; display: none; }
+.banner.show { display: block; }
+.status-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pill { font-size: 13px; font-weight: 700; letter-spacing: .06em; padding: 4px 10px; border-radius: 99px; background: var(--card2); }
+.pill.ok { color: var(--green); } .pill.warn { color: var(--yellow); } .pill.err { color: var(--red); } .pill.info { color: var(--blue); }
+.count { color: var(--dim); font-size: 14px; }
+.scene { font-size: 26px; font-weight: 700; margin: 10px 0 4px; line-height: 1.15; }
+.next { color: var(--yellow); font-size: 14px; min-height: 18px; }
+.bar { height: 8px; background: var(--card2); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--orange); border-radius: 99px; }
+.bar.small { height: 5px; margin-top: 8px; }
+.bar.small > i { background: var(--green); }
+.times { display: flex; justify-content: space-between; color: var(--dim); font-size: 13px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.transport { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 10px; margin-bottom: 10px; }
+.btn { background: var(--card2); border: 0; border-radius: var(--r); min-height: 64px; display: flex; flex-direction: column;
+       align-items: center; justify-content: center; gap: 2px; font-size: 13px; color: var(--dim); }
+.btn svg { width: 28px; height: 28px; fill: var(--text); }
+.btn.big { background: var(--orange); color: #1a0d00; font-weight: 600; }
+.btn.big svg { fill: #1a0d00; width: 34px; height: 34px; }
+.btn:active { filter: brightness(1.3); transform: scale(.98); }
+.btn[disabled] { opacity: .35; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.btn.wide { min-height: 48px; flex-direction: row; gap: 8px; font-size: 15px; color: var(--text); }
+.btn.wide svg { width: 20px; height: 20px; }
+.btn.danger { color: var(--red); } .btn.danger svg { fill: var(--red); }
+.btn.confirm { background: var(--red); color: #fff; } .btn.confirm svg { fill: #fff; }
+.btn.go { color: var(--green); } .btn.go svg { fill: var(--green); }
+h2 { font-size: 13px; letter-spacing: .1em; color: var(--dim); margin: 18px 4px 8px; font-weight: 600; text-transform: uppercase; }
+.stepper { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stepper .label { flex: 1; }
+.stepper .label b { display: block; font-size: 15px; }
+.stepper .label span { color: var(--dim); font-size: 13px; }
+.stepper .val { min-width: 58px; text-align: center; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sbtn { width: 48px; height: 48px; border-radius: 12px; border: 0; background: var(--card2); font-size: 26px; line-height: 1; }
+.sbtn:active { filter: brightness(1.4); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--card2); border-radius: 12px; padding: 4px; gap: 4px; margin-top: 10px; }
+.seg button { border: 0; background: transparent; border-radius: 9px; min-height: 44px; font-weight: 600; color: var(--dim); }
+.seg button.on { background: var(--purple); color: #fff; }
+.seg button.on.house { background: var(--blue); }
+.hint { color: var(--dim); font-size: 13px; margin-top: 8px; }
+.player { padding: 12px 0; border-top: 1px solid var(--line); }
+.player:first-of-type { border-top: 0; padding-top: 0; }
+.player .head { display: flex; align-items: center; gap: 8px; }
+.player .name { font-weight: 700; }
+.player .role { font-size: 12px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 1px 8px; }
+.player .role.master { color: var(--orange); border-color: #5a3410; }
+.player .st { margin-left: auto; font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 6px; }
+.player .file { color: var(--dim); font-size: 13px; margin-top: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.player .err { color: var(--red); font-size: 13px; margin-top: 4px; }
+.player .ctl { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.player .ctl .val { min-width: 64px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.player .ctl .mute { margin-left: auto; height: 44px; padding: 0 14px; border-radius: 12px; border: 0; background: var(--card2); font-size: 14px; }
+.player .ctl .mute.on { background: var(--red); color: #fff; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { background: var(--card2); border-radius: 10px; padding: 8px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; max-width: 100%; }
+.chip .n { color: var(--dim); }
+.chip .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex: none; }
+.chip.on-out { background: #3b2a06; color: var(--yellow); }
+.list .item { display: flex; align-items: center; gap: 10px; padding: 12px 4px; border-top: 1px solid var(--line); }
+.list .item:first-child { border-top: 0; }
+.list .num { width: 26px; text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; flex: none; }
+.list .nm { flex: 1; min-width: 0; }
+.list .nm b { display: block; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.list .nm span { display: block; color: var(--dim); font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.list .len { color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; flex: none; }
+.list .item.cur { background: #2a1a0c; border-radius: 10px; border-top-color: transparent; }
+.list .item.cur .num, .list .item.cur b { color: var(--orange); }
+.list .item.cur + .item { border-top-color: transparent; }
+.list .item.off b { text-decoration: line-through; color: var(--dim); }
+.list .item .miss { color: var(--red); }
+.acts { display: none; gap: 8px; padding: 0 4px 12px 40px; }
+.acts.open { display: flex; }
+.acts button { flex: 1; min-height: 44px; border: 0; border-radius: 10px; background: var(--card2); font-weight: 600; }
+.acts button.play { background: var(--orange); color: #1a0d00; }
+details summary { list-style: none; cursor: pointer; }
+details summary::-webkit-details-marker { display: none; }
+.log { font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--dim); margin-top: 8px; word-break: break-word; }
+.log .warning { color: var(--yellow); } .log .error { color: var(--red); }
+.more { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 18px);
+         background: #3a1218; color: #ffd5da; padding: 10px 16px; border-radius: 12px; font-size: 14px; opacity: 0;
+         transition: opacity .2s; pointer-events: none; max-width: 90vw; }
+.toast.show { opacity: 1; }
+.empty { color: var(--dim); font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>HAUNT</h1>
+  <div class="show" id="show"></div>
+  <span class="dot" id="conn" title="connection"></span>
+</header>
+
+<div class="banner" id="banner"></div>
+
+<section class="card" id="status">
+  <div class="status-top">
+    <span class="pill" id="phase">…</span>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="scene" id="scene">&nbsp;</div>
+  <div class="next" id="next"></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="times"><span id="pos">--:--</span><span id="dur">--:--</span></div>
+</section>
+
+<div class="transport">
+  <button class="btn" data-cmd="prev" aria-label="Previous scene">
+    <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>Previous</button>
+  <button class="btn big" id="toggle" data-cmd="toggle" aria-label="Pause or resume">
+    <svg viewBox="0 0 24 24" id="toggle-icon"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg><span id="toggle-text">Pause</span></button>
+  <button class="btn" data-cmd="next" aria-label="Next scene">
+    <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5l11 7-11 7z"/></svg>Next</button>
+</div>
+<div class="row2">
+  <button class="btn wide" data-cmd="restart">
+    <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>Restart scene</button>
+  <button class="btn wide danger" id="startstop">
+    <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg><span>Stop show</span></button>
+</div>
+
+<section class="card">
+  <div class="stepper">
+    <div class="label"><b>Master volume</b><span>all players</span></div>
+    <button class="sbtn" data-cmd="master" data-delta="-5" aria-label="Quieter">−</button>
+    <div class="val" id="master">--</div>
+    <button class="sbtn" data-cmd="master" data-delta="5" aria-label="Louder">+</button>
+  </div>
+</section>
+
+<section class="card" id="hue-card" hidden>
+  <div class="stepper"><div class="label"><b>Hue lights</b><span id="hue-sub"></span></div></div>
+  <div class="seg">
+    <button id="hue-show">Show</button>
+    <button id="hue-house">House</button>
+  </div>
+  <div class="hint" id="hue-hint"></div>
+</section>
+
+<h2>Players</h2>
+<section class="card" id="players"><div class="empty">waiting for the players…</div></section>
+
+<h2>Lights &amp; effects</h2>
+<section class="card"><div class="chips" id="lights"></div></section>
+
+<h2>Playlist</h2>
+<section class="card list" id="playlist"><div class="empty">waiting for the director…</div></section>
+
+<h2>More</h2>
+<section class="card">
+  <div class="more">
+    <button class="btn wide" data-cmd="reset_levels">Undo level changes</button>
+    <button class="btn wide" data-cmd="reload">Reload show file</button>
+  </div>
+  <details id="logbox">
+    <summary><h2 style="margin:16px 0 0">Log ▸</h2></summary>
+    <div class="log" id="log"></div>
+  </details>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+let S = null, gotAt = 0, openRow = null, confirmStop = 0;
+
+function mmss(s) {
+  if (s === null || s === undefined || isNaN(s)) return "--:--";
+  s = Math.max(0, Math.floor(s));
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+function esc(t) { return String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function setHTML(id, html) {
+  const el = $(id);
+  if (el._html !== html) { el._html = html; el.innerHTML = html; }
+}
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+async function send(cmd, extra) {
+  try {
+    const r = await fetch("/api/cmd", {method: "POST", headers: {"Content-Type": "application/json"},
+                                       body: JSON.stringify(Object.assign({cmd}, extra || {}))});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) toast(j.error || ("error " + r.status));
+  } catch (e) { toast("can't reach home-pi"); }
+}
+
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-cmd]");
+  if (!b) return;
+  const extra = {};
+  if (b.dataset.delta) extra.delta = Number(b.dataset.delta);
+  if (b.dataset.player) extra.player = b.dataset.player;
+  if (b.dataset.index) extra.index = Number(b.dataset.index);
+  send(b.dataset.cmd, extra);
+  if (b.closest(".acts")) { openRow = null; render(); }
+});
+
+$("startstop").addEventListener("click", () => {
+  if (!S) return;
+  const stopped = !S.phase || S.phase === "stopped" || S.phase === "waiting";
+  if (stopped) { send("start"); return; }
+  if (Date.now() - confirmStop < 4000) { confirmStop = 0; send("stop"); }
+  else { confirmStop = Date.now(); setTimeout(render, 4100); }
+  render();
+});
+$("hue-show").addEventListener("click", () => send("hue", {value: true}));
+$("hue-house").addEventListener("click", () => send("hue", {value: false}));
+$("playlist").addEventListener("click", (ev) => {
+  const it = ev.target.closest(".item");
+  if (!it) return;
+  const i = Number(it.dataset.index);
+  openRow = openRow === i ? null : i;
+  render();
+});
+
+const PHASE = {running: ["RUNNING", "ok"], preparing: ["STARTING", "warn"], ending: ["ENDING", "warn"],
+               gap: ["BETWEEN", "warn"], stopped: ["STOPPED", "err"], waiting: ["WAITING", "err"]};
+const PSTATE = {playing: "ok", ready: "warn", loading: "warn", paused: "info", stopping: "warn",
+                ended: "", idle: "", error: "err", offline: "err"};
+
+function render() {
+  if (!S) return;
+  const ok = S.connected && S.director;
+  $("show").textContent = S.show || "";
+  $("conn").className = "dot " + (S.connected ? "ok" : "err");
+  const ban = $("banner");
+  if (!S.connected) { ban.textContent = "home-pi has lost the MQTT broker; retrying…"; ban.className = "banner show"; }
+  else if (!S.director) { ban.textContent = "The director is not running on home-pi (haunt-director.service)."; ban.className = "banner show"; }
+  else ban.className = "banner";
+
+  let [label, style] = PHASE[S.phase] || [(S.phase || "?").toUpperCase(), ""];
+  if (S.paused) [label, style] = ["PAUSED", "info"];
+  if (!ok) [label, style] = ["OFFLINE", "err"];
+  $("phase").textContent = label; $("phase").className = "pill " + style;
+  $("count").textContent = S.count ? "scene " + (S.index + 1) + " of " + S.count : "";
+  $("scene").textContent = S.scene || " ";
+  $("next").textContent = (S.next !== null && S.next !== undefined && (S.phase === "ending" || S.phase === "gap"))
+      ? "→ next: " + ((S.scenes[S.next] || {}).name || "scene " + (S.next + 1)) : "";
+
+  const stopped = !S.phase || S.phase === "stopped" || S.phase === "waiting";
+  const tg = $("toggle");
+  $("toggle-text").textContent = stopped ? "Start" : (S.paused ? "Resume" : "Pause");
+  $("toggle-icon").innerHTML = (stopped || S.paused) ? '<path d="M7 4l13 8-13 8z"/>' : '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+  tg.dataset.cmd = stopped ? "start" : "toggle";
+  const ss = $("startstop");
+  if (stopped) { ss.className = "btn wide go"; ss.innerHTML = '<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg><span>Start show</span>'; }
+  else if (Date.now() - confirmStop < 4000) { ss.className = "btn wide confirm"; ss.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg><span>Tap again to stop</span>'; }
+  else { ss.className = "btn wide danger"; ss.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg><span>Stop show</span>'; }
+  document.querySelectorAll(".transport .btn, .row2 .btn, .sbtn").forEach(b => b.disabled = !ok);
+
+  $("master").textContent = S.master_level === null || S.master_level === undefined ? "--" : Math.round(S.master_level) + "%";
+
+  // Hue
+  const hc = $("hue-card");
+  if (S.hue) {
+    hc.hidden = false;
+    const house = S.hue === "released";
+    $("hue-show").className = house ? "" : "on";
+    $("hue-house").className = house ? "on house" : "";
+    $("hue-sub").textContent = S.hue_online === false ? "hue agent OFFLINE" : (house ? "left to the house" : "following the show");
+    $("hue-hint").textContent = house ? "The Hue app and switches work normally. Show gives them back to the scenes."
+                                      : "Rooms follow each scene and go off when the show stops. House puts them back as they were.";
+  } else hc.hidden = true;
+
+  // players
+  const cur = (S.scenes || [])[S.index] || {players: {}};
+  setHTML("players", (S.players || []).map(p => {
+    const c = cur.players[p.id];
+    const lvl = c ? c.level : p.level;
+    const lvlText = lvl === null || lvl === undefined ? "--" : (lvl ? Math.round(lvl) + "%" : "mute") + (c && c.overridden ? "*" : "");
+    let sub = p.file ? esc(p.file) : "";
+    if (p.state === "error" && p.error) sub = '<span class="err">' + esc(p.error) + "</span>";
+    else if (p.role === "follower" && !p.playing && S.phase === "running" && p.start_after > (S.pos || 0) + 0.5)
+      sub = "starts in " + mmss(p.start_after - (S.pos || 0));
+    const bar = p.playing && p.dur ? '<div class="bar small"><i data-pid="' + p.id + '"></i></div>' : "";
+    return '<div class="player"><div class="head"><span class="name">' + esc(p.name) + "</span>"
+      + (p.role && p.role !== "unused" ? '<span class="role ' + (p.role === "master" ? "master" : "") + '">' + esc(p.role) + "</span>" : "")
+      + '<span class="st"><span class="dot ' + (PSTATE[p.state] || "") + '"></span>' + esc(p.state) + "</span></div>"
+      + '<div class="file">' + (sub || "&nbsp;") + "</div>" + bar
+      + (c ? '<div class="ctl"><button class="sbtn" data-cmd="level" data-player="' + p.id + '" data-delta="-5" aria-label="Quieter">−</button>'
+        + '<span class="val">' + lvlText + "</span>"
+        + '<button class="sbtn" data-cmd="level" data-player="' + p.id + '" data-delta="5" aria-label="Louder">+</button>'
+        + '<button class="mute ' + (lvl ? "" : "on") + '" data-cmd="mute" data-player="' + p.id + '">' + (lvl ? "Mute" : "Unmute") + "</button></div>" : "")
+      + "</div>";
+  }).join("") || '<div class="empty">no players yet</div>');
+
+  // lights and outputs
+  const chips = (S.lights || []).map(l => {
+    const sw = (l.colors || []).map(c => '<span class="sw" style="background:' + esc(c) + '"></span>').join("");
+    return '<span class="chip"><span class="n">' + esc(l.name.replace(/_/g, " ")) + "</span>" + sw + esc(l.text) + "</span>";
+  }).concat((S.outputs || []).map(o => '<span class="chip ' + (o.on ? "on-out" : "") + '"><span class="n">' + esc(o.label)
+      + "</span>" + (o.on ? (o.burst !== null && o.burst !== undefined ? "ON " + Math.max(0, Math.round(o.burst)) + "s" : "ON") : "off") + "</span>"));
+  setHTML("lights", chips.join("") || '<span class="empty">none</span>');
+
+  // playlist
+  const pnames = {}; (S.players || []).forEach(p => pnames[p.id] = p.name);
+  setHTML("playlist", (S.scenes || []).map(sc => {
+    const curRow = sc.index === S.index;
+    const miss = Object.values(sc.players).some(c => c.missing);
+    const files = Object.entries(sc.players).map(([pid, c]) => (pid === sc.master ? "★" : "") + c.file).join("  ·  ");
+    return '<div class="item' + (curRow ? " cur" : "") + (sc.enabled ? "" : " off") + '" data-index="' + sc.index + '">'
+      + '<span class="num">' + (sc.index + 1) + "</span>"
+      + '<span class="nm"><b>' + esc(sc.name) + (miss ? ' <span class="miss">missing file</span>' : "") + "</b><span>" + esc(files) + "</span></span>"
+      + '<span class="len">' + mmss(sc.len) + "</span></div>"
+      + '<div class="acts' + (openRow === sc.index ? " open" : "") + '">'
+      + '<button class="play" data-cmd="goto" data-index="' + sc.index + '">Play now</button>'
+      + '<button data-cmd="enable" data-index="' + sc.index + '">' + (sc.enabled ? "Skip it" : "Include it") + "</button></div>";
+  }).join("") || '<div class="empty">no playlist</div>');
+
+  setHTML("log", (S.log || []).slice().reverse().map(l => {
+    const t = new Date(l[0] * 1000);
+    return '<div class="' + esc(l[1]) + '">' + t.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", second: "2-digit"})
+      + "  " + esc(l[2]) + "</div>";
+  }).join(""));
+  tick();
+}
+
+// progress bars move smoothly between updates
+function tick() {
+  if (!S) return;
+  const dt = (performance.now() - gotAt) / 1000;
+  const live = S.phase === "running" && !S.paused && S.connected && S.director;
+  let pos = (S.pos || 0) + (live ? dt : 0);
+  const dur = S.dur || (((S.scenes || [])[S.index] || {}).len);
+  if (dur) pos = Math.min(pos, dur);
+  $("bar").style.width = dur ? (100 * pos / dur).toFixed(2) + "%" : "0";
+  $("pos").textContent = S.phase === "running" ? mmss(pos) : "--:--";
+  $("dur").textContent = mmss(dur);
+  document.querySelectorAll("[data-pid]").forEach(el => {
+    const p = (S.players || []).find(x => x.id === el.dataset.pid);
+    if (!p || !p.dur) return;
+    let pp = p.pos + (p.playing ? dt : 0);
+    pp = p.loop ? pp % p.dur : Math.min(pp, p.dur);
+    el.style.width = (100 * pp / p.dur).toFixed(2) + "%";
+  });
+}
+setInterval(tick, 250);
+
+function take(data) { S = data; gotAt = performance.now(); render(); }
+
+let es = null, pollTimer = null;
+function poll() {
+  fetch("/api/state", {cache: "no-store"}).then(r => r.json()).then(take)
+    .catch(() => { $("conn").className = "dot err"; });
+}
+function connect() {
+  if (es) es.close();
+  es = new EventSource("/api/events");
+  es.onmessage = (ev) => { try { take(JSON.parse(ev.data)); } catch (e) {} };
+  es.onopen = () => { clearInterval(pollTimer); pollTimer = null; };
+  es.onerror = () => {
+    $("conn").className = "dot err";
+    if (!pollTimer) pollTimer = setInterval(poll, 2000);
+  };
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { poll(); connect(); } });
+poll(); connect();
+</script>
+</body>
+</html>

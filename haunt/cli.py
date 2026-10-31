@@ -1,4 +1,4 @@
-"""Command line: haunt director | player | dmx | hue | floods | console | demo | check | send"""
+"""Command line: haunt director | player | dmx | hue | floods | console | web | demo | check | send"""
 
 from __future__ import annotations
 
@@ -128,6 +128,13 @@ def cmd_console(args) -> None:
     bus = MqttBus(mqtt, "console")
     bus.subscribe(topics.everything)
     run_curses(Model(topics), bus, broker=mqtt["host"], unicode=_utf8() and not args.ascii)
+
+
+def cmd_web(args) -> None:
+    from . import web
+    _logging(args.verbose)
+    _sigterm_is_ctrl_c()
+    web.main(_mqtt_for_client(args), host=args.host, port=args.port)
 
 
 def cmd_demo(args) -> None:
@@ -287,6 +294,14 @@ def main(argv=None) -> None:
     p.add_argument("--broker", help="MQTT broker host (default: from the show file)")
     p.add_argument("--ascii", action="store_true", help="plain ASCII, no box-drawing characters")
     p.set_defaults(fn=cmd_console)
+
+    p = sub.add_parser("web", help="the console as a web page for a phone (on home-pi; http://home-pi.local:8080)")
+    show_arg(p)
+    p.add_argument("--broker", help="MQTT broker host (default: from the show file)")
+    p.add_argument("--host", default="0.0.0.0", help="address to listen on (default: all)")
+    p.add_argument("--port", type=int, default=8080)
+    p.add_argument("-v", "--verbose", action="store_true")
+    p.set_defaults(fn=cmd_web)
 
     p = sub.add_parser("demo", help="director + pretend players + console in one process")
     show_arg(p)
