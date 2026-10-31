@@ -201,7 +201,7 @@ scenes:
       front_bedroom: {color: "#a00060", animation: pulse, period: 4, low: 0.6}
       porch: {color: "#ff0020"}
       lamp_post: {color: "#c00080", animation: pulse, period: 4, low: 0.6}
-    outputs: {fog_machine: {burst: 6, every: 45}}   # fog: graveyard fog all the way through (plus the 7:00 cue)
+    outputs: {pond_mister: on, fog_machine: {burst: 6, every: 45}}   # mister the whole song (Karl 2026-10-31); fog: graveyard fog all the way through (plus the 7:00 cue)
     cues:
       - {at: 420, outputs: {fog_machine: 6},   # the zombies rise (the animation starts at 420 s)
          lights: {living_room: {colors: ["#40ff20", "#20c000"], animation: flicker, period: 0.9, low: 0.6},
