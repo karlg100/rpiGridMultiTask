@@ -169,7 +169,7 @@ scenes:
         start: 37
       2:
         file: "Phantasms-Rise Of The Wraiths.mp4"
-        level: 100  # old omxplayer vol: 10
+        level: 50   # Karl 2026-10-31: wall at half volume
         start_after: 40
     lights:
       front_lights: {effect: Lightning, colors: ["#e0e8ff", "#1838a0"], speed: 150, intensity: 150, transition: 1}   # strikes over a stormy blue sky (measured 61%; over black it was 10%)
