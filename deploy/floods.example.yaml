@@ -1,0 +1,40 @@
+# /etc/haunt/floods.yaml, on the Pi that runs `haunt floods` (home-pi, next to the director).
+#
+#   python3 -m haunt floods -c /etc/haunt/floods.yaml --list          Home Assistant's lights
+#   python3 -m haunt floods -c /etc/haunt/floods.yaml --list flood    ... only those matching "flood"
+#   python3 -m haunt floods -c /etc/haunt/floods.yaml --walk          light 1, 2, 3 ... in turn: check the order
+#   python3 -m haunt floods -c /etc/haunt/floods.yaml --test floods '{"color":"#ff6a00","animation":"chase"}'
+
+mqtt:
+  host: 192.168.1.244
+  username: home-pi
+  # password comes from HAUNT_MQTT_PASSWORD in /etc/haunt/env
+
+home_assistant: http://192.168.1.244:8123
+token_file: /etc/haunt/ha.token   # a long-lived access token (HA profile > Security); never commit it
+
+rate: 10       # calls a second to Home Assistant (lights needing the same thing share a call)
+workers: 4     # calls in flight at once (each AiDot command takes a moment over Bluetooth)
+fps: 5         # animation frames a second; only lights that change are sent
+idle: off      # when the show is not running: off | leave (hands off) | a setting, e.g. "#ff6a00"
+
+# show.yaml light name: its Home Assistant lights, in order along the house.
+# First = the Window (player 1) end, last = the Wall (player 2) end.
+rows:
+  floods:
+    entities:
+      - light.REPLACE_1
+      - light.REPLACE_2
+      - light.REPLACE_3
+      - light.REPLACE_4
+      - light.REPLACE_5
+      - light.REPLACE_6
+      - light.REPLACE_7
+      - light.REPLACE_8
+      - light.REPLACE_9
+      - light.REPLACE_10
+      - light.REPLACE_11
+      - light.REPLACE_12
+      - light.REPLACE_13
+      - light.REPLACE_14
+      - light.REPLACE_15

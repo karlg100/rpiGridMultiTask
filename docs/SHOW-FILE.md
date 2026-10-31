@@ -176,6 +176,46 @@ lights:
 Hue takes about 10 bulb commands and 1 room command a second, so the
 animations are slow-ish by design: no strobing.
 
+### The flood lights (`type: floods`)
+
+`type: floods` is a row of lights in Home Assistant: the 15 AiDot solar
+floods across the front of the house, 1 at the Window end to 15 at the Wall
+end. The director publishes the scene's setting as JSON, retained, on
+`<prefix>/floods/<name>/set`, and `python3 -m haunt floods` (the
+`haunt-floods` service) works out every light's colour and brightness a few
+times a second and sends the ones that changed to Home Assistant
+(`light.turn_on` / `turn_off`). Which entities make up the row, in order, is
+set in `/etc/haunt/floods.yaml` (`deploy/floods.example.yaml`). The row goes
+**off** whenever the show is not running (or `idle:` says otherwise).
+
+```yaml
+lights:
+  floods: {type: floods}
+
+# in a scene:
+      floods: "#ff6a00"                                            # solid
+      floods: off
+      floods: {colors: ["#ff6a00", "#5a00a0"], pattern: blocks}     # Window half / Wall half
+      floods: {color: "#20ff20", animation: chase, width: 3, period: 2}
+      floods: {color: "#003010", animation: lightning, period: 4, low: 0.3}
+```
+
+| Setting | Meaning |
+|---|---|
+| `color` / `colors` | 1 to 15 colours, laid along the row by `pattern`. A dark colour is a dim light. |
+| `pattern` | `alternate` (default: 1, 2, 1, 2 ...), `blocks` (one block per colour; two colours = Window half and Wall half), `gradient` (blended along the row) |
+| `bri` | 0-255 (default 255) |
+| `animation` | `solid` (default), `drift` (pattern crawls along the row), `flicker` (each light on its own, flame-like), `pulse` (whole row breathes; colours swap each breath), `lightning` (held dim, white strikes across part or all of the row), `chase` (a group runs along the row with a tail), `wave` (brightness rolls along the row), `sparkle` (held dim, random lights flare) |
+| `period` | seconds: drift = per step, flicker = how often, pulse = one breath, lightning = average gap, chase = one pass of the row, wave = one wave, sparkle = average gap per light |
+| `low` | dimmest point as a fraction of `bri` |
+| `direction` | `right` (1 to 15, default), `left`, `bounce` (chase) |
+| `width` | chase: how many lights in the moving group (default 3) |
+| `flash` | lightning / sparkle colour |
+| `transition` | fade into the setting, seconds, if the lights support it |
+
+Each command goes to a light over Bluetooth through Home Assistant, so keep
+animations gentle: a period of a second or more per step is safe.
+
 A light not mentioned in a scene keeps whatever it had.
 
 ### Outputs (mister, fog machine, ...)

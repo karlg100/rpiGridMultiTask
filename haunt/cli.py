@@ -1,4 +1,4 @@
-"""Command line: haunt director | player | dmx | hue | console | demo | check | send"""
+"""Command line: haunt director | player | dmx | hue | floods | console | demo | check | send"""
 
 from __future__ import annotations
 
@@ -96,6 +96,23 @@ def cmd_hue(args) -> None:
         hue.bench_test(cfg, room, setting, args.seconds)
     else:
         hue.main(cfg)
+
+
+def cmd_floods(args) -> None:
+    from . import floods
+    _logging(args.verbose)
+    _sigterm_is_ctrl_c()
+    cfg = floods.load_config(args.config, broker=args.broker,
+                             need_mqtt=not (args.list is not None or args.walk or args.test))
+    if args.list is not None:
+        floods.cmd_list(cfg, args.list)
+    elif args.walk:
+        floods.cmd_walk(cfg, args.row, args.hold)
+    elif args.test:
+        row, setting = args.test
+        floods.bench_test(cfg, row, setting, args.seconds)
+    else:
+        floods.main(cfg)
 
 
 def _utf8() -> bool:
@@ -246,6 +263,22 @@ def main(argv=None) -> None:
     p.add_argument("--seconds", type=float, default=15, help="with --test: how long (default 15)")
     p.add_argument("-v", "--verbose", action="store_true")
     p.set_defaults(fn=cmd_hue)
+
+    p = sub.add_parser("floods", help="drive the AiDot flood lights (through Home Assistant) from the show")
+    p.add_argument("-c", "--config", help="floods.yaml (Home Assistant address, token file, the row's entities)")
+    p.add_argument("--broker", help="MQTT broker host")
+    p.add_argument("--list", nargs="?", const="", metavar="MATCH",
+                   help="list Home Assistant's lights (optionally only those matching MATCH)")
+    p.add_argument("--walk", action="store_true",
+                   help="light each light in turn, 1 to the end, to check the order")
+    p.add_argument("--row", help="with --walk: which row (default: the first)")
+    p.add_argument("--hold", type=float, default=1.5, help="with --walk: seconds per light")
+    p.add_argument("--test", nargs=2, metavar=("ROW", "SETTING"),
+                   help="no MQTT: run SETTING (e.g. '{\"color\":\"#ff6a00\",\"animation\":\"chase\"}') "
+                        "on ROW, then off")
+    p.add_argument("--seconds", type=float, default=15, help="with --test: how long (default 15)")
+    p.add_argument("-v", "--verbose", action="store_true")
+    p.set_defaults(fn=cmd_floods)
 
     p = sub.add_parser("console", help="the terminal UI")
     show_arg(p)

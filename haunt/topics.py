@@ -12,6 +12,8 @@
 
     <p>/hue/control            retained "show"/"released": whether `haunt hue`
                                drives the Hue rooms or leaves them to the house
+    <p>/floods/online          retained "1"/"0": the `haunt floods` agent
+    <p>/floods/<name>/set      retained JSON, the row's setting (from the director)
 
 See docs/DESIGN.md for the payloads.
 """
@@ -47,6 +49,10 @@ class Topics:
     @property
     def hue_online(self) -> str:
         return f"{self.prefix}/hue/online"
+
+    @property
+    def floods_online(self) -> str:
+        return f"{self.prefix}/floods/online"
 
     # players
     def player(self, pid, leaf: str) -> str:

@@ -10,6 +10,9 @@ understand.
                                      <topic>/command go   (on / off)
     hue       <prefix>/hue/<name>/set   the whole setting as JSON, retained;
                                      `haunt hue` (haunt/hue.py) drives the bridge
+    floods    <prefix>/floods/<name>/set   the same; `haunt floods`
+                                     (haunt/floods.py) drives the AiDot lights
+                                     through Home Assistant
 
 A WLED setting that names an effect, palette, speed, intensity or more than
 one colour is sent as one JSON-API message, so the strip changes in a single
@@ -212,7 +215,7 @@ def messages(light_cfg: dict, setting: dict):
                 out.append((topic + "/col", setting["color"].upper()))
         if setting.get("api"):
             out.append((topic + "/api", str(setting["api"])))
-    elif kind == "hue":
+    elif kind in ("hue", "floods"):
         out.append((topic + "/set", json.dumps(setting, separators=(",", ":"))))
     elif kind == "particle":
         if not setting.get("on", True):
@@ -228,6 +231,6 @@ def messages(light_cfg: dict, setting: dict):
 
 def apply(bus, light_cfg: dict, setting: dict) -> None:
     # Hue settings are retained so `haunt hue` picks up the current scene when it restarts.
-    retain = light_cfg.get("type") == "hue"
+    retain = light_cfg.get("type") in ("hue", "floods")
     for topic, payload in messages(light_cfg, setting):
         bus.publish(topic, payload, retain=retain)

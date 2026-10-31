@@ -1,0 +1,16 @@
+# Installed by deploy/install.sh, which fills in @USER@ and @DIR@.
+[Unit]
+Description=Halloween show AiDot flood lights through Home Assistant (haunt)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USER@
+WorkingDirectory=@DIR@
+EnvironmentFile=-/etc/haunt/env
+ExecStart=/usr/bin/python3 -m haunt floods -c /etc/haunt/floods.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

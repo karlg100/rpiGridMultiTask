@@ -285,9 +285,12 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
         if l["type"] == "hue":
             # a Hue room: the director publishes the setting, `haunt hue` drives the bridge
             l.setdefault("topic", "%s/hue/%s" % ((data.get("mqtt") or {}).get("prefix", "haunt"), name))
+        if l["type"] == "floods":
+            # a row of lights in Home Assistant: the director publishes the setting, `haunt floods` drives HA
+            l.setdefault("topic", "%s/floods/%s" % ((data.get("mqtt") or {}).get("prefix", "haunt"), name))
         l.setdefault("topic", name)
-        if l["type"] not in ("wled", "particle", "hue"):
-            problems.append("lights.%s: type %r is not 'wled', 'particle' or 'hue'" % (name, l["type"]))
+        if l["type"] not in ("wled", "particle", "hue", "floods"):
+            problems.append("lights.%s: type %r is not 'wled', 'particle', 'hue' or 'floods'" % (name, l["type"]))
         lights[str(name)] = l
 
     outputs = {}
@@ -328,6 +331,9 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
                 if lights[str(lname)]["type"] == "hue":
                     from . import hue as _hue
                     out[str(lname)] = _hue.parse_setting(val)
+                elif lights[str(lname)]["type"] == "floods":
+                    from . import floods as _floods
+                    out[str(lname)] = _floods.parse_setting(val)
                 else:
                     out[str(lname)] = parse_light(val)
             except ValueError as exc:

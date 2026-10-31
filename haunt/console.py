@@ -69,6 +69,7 @@ class Model:
         self.playlist = {}
         self.players = {}      # pid -> {"online": bool, "state": dict, "seen": t}
         self.hue_online = None  # the `haunt hue` agent, None = never heard
+        self.floods_online = None  # the `haunt floods` agent
 
     def _player(self, pid):
         return self.players.setdefault(pid, {"online": False, "state": {}, "seen": -1e9})
@@ -85,6 +86,8 @@ class Model:
                 self.playlist = json.loads(payload)
             elif topic == t.hue_online:
                 self.hue_online = payload == "1"
+            elif topic == t.floods_online:
+                self.floods_online = payload == "1"
             else:
                 parsed = t.parse_player(topic)
                 if not parsed:
@@ -275,6 +278,9 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         if model.hue_online is False:
             hseg.append(("   hue agent OFFLINE", "err"))
         lines.append(hseg)
+    if model.floods_online is False and any((v or {}).get("type") == "floods"
+                                            for v in light_types.values()):
+        lines.append([(" Floods  ", "bold"), ("floods agent OFFLINE", "err")])
     lseg: Line = [(" ", "")]
     for name in light_types:
         cur = (st.get("lights") or {}).get(name)
