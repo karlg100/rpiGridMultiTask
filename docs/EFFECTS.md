@@ -70,6 +70,15 @@ stopped show leaves the floods to their own motion sensors either way, and
 test mode still drives them. Kept across restarts and sent as
 `haunt/floods/enabled` (retained, 1/0).
 
+**Group command.** A row can name a `group:` entity in floods.yaml, one
+Home Assistant light that reaches all the floods at once. When most of the row
+should show the same thing (a solid look, off at the end of the show, the
+20 s keep-alive) the agent sends that one command instead of 14, then fixes
+any floods that should differ (battery-dimmed ones, say) on their own.
+Animations that give each flood its own colour still go one at a time. If HA
+does not have the group entity, or it is unavailable, everything goes one at
+a time as before; the floods status line says "group ok" or "group missing".
+
 **Flood batteries.** Each flood's battery (`sensor.<light>_battery` in Home
 Assistant) is read every 10 s. Below 40% a flood is dimmed in proportion to
 what is left, down to a quarter of its brightness at 10% and below, so the

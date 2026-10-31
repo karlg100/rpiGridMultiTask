@@ -548,3 +548,104 @@ def test_switch_off_still_lets_test_mode_drive_the_floods():
     agent.handle("haunt/floods/floods/set", json.dumps(parse_setting("#ff0000")))
     run(agent, clock, 3.0)
     assert ha.light[ENTS[0]] is not None
+
+# --------------------------------------------------------------------------
+# a group entity: one command for the whole row
+# --------------------------------------------------------------------------
+
+GROUP = "light.all_floods"
+
+
+class GroupHA(BatteryHA):
+    def __init__(self, battery=None, group=True, **kw):
+        super().__init__(battery or {}, **kw)
+        self.group = group
+
+    def states(self):
+        st = super().states()
+        if self.group:
+            st[GROUP] = {"entity_id": GROUP, "state": "on", "attributes": {}}
+        return st
+
+    def turn_on(self, entities, rgb, brightness, transition=None):
+        if list(entities) == [GROUP]:
+            self.calls.append(("on", (GROUP,), tuple(rgb), brightness, transition))
+            for e in self.ents:
+                self.light[e] = (tuple(rgb), brightness)
+            return
+        return super().turn_on(entities, rgb, brightness, transition)
+
+    def turn_off(self, entities, transition=None):
+        if list(entities) == [GROUP]:
+            self.calls.append(("off", (GROUP,), None, None, transition))
+            for e in self.ents:
+                self.light[e] = None
+            return
+        return super().turn_off(entities, transition)
+
+
+def make_group(ha, **kw):
+    clock = Clock()
+    clock.t = 100.0
+    bus = Bus()
+    agent = FloodAgent({"floods": {"entities": list(ENTS), "topic": "haunt/floods/floods", "group": GROUP}},
+                       ha, bus, clock=clock, rng=random.Random(4), rate=1000.0, workers=4, fps=5,
+                       executor=_InlineExecutor(), **kw)
+    return agent, ha, bus, clock
+
+
+def test_same_look_everywhere_is_one_group_command():
+    agent, ha, bus, clock = make_group(GroupHA())
+    go(agent, "#ff6a00")
+    run(agent, clock, 2.0)
+    assert [c[1] for c in ha.calls] == [(GROUP,)]
+    assert all(ha.light[e] == ((255, 106, 0), 255) for e in ENTS)
+    go(agent, "off")
+    run(agent, clock, 2.0)
+    assert ha.calls[-1][:2] == ("off", (GROUP,)) and len(ha.calls) == 2
+
+
+def test_group_then_the_odd_ones_out():
+    agent, ha, bus, clock = make_group(GroupHA({ENTS[2]: 20}))       # one flood low on battery
+    go(agent, "#ff6a00")
+    run(agent, clock, 2.0)
+    assert [c[1] for c in ha.calls] == [(GROUP,), (ENTS[2],)]
+    assert ha.light[ENTS[2]][1] < 255 and ha.light[ENTS[0]][1] == 255
+
+
+def test_keepalive_for_the_row_is_one_command():
+    agent, ha, bus, clock = make_group(GroupHA(), keepalive=20.0)
+    go(agent, "#ff6a00")
+    run(agent, clock, 45.0)
+    assert [c[1] for c in ha.calls] == [(GROUP,)] * 3                 # start, 20 s, 40 s
+
+
+def test_different_looks_per_light_stay_one_at_a_time():
+    agent, ha, bus, clock = make_group(GroupHA())
+    go(agent, {"colors": ["#ff0000", "#0000ff"], "animation": "drift", "period": 30})
+    run(agent, clock, 2.0)
+    assert (GROUP,) not in [c[1] for c in ha.calls] and len(ha.calls) == len(ENTS)
+
+
+def test_no_group_entity_in_ha_falls_back():
+    agent, ha, bus, clock = make_group(GroupHA(group=False))
+    go(agent, "#ff6a00")
+    run(agent, clock, 2.0)
+    assert len(ha.calls) == len(ENTS) and (GROUP,) not in [c[1] for c in ha.calls]
+    status = [p for t, p, r in bus.sent if t == "haunt/floods/floods/status"][-1]
+    assert "group missing" in status
+
+
+def test_late_reports_after_a_group_command_are_not_resent_at_once():
+    agent, ha, bus, clock = make_group(GroupHA())
+    agent.resolve()
+    go(agent, "#ff0000")
+    run(agent, clock, 1.0)
+    assert any(c[1] == (GROUP,) for c in ha.calls)
+    for e in ENTS:                                   # HA still says off: members are slow to report
+        ha.light[e] = None
+    agent.resolve()
+    assert agent.corrected == 0                      # 1 s after a group command: wait
+    clock.t += 12.0
+    agent.resolve()
+    assert agent.corrected > 0                       # still wrong after the grace: sent again

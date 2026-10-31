@@ -88,6 +88,7 @@ DEFAULT_LOW = {"flicker": 0.3, "pulse": 0.1, "lightning": 0.08, "chase": 0.05, "
 DEFAULT_FLASH = "#d8e4ff"
 TRANSITION_FEATURE = 32       # LightEntityFeature.TRANSITION
 
+GROUP_GRACE = 12.0            # s before a light still reported wrong after a group command is re-sent
 OFF = None                    # a light's state: None = off, else ((r, g, b), brightness 1-255)
 
 
@@ -565,6 +566,12 @@ class FloodAgent:
         self.battery_min_bri = max(0.05, min(1.0, float(battery_min_bri)))
         self.battery: Dict[str, float] = {}
         self._dimmed: set = set()
+        # A row's group entity (one command reaches every light in it), when
+        # Home Assistant has it and it is available.
+        self.group_ok: Dict[str, bool] = {}
+        self.n_group_calls = 0
+        self.group_futs: set = set()     # calls that went to a group entity
+        self.grace: Dict[str, float] = {}   # entity -> seconds to let HA catch up after its last send
         self.sent_at: Dict[str, float] = {}
         self.corrected = 0
         self.hold_until = 0.0
@@ -661,6 +668,13 @@ class FloodAgent:
                 b = _battery_of(states, e)
                 if b is not None:
                     self.battery[e] = b
+            grp = c.get("group")
+            if grp:
+                ok = grp in states and states[grp].get("state") not in ("unavailable", None)
+                if ok != self.group_ok.get(name):
+                    (log.info if ok else log.warning)("%s: group %s %s", name, grp,
+                                                      "in use" if ok else "not in Home Assistant (or unavailable): one light at a time")
+                self.group_ok[name] = ok
             if len(missing) + len(gone) == len(ents):
                 text = "error: none of the %d lights is in Home Assistant" % len(ents)
             else:
@@ -669,6 +683,8 @@ class FloodAgent:
                     text += "; not in HA: %s" % ", ".join(str(ents.index(e) + 1) for e in missing)
                 if gone:
                     text += "; unavailable: %s" % ", ".join(str(ents.index(e) + 1) for e in gone)
+                if c.get("group"):
+                    text += "; group %s" % ("ok" if self.group_ok.get(name) else "missing")
                 dim = [e for e in ents if self.battery_factor(e) < 1.0]
                 if dim:
                     text += "; dimmed for battery: %s" % ", ".join(
@@ -696,7 +712,7 @@ class FloodAgent:
             st = (states.get(e) or {}).get("state")
             if e in skip or e in self.busy or want == "unset" or st not in ("on", "off"):
                 continue
-            if self.sent.get(e, "unset") != want or now - self.sent_at.get(e, now) < 5.0:
+            if self.sent.get(e, "unset") != want or now - self.sent_at.get(e, now) < self.grace.get(e, 5.0):
                 continue                             # in flight, or HA has not caught up yet
             if (st == "on") != (want is not OFF):
                 self.corrected += 1
@@ -743,6 +759,8 @@ class FloodAgent:
                 continue
             for e in ents:
                 self.busy.pop(e, None)
+            via_group = fut in self.group_futs
+            self.group_futs.discard(fut)
             try:
                 fut.result()
             except Exception as exc:              # noqa: BLE001 - HAError, or anything from the pool
@@ -769,6 +787,8 @@ class FloodAgent:
                 self.retry_at.pop(e, None)
                 self.sent[e] = state
                 self.sent_at[e] = now
+                # members report a group command late (5-8 s seen on 2026-10-31)
+                self.grace[e] = GROUP_GRACE if via_group else 5.0
                 if self.desired.get(e, "unset") == state:
                     self.since.pop(e, None)
                 else:
@@ -789,6 +809,7 @@ class FloodAgent:
             return
         for e in [e for e in self.since if self.sent.get(e, "unset") == self.desired.get(e, "unset")]:
             self.since.pop(e, None)
+        self._dispatch_groups(now)
         while len(self.calls) < self.workers:
             pending = sorted((t, self.pos.get(e, 0), e) for e, t in self.since.items()
                              if e not in self.busy and e not in self.skip
@@ -820,6 +841,51 @@ class FloodAgent:
             for e in group:
                 self.busy[e] = fut
             self.calls.append((fut, group, state))
+            self._collect(now)
+
+    def _dispatch_groups(self, now: float) -> None:
+        """One command for a whole row when most of it should show the same
+        thing: the lights that differ are then sent on their own."""
+        for name, c in self.cfg.items():
+            grp = c.get("group")
+            if not grp or not self.group_ok.get(name) or len(self.calls) >= self.workers:
+                continue
+            ents = [e for e in c["entities"] if e not in self.skip]
+            if not ents or any(e in self.busy for e in ents) or any(self.retry_at.get(e, 0.0) > now for e in ents):
+                continue
+            if any(self.solo_until.get(e, 0.0) > now for e in ents):
+                continue
+            want = [self.desired.get(e, "unset") for e in ents]
+            counts: Dict[object, int] = {}
+            for w in want:
+                if w != "unset":
+                    counts[w] = counts.get(w, 0) + 1
+            if not counts:
+                continue
+            state, n_same = max(counts.items(), key=lambda kv: kv[1])
+            behind = [e for e in ents if self.desired.get(e) == state and self.sent.get(e, "unset") != state]
+            if n_same < 0.6 * len(ents) or len(behind) < 3:
+                continue                         # not worth it: one at a time
+            if not self.bucket.take():
+                return
+            fade = self.fade.get(behind[0])
+            for e in ents:
+                self.fade.pop(e, None)
+            if fade is not None and not all(self.can_fade.get(e) for e in ents):
+                fade = None
+            if state is OFF:
+                fut = self.executor.submit(self.ha.turn_off, [grp], fade)
+            else:
+                rgb, b = state
+                fut = self.executor.submit(self.ha.turn_on, [grp], rgb, b, fade)
+            self.n_calls += 1
+            self.n_group_calls += 1
+            for e in ents:
+                self.busy[e] = fut
+            # every light in the row now shows `state`; the ones that should
+            # not are sent again on their own after this
+            self.group_futs.add(fut)
+            self.calls.append((fut, ents, state))
             self._collect(now)
 
     # -- the loop --------------------------------------------------------
@@ -940,10 +1006,12 @@ def load_config(path: Optional[str], broker: Optional[str] = None, need_mqtt: bo
     rows = {}
     for name, row in (cfg["rows"] or {}).items():
         r = dict(row) if isinstance(row, dict) else {"entities": row}
-        unknown = set(r) - {"entities", "topic"}
+        unknown = set(r) - {"entities", "topic", "group"}
         if unknown:
-            raise ConfigError(["floods config: rows.%s: unknown setting %r (entities)" % (name, k)
+            raise ConfigError(["floods config: rows.%s: unknown setting %r (entities, group)" % (name, k)
                                for k in sorted(unknown)])
+        if r.get("group") is not None and not (isinstance(r["group"], str) and r["group"].startswith("light.")):
+            raise ConfigError("floods config: rows.%s: group must be a light.* entity id" % name)
         ents = r.get("entities")
         if not isinstance(ents, list) or not ents or not all(isinstance(e, str) and e.startswith("light.")
                                                              for e in ents):

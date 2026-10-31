@@ -30,6 +30,9 @@ battery_min_bri: 0.25
 # A light that is missing or unavailable in HA is skipped and picked up when it comes back.
 rows:
   floods:
+    # group: light.<all_floods>   # optional: one Home Assistant entity that commands the whole row at once;
+    #                             used when most of the row shows the same thing (solid looks, off,
+    #                             keep-alives), one light at a time otherwise or if HA lacks it
     entities:
       - light.sl5c_solar_spotlight_14
       - light.sl5c_solar_spotlight_15
