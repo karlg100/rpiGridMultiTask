@@ -3,6 +3,8 @@
 #
 #   sudo deploy/install.sh director
 #   sudo deploy/install.sh player 1
+#   sudo deploy/install.sh dmx            (the Pi with the USB-to-DMX dongle)
+#   sudo deploy/install.sh hue            (Philips Hue rooms; usually home-pi)
 #
 # Safe to run again: it never overwrites an existing /etc/haunt/* file.
 set -euo pipefail
@@ -20,7 +22,9 @@ case "$role" in
     player)
         [ -n "$id" ] || { echo "usage: $0 player <id>" >&2; exit 1; }
         pkgs="python3-paho-mqtt python3-yaml mpv ffmpeg" ;;
-    *) echo "usage: $0 director | player <id>" >&2; exit 1 ;;
+    dmx) pkgs="python3-paho-mqtt python3-yaml python3-serial" ;;
+    hue) pkgs="python3-paho-mqtt python3-yaml avahi-utils" ;;
+    *) echo "usage: $0 director | player <id> | dmx | hue" >&2; exit 1 ;;
 esac
 
 echo "== installing packages: $pkgs"
@@ -45,6 +49,25 @@ if [ "$role" = player ]; then
         echo "== created /etc/haunt/player.yaml (id $id)  <-- check media_root, rotate, audio_device"
     fi
     usermod -aG video,render,audio "$user"
+fi
+
+if [ "$role" = dmx ]; then
+    if [ ! -e /etc/haunt/dmx.yaml ]; then
+        cp "$dir/deploy/dmx.example.yaml" /etc/haunt/dmx.yaml
+        echo "== created /etc/haunt/dmx.yaml  <-- check the channel and level"
+    fi
+    usermod -aG dialout "$user"
+fi
+
+if [ "$role" = hue ]; then
+    if [ ! -e /etc/haunt/hue.yaml ]; then
+        cp "$dir/deploy/hue.example.yaml" /etc/haunt/hue.yaml
+        echo "== created /etc/haunt/hue.yaml  <-- check the bridge and room names"
+    fi
+    if [ ! -e /etc/haunt/hue.key ]; then
+        install -m 600 -o "$user" /dev/null /etc/haunt/hue.key
+        echo "== press the Hue bridge button, then:  python3 -m haunt hue -c /etc/haunt/hue.yaml --pair"
+    fi
 fi
 
 unit="haunt-$role.service"

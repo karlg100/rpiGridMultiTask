@@ -43,6 +43,61 @@ per-scene colours.
 | 14 | Ghosts n Stuff | **Juggle** | Eight coloured dots chasing with trails: EDM energy. | | |
 | 15 | Stayin' Undead | **Glitter**, Party palette | Rainbow with white sparkles: a disco ball. | | |
 
+## Hue rooms (living room, front bedroom)
+
+The two front rooms' Philips Hue lights follow each scene too, through
+`haunt hue` on home-pi (see `docs/SHOW-FILE.md` for the settings). They go
+**off** whenever the show is not running. Colours match the eaves; the rooms
+add movement Hue can do smoothly (no strobing: Hue limits how fast bulbs can
+be changed, and it is a house, not a club).
+
+| # | Scene | Living room | Front bedroom |
+|---|---|---|---|
+| 1 | Pumpkin Song | candle, orange | candle, dimmer |
+| 2 | Wicked Brew | pulse green/purple (the cauldron) | drift purple/green |
+| 3 | Twas the Night | low candle | slow red breathing |
+| 4 | Dragula APT | fire | fire |
+| 5 | Cat Crow Canzonet | drift purple/green, 3 s | the same, colours swapped |
+| 6 | Frankenstein | lightning over dark blue, ~7 s | lightning over dark green, ~9 s (out of step) |
+| 7 | Thriller | drift red/magenta; **at 7:00 sickly green flicker** as the zombies rise | magenta pulse; green flicker at 7:00 |
+| 8 | In the Hall | orange/red pulse, 2.5 s (the march) | the same, alternate colours |
+| 9 | Ghostbusters | slime-green drift | flickering slimer green |
+| 10 | Spooky Scary Skeletons | bone white/purple drift, 1.5 s | white pulse |
+| 11 | Seance | slow purple/teal drift | seance candle |
+| 12 | Witching Hour | sparkle (drift on bulbs without it) | purple/green drift |
+| 13 | Guardians Inferno | five-colour disco drift, 1 s | the same, reversed |
+| 14 | Ghosts n Stuff | blue/pink pulse | cyan/magenta/blue drift, 1 s |
+| 15 | Stayin' Undead | prism (drift on bulbs without it) | disco drift |
+
+### Outdoor accents (porch, lamp post)
+
+The two porch lights and the driveway lamp post are accents: the porch
+carries each scene's second colour (joining in the march, the disco and the
+lightning), and the lamp post is an old gas lamp that flickers in the
+scene's colour, sputtering during the Frankenstein storm. Candy is handed
+out at the end of the sidewalk, not at the door, so neither has to stay lit:
+both can go dark in the lightning and pulse scenes, and off when the show
+stops. (`floor:` in hue.yaml can hold a light up if that ever changes.) At 7:00 in Thriller everything outside goes
+zombie green with the rooms. A white-only bulb just follows the brightness.
+
+| # | Scene | Porch | Lamp post |
+|---|---|---|---|
+| 1 | Pumpkin Song | pumpkin orange | flickering gas lamp, orange |
+| 2 | Wicked Brew | potion green | flicker, purple |
+| 3 | Twas the Night | red | flicker, warm |
+| 4 | Dragula APT | fire | fast flicker, red-orange |
+| 5 | Cat Crow Canzonet | slow purple/green drift | green |
+| 6 | Frankenstein | its own lightning | sputtering blue-white |
+| 7 | Thriller | red (green at 7:00) | magenta pulse (green flicker at 7:00) |
+| 8 | In the Hall | orange pulse with the march | orange |
+| 9 | Ghostbusters | slime green | green flicker |
+| 10 | Spooky Scary Skeletons | white/purple drift | bone white |
+| 11 | Seance | teal | candle |
+| 12 | Witching Hour | purple | green flicker |
+| 13 | Guardians Inferno | disco drift | disco drift |
+| 14 | Ghosts n Stuff | blue/pink pulse | cyan/magenta drift |
+| 15 | Stayin' Undead | disco drift | prism |
+
 Every setting is one line in `show.yaml` and can be changed and reloaded
 (`R` in the console). The speed and intensity values are starting points;
 WLED's sliders mean different things for each effect, so tune by eye.

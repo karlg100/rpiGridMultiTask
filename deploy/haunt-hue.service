@@ -1,0 +1,16 @@
+# Installed by deploy/install.sh, which fills in @USER@ and @DIR@.
+[Unit]
+Description=Halloween show Philips Hue rooms (haunt)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USER@
+WorkingDirectory=@DIR@
+EnvironmentFile=-/etc/haunt/env
+ExecStart=/usr/bin/python3 -m haunt hue -c /etc/haunt/hue.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

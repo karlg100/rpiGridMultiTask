@@ -78,6 +78,25 @@ and waits. That is the expected first sight.
 Stop the old manager first if it is running; old and new use different
 topics for the players, but both would drive the lights.
 
+### Hue rooms (living room, front bedroom), also on home-pi
+
+```sh
+sudo deploy/install.sh hue                      # creates /etc/haunt/hue.yaml and an empty hue.key
+python3 -m haunt hue -c /etc/haunt/hue.yaml --discover
+#   put the IP in /etc/haunt/hue.yaml (bridge: ...); a DHCP reservation for the bridge helps
+#   press the round button on the bridge, then within 30 s:
+python3 -m haunt hue -c /etc/haunt/hue.yaml --pair
+python3 -m haunt hue -c /etc/haunt/hue.yaml --list         # check both rooms are found ("<- living_room")
+python3 -m haunt hue -c /etc/haunt/hue.yaml --test living_room '{"color":"#ff6a00","effect":"candle"}'
+sudo systemctl start haunt-hue && journalctl -fu haunt-hue
+```
+
+If a room is not called "Living room" / "Front bedroom" / "Porch" / "Lamp post"
+in the Hue app, change the names under `rooms:` in hue.yaml (a zone name works
+too, or list the bulbs by name: `porch: {lights: [Porch left, Porch right]}`).
+`--list` prints every name the bridge has. Each room reports
+`ok: ...` or the error on `haunt/hue/<name>/status`.
+
 ## 2. A player Pi
 
 ### Which Pi

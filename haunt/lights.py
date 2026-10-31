@@ -8,6 +8,8 @@ understand.
                                                   JSON-API object ("{...}")
     particle  the Particle firmware in Particle/: <topic>/color/r|g|b, then
                                      <topic>/command go   (on / off)
+    hue       <prefix>/hue/<name>/set   the whole setting as JSON, retained;
+                                     `haunt hue` (haunt/hue.py) drives the bridge
 
 A WLED setting that names an effect, palette, speed, intensity or more than
 one colour is sent as one JSON-API message, so the strip changes in a single
@@ -147,6 +149,9 @@ def palette_id(value) -> int:
 
 def effect_label(setting: dict) -> Optional[str]:
     """Short human description, e.g. 'Fire 2012 / Fire'."""
+    if setting.get("animation") is not None or setting.get("effect") is not None:
+        from .hue import label
+        return label(setting)
     if setting.get("fx") is None:
         return None
     name = EFFECT_NAMES.get(setting["fx"], "fx %d" % setting["fx"]).title()
@@ -207,6 +212,8 @@ def messages(light_cfg: dict, setting: dict):
                 out.append((topic + "/col", setting["color"].upper()))
         if setting.get("api"):
             out.append((topic + "/api", str(setting["api"])))
+    elif kind == "hue":
+        out.append((topic + "/set", json.dumps(setting, separators=(",", ":"))))
     elif kind == "particle":
         if not setting.get("on", True):
             return [(topic + "/command", "off")]
@@ -220,5 +227,7 @@ def messages(light_cfg: dict, setting: dict):
 
 
 def apply(bus, light_cfg: dict, setting: dict) -> None:
+    # Hue settings are retained so `haunt hue` picks up the current scene when it restarts.
+    retain = light_cfg.get("type") == "hue"
     for topic, payload in messages(light_cfg, setting):
-        bus.publish(topic, payload)
+        bus.publish(topic, payload, retain=retain)

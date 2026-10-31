@@ -282,9 +282,12 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
     for name, l in (data.get("lights") or {}).items():
         l = dict(l or {})
         l.setdefault("type", "wled")
+        if l["type"] == "hue":
+            # a Hue room: the director publishes the setting, `haunt hue` drives the bridge
+            l.setdefault("topic", "%s/hue/%s" % ((data.get("mqtt") or {}).get("prefix", "haunt"), name))
         l.setdefault("topic", name)
-        if l["type"] not in ("wled", "particle"):
-            problems.append("lights.%s: type %r is not 'wled' or 'particle'" % (name, l["type"]))
+        if l["type"] not in ("wled", "particle", "hue"):
+            problems.append("lights.%s: type %r is not 'wled', 'particle' or 'hue'" % (name, l["type"]))
         lights[str(name)] = l
 
     outputs = {}
@@ -322,7 +325,11 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
                 problems.append("%s: light %r is not defined under 'lights'" % (where, lname))
                 continue
             try:
-                out[str(lname)] = parse_light(val)
+                if lights[str(lname)]["type"] == "hue":
+                    from . import hue as _hue
+                    out[str(lname)] = _hue.parse_setting(val)
+                else:
+                    out[str(lname)] = parse_light(val)
             except ValueError as exc:
                 problems.append("%s: light %s: %s" % (where, lname, exc))
         return out

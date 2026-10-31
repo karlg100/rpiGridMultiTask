@@ -1,4 +1,4 @@
-"""Command line: haunt director | player | console | demo | check | send"""
+"""Command line: haunt director | player | dmx | hue | console | demo | check | send"""
 
 from __future__ import annotations
 
@@ -65,6 +65,37 @@ def cmd_player(args) -> None:
         "mqtt_host": args.broker,
     })
     player.main(cfg)
+
+
+def cmd_dmx(args) -> None:
+    from . import dmx
+    _logging(args.verbose)
+    _sigterm_is_ctrl_c()
+    cfg = dmx.load_config(args.config, device=args.device, broker=args.broker)
+    if args.test is not None:
+        dmx.bench_test(cfg, args.test, args.output)
+    else:
+        dmx.main(cfg)
+
+
+def cmd_hue(args) -> None:
+    from . import hue
+    _logging(args.verbose)
+    _sigterm_is_ctrl_c()
+    cfg = hue.load_config(args.config, bridge=args.bridge, broker=args.broker,
+                          need_mqtt=not (args.pair or args.list or args.discover or args.test))
+    if args.discover:
+        found = hue.discover()
+        print("\n".join(found) if found else "no Hue bridge found")
+    elif args.pair:
+        hue.cmd_pair(cfg)
+    elif args.list:
+        hue.cmd_list(cfg)
+    elif args.test:
+        room, setting = args.test
+        hue.bench_test(cfg, room, setting, args.seconds)
+    else:
+        hue.main(cfg)
 
 
 def _utf8() -> bool:
@@ -191,6 +222,30 @@ def main(argv=None) -> None:
     p.add_argument("--backend", choices=("mpv", "fake"))
     p.add_argument("-v", "--verbose", action="store_true")
     p.set_defaults(fn=cmd_player)
+
+    p = sub.add_parser("dmx", help="drive DMX fixtures (the fog machine) from the show's outputs")
+    p.add_argument("-c", "--config", help="dmx.yaml (default settings: fog_machine on channel 1)")
+    p.add_argument("--device", help="serial device, 'auto' (default) or 'fake'")
+    p.add_argument("--broker", help="MQTT broker host")
+    p.add_argument("--test", type=float, metavar="SECONDS",
+                   help="no MQTT: fire one output for SECONDS, then off (bench test)")
+    p.add_argument("--output", help="with --test: which output (default: the first)")
+    p.add_argument("-v", "--verbose", action="store_true")
+    p.set_defaults(fn=cmd_dmx)
+
+    p = sub.add_parser("hue", help="drive the Philips Hue rooms (living room, front bedroom) from the show")
+    p.add_argument("-c", "--config", help="hue.yaml (default: bridge auto, key in /etc/haunt/hue.key)")
+    p.add_argument("--bridge", help="bridge IP address (overrides the config)")
+    p.add_argument("--broker", help="MQTT broker host")
+    p.add_argument("--discover", action="store_true", help="find bridges on the network")
+    p.add_argument("--pair", action="store_true", help="get a key: press the bridge button, then run this")
+    p.add_argument("--list", action="store_true", help="show the bridge's rooms, zones and bulbs")
+    p.add_argument("--test", nargs=2, metavar=("ROOM", "SETTING"),
+                   help="no MQTT: run SETTING (e.g. '{\"color\":\"#ff6a00\",\"effect\":\"candle\"}') "
+                        "on ROOM, then off")
+    p.add_argument("--seconds", type=float, default=15, help="with --test: how long (default 15)")
+    p.add_argument("-v", "--verbose", action="store_true")
+    p.set_defaults(fn=cmd_hue)
 
     p = sub.add_parser("console", help="the terminal UI")
     show_arg(p)

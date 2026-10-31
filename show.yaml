@@ -24,13 +24,17 @@ players:
 lights:
   front_lights: {type: wled, topic: front_lights}
   graveyard: {type: particle, topic: graveyard}
+  living_room: {type: hue}     # Philips Hue rooms: `haunt hue` drives the bridge (deploy/hue.example.yaml)
+  front_bedroom: {type: hue}   # both switch off whenever the show is not running
+  porch: {type: hue}           # accents: the two porch lights ...
+  lamp_post: {type: hue}       # ... and the driveway lamp post
 
 # Things the show switches on and off. The director publishes ON/OFF to
 # haunt/output/<name>/set (retained); something else does the switching.
 # In a scene:  on = on for the scene, a number = a burst of that many seconds.
 outputs:
   pond_mister: {label: mister}           # Tapo plug in Home Assistant: deploy/home-assistant/haunt-outputs.yaml
-  fog_machine: {label: fog, max_on: 10}  # control not decided yet; bursts only, never on longer than 10 s
+  fog_machine: {label: fog, max_on: 10}  # DMX F-3000 via USB-DMX dongle: haunt dmx (deploy/dmx.example.yaml); never on longer than 10 s
 
 defaults:
   fade_in: 1.0        # seconds; picture and sound fade up from black
@@ -67,6 +71,10 @@ scenes:
     lights:
       front_lights: {effect: Candle Multi, colors: ["#ff6a00"], speed: 96, intensity: 200, transition: 1}      # candle-lit jack-o-lanterns
       graveyard: "#007200"
+      living_room: {color: "#ff6a00", effect: candle, bri: 220}                                    # candle-lit, like the jack-o-lanterns
+      front_bedroom: {color: "#ff5000", effect: candle, bri: 160}
+      porch: {color: "#ff6a00", bri: 180}                                          # accent: pumpkin orange
+      lamp_post: {color: "#ff7a00", animation: flicker, period: 1.2, low: 0.6}          # an old gas lamp
 
   - name: Wicked Brew
     master: 2
@@ -82,6 +90,10 @@ scenes:
     lights:
       front_lights: {effect: Popcorn, colors: ["#00ff40", "#3a0066"], speed: 80, intensity: 100, transition: 1}   # bubbling cauldron
       graveyard: "#310059"
+      living_room: {colors: ["#20ff40", "#5a00a0"], animation: pulse, period: 4, low: 0.25}          # the cauldron glowing and fading
+      front_bedroom: {colors: ["#5a00a0", "#20ff40"], animation: drift, period: 5}
+      porch: {color: "#20ff40", bri: 170}
+      lamp_post: {color: "#7a00ff", animation: flicker, period: 1.2, low: 0.5}
     outputs: {pond_mister: on}
 
   - name: Twas the Night
@@ -97,6 +109,10 @@ scenes:
     lights:
       front_lights: {effect: Halloween Eyes, colors: ["#ff2000", "#000000"], speed: 128, intensity: 128, transition: 1}   # eyes blinking in the dark under the story
       graveyard: "#ffa500"
+      living_room: {color: "#ff5000", effect: candle, bri: 110}                                    # low firelight for the story
+      front_bedroom: {color: "#600000", animation: pulse, period: 6, low: 0.2, bri: 160}            # something red breathing upstairs
+      porch: {color: "#ff2000", bri: 150}                                          # red eyes in the dark
+      lamp_post: {color: "#ff8a30", animation: flicker, period: 1.4, low: 0.5}
 
   - name: Dragula APT
     master: 1
@@ -110,6 +126,10 @@ scenes:
     lights:
       front_lights: {effect: Fire 2012, palette: Fire, speed: 120, intensity: 160, transition: 1}   # "burn through the witches"
       graveyard: "#c8c800"
+      living_room: {colors: ["#ff3000", "#ff8000"], effect: fire}                                  # burn through the witches
+      front_bedroom: {colors: ["#ff2000", "#ff7000"], effect: fire, bri: 200}
+      porch: {color: "#ff3000", effect: fire}
+      lamp_post: {color: "#ff4000", animation: flicker, period: 0.6, low: 0.4}
 
   - name: Cat Crow Canzonet
     master: 2
@@ -124,6 +144,10 @@ scenes:
     lights:
       front_lights: {effect: Dancing Shadows, palette: Set Colors, colors: ["#7a00ff", "#00ff60"], speed: 90, intensity: 128, transition: 1}   # cat and crow flitting
       graveyard: "#310059"
+      living_room: {colors: ["#7a00ff", "#00ff60"], animation: drift, period: 3}                   # cat and crow chasing round the room
+      front_bedroom: {colors: ["#00ff60", "#7a00ff"], animation: drift, period: 3}
+      porch: {colors: ["#7a00ff", "#00ff60"], animation: drift, period: 6}
+      lamp_post: {color: "#00ff60", bri: 160}
     outputs: {pond_mister: on}
 
   - name: Frankenstein
@@ -140,6 +164,10 @@ scenes:
     lights:
       front_lights: {effect: Lightning, colors: ["#c8d8ff", "#001a08"], speed: 150, intensity: 150, transition: 1}   # the lab coming alive
       graveyard: "#004000"
+      living_room: {color: "#0a1a40", animation: lightning, period: 7, low: 0.3}                  # the lab in a storm
+      front_bedroom: {color: "#0a2a10", animation: lightning, period: 9, low: 0.3}                  # its own strikes, out of step
+      porch: {color: "#0a2a10", animation: lightning, period: 11, low: 0.4}         # strikes of its own
+      lamp_post: {color: "#c8d8ff", animation: flicker, period: 0.5, low: 0.2}          # sputtering in the storm
     outputs: {fog_machine: 6}
 
   - name: Thriller
@@ -157,9 +185,17 @@ scenes:
     lights:
       front_lights: {effect: Colorwaves, palette: Magred, speed: 70, intensity: 128, transition: 1}   # red/magenta dance floor
       graveyard: "#400040"
+      living_room: {colors: ["#ff0020", "#c00080"], animation: drift, period: 5}                   # red/magenta dance floor
+      front_bedroom: {color: "#a00060", animation: pulse, period: 4, low: 0.2}
+      porch: {color: "#ff0020", bri: 180}
+      lamp_post: {color: "#c00080", animation: pulse, period: 4, low: 0.3}
     outputs: {fog_machine: 8}
     cues:
-      - {at: 420, outputs: {fog_machine: 6}}   # the zombies rise (the animation starts at 420 s)
+      - {at: 420, outputs: {fog_machine: 6},   # the zombies rise (the animation starts at 420 s)
+         lights: {living_room: {colors: ["#40ff20", "#106000"], animation: flicker, period: 0.7, low: 0.3},
+                  front_bedroom: {color: "#40ff20", animation: flicker, period: 0.9, low: 0.3},
+                  porch: {color: "#40ff20", bri: 200},
+                  lamp_post: {color: "#40ff20", animation: flicker, period: 0.7, low: 0.3}}}
 
   - name: In the Hall
     master: 1
@@ -174,6 +210,10 @@ scenes:
     lights:
       front_lights: {effect: Running, colors: ["#ff6a00", "#000000"], speed: 140, intensity: 80, transition: 1}   # Mountain King march
       graveyard: "#ffa500"
+      living_room: {colors: ["#ff6a00", "#ff2000"], animation: pulse, period: 2.5, low: 0.1}      # the march
+      front_bedroom: {colors: ["#ff2000", "#ff6a00"], animation: pulse, period: 2.5, low: 0.1}
+      porch: {color: "#ff6a00", animation: pulse, period: 2.5, low: 0.3}           # marching with the rooms
+      lamp_post: {color: "#ff6a00", bri: 200}
 
   - name: Ghostbusters
     master: 2
@@ -188,6 +228,10 @@ scenes:
     lights:
       front_lights: {effect: Meteor, o3: true, colors: ["#20ff20"], speed: 150, intensity: 128, transition: 1}   # green slimers zipping by (o3 = WLED 16's "Smooth" option)
       graveyard: "#c8c800"
+      living_room: {colors: ["#20ff20", "#a0ff00", "#00c060"], animation: drift, period: 2}        # slime
+      front_bedroom: {color: "#30ff30", animation: flicker, period: 0.8, low: 0.4, bri: 200}        # a slimer in the bedroom
+      porch: {color: "#20ff20", bri: 200}
+      lamp_post: {color: "#30ff30", animation: flicker, period: 0.8, low: 0.4}
 
   - name: Spooky Scary Skeletons
     master: 1
@@ -202,6 +246,10 @@ scenes:
     lights:
       front_lights: {effect: Bouncing Balls, colors: ["#ffffff", "#200040"], speed: 128, intensity: 100, transition: 1}   # dancing bones
       graveyard: "#400000"
+      living_room: {colors: ["#ffffff", "#5000a0"], animation: drift, period: 1.5}                 # bone white and purple, bouncing
+      front_bedroom: {color: "#e0e0ff", animation: pulse, period: 2, low: 0.1}
+      porch: {colors: ["#ffffff", "#5000a0"], animation: drift, period: 3}
+      lamp_post: {color: "#e0e0ff", bri: 200}
 
   - name: Seance
     master: 2
@@ -216,6 +264,10 @@ scenes:
     lights:
       front_lights: {effect: Aurora, palette: Set Colors, colors: ["#6a00ff", "#00c8a0"], speed: 60, intensity: 150, transition: 1}   # spirit glow
       graveyard: "#00c800"
+      living_room: {colors: ["#6a00ff", "#00c8a0"], animation: drift, period: 6, bri: 180}         # spirit glow
+      front_bedroom: {color: "#ff7a20", effect: candle, bri: 120}                                   # seance candles
+      porch: {color: "#00c8a0", bri: 150}
+      lamp_post: {color: "#ff7a20", effect: candle}
     outputs: {pond_mister: on, fog_machine: 5}
 
   - name: Witching Hour
@@ -231,6 +283,10 @@ scenes:
     lights:
       front_lights: {effect: Fairytwinkle, colors: ["#9d00ff", "#20ff40"], speed: 100, intensity: 128, transition: 1}   # witch sparkle
       graveyard: "#c80000"
+      living_room: {colors: ["#9d00ff", "#20ff40"], effect: sparkle}                               # witch sparkle (drift where a bulb has no sparkle)
+      front_bedroom: {colors: ["#20ff40", "#9d00ff"], animation: drift, period: 4}
+      porch: {color: "#9d00ff", bri: 200}
+      lamp_post: {color: "#20ff40", animation: flicker, period: 1.0, low: 0.5}
     outputs: {pond_mister: on}
 
   - name: Guardians Inferno
@@ -246,6 +302,10 @@ scenes:
     lights:
       front_lights: {effect: Bpm, palette: Party, speed: 128, intensity: 128, transition: 1}   # disco
       graveyard: "#c8c800"
+      living_room: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], animation: drift, period: 1}   # disco
+      front_bedroom: {colors: ["#c000ff", "#0060ff", "#00ff80", "#ffaa00", "#ff0040"], animation: drift, period: 1.2}
+      porch: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], animation: drift, period: 2}
+      lamp_post: {colors: ["#c000ff", "#0060ff", "#00ff80", "#ffaa00", "#ff0040"], animation: drift, period: 1.5}
 
   - name: Ghosts n Stuff
     master: 2
@@ -260,6 +320,10 @@ scenes:
     lights:
       front_lights: {effect: Juggle, speed: 160, intensity: 128, transition: 1}   # EDM
       graveyard: "#c80000"
+      living_room: {colors: ["#00a0ff", "#ff00c0"], animation: pulse, period: 2, low: 0.1}        # EDM
+      front_bedroom: {colors: ["#00ffff", "#ff00ff", "#0000ff"], animation: drift, period: 1}
+      porch: {colors: ["#00a0ff", "#ff00c0"], animation: pulse, period: 2, low: 0.3}
+      lamp_post: {colors: ["#00ffff", "#ff00ff"], animation: drift, period: 2}
 
 
   - name: Stayin' Undead
@@ -275,3 +339,7 @@ scenes:
     lights:
       front_lights: {effect: Glitter, palette: Party, speed: 128, intensity: 128, transition: 1}   # disco-ball sparkle
       graveyard: "#00c800"
+      living_room: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], effect: prism}   # disco ball (drift where a bulb has no prism)
+      front_bedroom: {colors: ["#ffaa00", "#ff0040", "#c000ff", "#0060ff", "#00ff80"], animation: drift, period: 1.5}
+      porch: {colors: ["#ff0040", "#ffaa00", "#00ff80", "#0060ff", "#c000ff"], animation: drift, period: 2}
+      lamp_post: {colors: ["#0060ff", "#c000ff", "#ff0040", "#ffaa00", "#00ff80"], effect: prism}

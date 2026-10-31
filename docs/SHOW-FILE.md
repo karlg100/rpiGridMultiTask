@@ -126,6 +126,41 @@ colour to `<topic>/col`.
 which is what the firmware in `Particle/` expects. It only does a colour; with
 `colors`, it takes the first.
 
+`type: hue` is a Philips Hue room (or zone). The director publishes the
+scene's setting as JSON, retained, on `<prefix>/hue/<name>/set`, and
+`python3 -m haunt hue` (the `haunt-hue` service) turns it into Hue bridge
+calls and runs the animation. Which Hue room a light name means is set in
+`/etc/haunt/hue.yaml`: a Hue room or zone, or a list of bulbs by name
+(`porch: {lights: [Porch left, Porch right]}`), with an optional `floor`
+(percent) below which the light never dims while the show runs. The rooms switch **off** whenever the show is not
+running: show stopped, director offline, or `haunt hue` stopped.
+
+```yaml
+lights:
+  living_room: {type: hue}
+  front_bedroom: {type: hue}
+
+# in a scene:
+      living_room: "#ff6a00"                                   # solid
+      living_room: off
+      living_room: {color: "#ff6a00", effect: candle, bri: 200} # Hue's own effect
+      living_room: {colors: ["#7a00ff", "#00ff60"], animation: drift, period: 3}
+```
+
+| Setting | Meaning |
+|---|---|
+| `color` / `colors` | 1 to 8 colours, spread across the bulbs (bulb 1 gets colour 1, ...). A dark colour is a dim light. |
+| `bri` | 0-255 (default 255) |
+| `animation` | `solid` (default), `drift` (colours rotate round the bulbs, crossfading), `flicker` (each bulb on its own, flame-like), `pulse` (whole room breathes; colours advance each breath), `lightning` (held dim, random white double-flashes) |
+| `effect` | Hue's built-in effects, on bulbs that have them: `candle fire sparkle prism opal glisten underwater cosmos sunbeam enchant`. Bulbs without it get `flicker` (candle, fire) or `drift` (others). `haunt hue --list` shows what each bulb has. |
+| `period` | seconds per step: drift 4, flicker 0.6, pulse 3 (min 2), lightning 8 (min 1.5) by default |
+| `low` | dimmest point as a fraction of `bri`: flicker 0.35, pulse 0.15, lightning 0.12 |
+| `flash` | lightning flash colour (default `#d8e4ff`) |
+| `transition` | fade into the setting, seconds (default 1) |
+
+Hue takes about 10 bulb commands and 1 room command a second, so the
+animations are slow-ish by design: no strobing.
+
 A light not mentioned in a scene keeps whatever it had.
 
 ### Outputs (mister, fog machine, ...)

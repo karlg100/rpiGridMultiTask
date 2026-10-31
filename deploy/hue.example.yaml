@@ -1,0 +1,27 @@
+# /etc/haunt/hue.yaml, on the Pi that runs `haunt hue` (home-pi, next to the director).
+#
+#   python3 -m haunt hue -c /etc/haunt/hue.yaml --discover    find the bridge
+#   python3 -m haunt hue -c /etc/haunt/hue.yaml --pair        press the bridge button first
+#   python3 -m haunt hue -c /etc/haunt/hue.yaml --list        rooms, bulbs, which effects they have
+#   python3 -m haunt hue -c /etc/haunt/hue.yaml --test living_room '{"color":"#ff6a00","effect":"candle"}'
+
+mqtt:
+  host: 192.168.1.244
+  username: home-pi
+  # password comes from HAUNT_MQTT_PASSWORD in /etc/haunt/env
+
+bridge: auto                 # or its IP address (give it a DHCP reservation)
+key_file: /etc/haunt/hue.key # written by --pair; never commit the key
+rate: 10                     # light commands a second (Hue's guidance; lower if the bridge complains)
+
+# show.yaml light name: what it is on the bridge (case, spaces and underscores don't matter).
+#   a Hue room or zone:      living_room: Living room
+#   bulbs by name:           porch: {lights: [Porch left, Porch right]}
+#   floor: N                 optional: never dimmer than N % while the show runs
+#                            (e.g. if a light is needed to see by); still off when the show stops
+# `--list` prints every room, zone and bulb name, and marks the ones in use.
+rooms:
+  living_room: Living room
+  front_bedroom: Front bedroom
+  porch: Porch                 # the two porch lights; or {lights: [Porch left, Porch right]}
+  lamp_post: Lamp post         # by the driveway; or {lights: [Lamp post]}
