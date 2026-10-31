@@ -21,7 +21,10 @@ step: {"on":true,"bri":..,"transition":..,"seg":[{"fx":..,"sx":..,"ix":..,
 the whole strip unless it has been split into segments in WLED. With an effect
 and no palette, palette 0 ("Default", the effect's own) is sent; colour slots
 that are not given are sent black, so nothing carries over from the scene
-before.
+before. `grouping: N` (WLED "grp") lights LEDs in groups of N, which makes an
+effect N times longer; `mirror: true` (WLED "mi") runs it on half the strip
+and mirrors it onto the other half. Both are reset (1, off) by any setting
+that names an effect without them.
 
 Effect and palette numbers are WLED's built-in ones (kno.wled.ge/features/effects,
 kno.wled.ge/interfaces/json-api), taken from the eaves controller itself.
@@ -178,11 +181,17 @@ def wled_json(setting: dict) -> dict:
     for key in ("fx", "sx", "ix", "pal", "c1", "c2", "c3"):
         if setting.get(key) is not None:
             seg[key] = int(setting[key])
-    for key in ("o1", "o2", "o3"):
+    for key in ("o1", "o2", "o3", "mi"):
         if setting.get(key) is not None:
             seg[key] = bool(setting[key])
-    if "fx" in seg and "pal" not in seg:
-        seg["pal"] = 0        # the effect's own default, not whatever the last scene left
+    if setting.get("grp") is not None:
+        seg["grp"] = int(setting["grp"])
+    if "fx" in seg:
+        # The effect's own palette, and the whole strip one LED per pixel,
+        # unless asked otherwise: nothing left over from the last scene.
+        seg.setdefault("pal", 0)
+        seg.setdefault("grp", 1)
+        seg.setdefault("mi", False)
     colors = setting.get("colors") or ([setting["color"]] if setting.get("color") else [])
     if colors:
         # Unused colour slots go black so nothing from the last scene leaks in.
@@ -204,7 +213,8 @@ def messages(light_cfg: dict, setting: dict):
             if setting.get("bri") is not None:
                 out.append((topic, str(int(setting["bri"]))))
         elif any(setting.get(k) is not None for k in ("fx", "sx", "ix", "pal", "colors", "transition",
-                                                       "c1", "c2", "c3", "o1", "o2", "o3")):
+                                                       "c1", "c2", "c3", "o1", "o2", "o3",
+                                                       "grp", "mi")):
             out.append((topic + "/api", json.dumps(wled_json(setting), separators=(",", ":"))))
         else:
             if setting.get("bri") is not None:

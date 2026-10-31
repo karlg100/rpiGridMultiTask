@@ -126,7 +126,7 @@ def test_wled_effect_is_one_json_api_message():
     assert len(msgs) == 1 and msgs[0][0] == "front_lights/api"
     assert json.loads(msgs[0][1]) == {
         "on": True, "bri": 200, "transition": 15,
-        "seg": [{"fx": 66, "sx": 120, "ix": 200, "pal": 35,
+        "seg": [{"fx": 66, "sx": 120, "ix": 200, "pal": 35, "grp": 1, "mi": False,
                  "col": [[255, 106, 0], [48, 0, 96], [0, 0, 0]]}]}
     assert lights.effect_label(setting) == "Fire 2012 / Fire"
     # The Particle graveyard just takes the first colour.
@@ -407,3 +407,14 @@ def test_console_without_hue_lights_has_no_hue_line():
     sim.run(1)
     _, _, text = console(sim)
     assert "Hue rooms" not in text
+
+
+def test_wled_grouping_and_mirror_stretch_an_effect_and_reset_after():
+    wled = {"type": "wled", "topic": "front_lights"}
+    seg = json.loads(lights.messages(wled, parse_light(
+        {"effect": "Fire 2012", "palette": "Fire", "grouping": 4, "mirror": True}))[0][1])["seg"][0]
+    assert seg["grp"] == 4 and seg["mi"] is True
+    seg = json.loads(lights.messages(wled, parse_light({"effect": "Juggle"}))[0][1])["seg"][0]
+    assert seg["grp"] == 1 and seg["mi"] is False            # the next scene gets the whole strip back
+    with pytest.raises(ValueError):
+        parse_light({"effect": "Fire 2012", "grouping": 0})

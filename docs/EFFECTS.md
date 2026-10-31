@@ -30,7 +30,7 @@ per-scene colours.
 | 1 | Pumpkin Song | **Candle Multi**, orange | Each LED flickers like its own candle: a row of lit jack-o-lanterns under the singing pumpkins. | | |
 | 2 | Wicked Brew | **Popcorn**, green on purple | Pops of green rising and falling: the cauldron bubbling. | on | |
 | 3 | Twas the Night | **Halloween Eyes**, red on black | Pairs of eyes open and blink at random along the eaves while the pumpkins tell the story. | | |
-| 4 | Dragula APT | **Fire 2012**, Fire palette | "Burn through the witches": a real fire simulation along the house. | | |
+| 4 | Dragula APT | **Fire 2012**, Fire palette, grouping 4, mirrored | "Burn through the witches": a real fire simulation, flames rising from both corners of the house to meet in the middle. On the full 631-LED strip Fire 2012 only burns near its start (the left end, the rest dark): grouping LEDs in fours and mirroring makes it a 79-pixel fire on each half, the length the effect was written for. | | |
 | 5 | Cat Crow Canzonet | **Dancing Shadows**, purple and green | Spotlights sweeping past each other, like the cat and crow flitting around the witch. | on | |
 | 6 | Frankenstein | **Lightning**, blue-white over dark green | Random lightning strikes for the lab scene; the Wraiths appear in the flashes. | | 6 s at start |
 | 7 | Thriller | **Colorwaves**, Magred palette | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. | | 8 s at start, 6 s at 7:00 when the zombie animation starts |
