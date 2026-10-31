@@ -34,20 +34,24 @@ class Clock:
 
 
 class FakeHA:
-    def __init__(self, ents=ENTS, fail=None, features=0):
+    def __init__(self, ents=ENTS, fail=None, features=0, unavailable=(), bad=()):
         self.ents = list(ents)
         self.calls = []
         self.fail = fail
         self.features = features
+        self.unavailable = set(unavailable)
+        self.bad = set(bad)              # a call that includes one of these fails
         self.light = {}
 
     def states(self):
-        return {e: {"entity_id": e, "state": "on",
+        return {e: {"entity_id": e, "state": "unavailable" if e in self.unavailable else "on",
                     "attributes": {"supported_features": self.features}} for e in self.ents}
 
     def turn_on(self, entities, rgb, brightness, transition=None):
         if self.fail:
             raise self.fail
+        if self.bad & set(entities):
+            raise HAError("500 from the integration", 500)
         self.calls.append(("on", tuple(entities), tuple(rgb), brightness, transition))
         for e in entities:
             self.light[e] = (tuple(rgb), brightness)
@@ -270,12 +274,44 @@ def test_transition_only_when_supported():
     assert ha2.calls[0][4] == 2.0
 
 
-def test_status_reports_missing_entities():
-    agent, ha, bus, clock = make(ha=FakeHA(ents=ENTS[:-1]))
+def test_missing_light_is_skipped_and_reported():
+    ents = [e for e in ENTS if e != "light.flood_13"]
+    agent, ha, bus, clock = make(ha=FakeHA(ents=ents))
     go(agent, "#ff0000")
-    run(agent, clock, 0.2)
+    run(agent, clock, 0.5)
     st = [p for t, p, r in bus.sent if t == "haunt/floods/floods/status"]
-    assert st and "light.flood_15" in st[-1]
+    assert st[-1] == "ok: 14 of 15 lights; not in HA: 13"
+    sent_to = set(e for c in ha.calls for e in c[1])
+    assert sent_to == set(ents)
+    # it turns up later (re-paired): picked up at the next check and given the scene
+    ha.ents = list(ENTS)
+    run(agent, clock, 31.0)
+    assert ha.light.get("light.flood_13") == ((255, 0, 0), 255)
+
+
+def test_unavailable_light_is_skipped_until_it_returns():
+    agent, ha, bus, clock = make(ha=FakeHA(unavailable={"light.flood_2"}))
+    go(agent, "#00ff00")
+    run(agent, clock, 0.5)
+    assert "light.flood_2" not in ha.light
+    ha.unavailable = set()
+    run(agent, clock, 31.0)
+    assert ha.light["light.flood_2"] == ((0, 255, 0), 255)
+
+
+def test_one_bad_light_does_not_sink_the_rest():
+    agent, ha, bus, clock = make(ha=FakeHA(bad={"light.flood_7"}))
+    go(agent, "#ff6a00")
+    run(agent, clock, 15.0)
+    good = [e for e in ENTS if e != "light.flood_7"]
+    assert all(ha.light.get(e) == ((255, 106, 0), 255) for e in good)
+
+
+def test_max_bri_caps_everything():
+    agent, ha, bus, clock = make(max_bri=128)
+    go(agent, {"color": "#ffffff", "bri": 255})
+    run(agent, clock, 0.5)
+    assert all(b <= 128 for c in ha.calls if c[0] == "on" for b in [c[3]])
 
 
 # --------------------------------------------------------------------------

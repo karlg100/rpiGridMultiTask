@@ -470,7 +470,7 @@ class FloodAgent:
     def __init__(self, rows_cfg: Dict[str, dict], ha, bus, prefix: str = "haunt",
                  clock: Callable[[], float] = time.monotonic, rng=None,
                  rate: float = 10.0, workers: int = 4, fps: float = 5.0, idle="off",
-                 executor=None, resolve_every: float = 60.0):
+                 executor=None, resolve_every: float = 30.0, max_bri: int = 255):
         self.cfg = rows_cfg              # show light name -> {"entities": [...], "topic": ...}
         self.ha = ha
         self.bus = bus
@@ -501,6 +501,11 @@ class FloodAgent:
         self.busy: Dict[str, object] = {}            # entity -> future
         self.calls: List[tuple] = []                 # (future, entities, state)
         self.can_fade: Dict[str, bool] = {}
+        self.skip: set = set()                       # not in HA, or unavailable: not sent to
+        self.solo_until: Dict[str, float] = {}       # after a failed group call: one at a time
+        self.retry_at: Dict[str, float] = {}         # a light that failed on its own: wait
+        self.fails: Dict[str, int] = {}
+        self.max_bri = max(1, min(255, int(max_bri)))
         self.hold_until = 0.0
         self.resolve_every = resolve_every
         self.next_resolve = 0.0
@@ -553,20 +558,34 @@ class FloodAgent:
     # -- Home Assistant --------------------------------------------------
 
     def resolve(self) -> None:
+        """Read Home Assistant: which lights exist and are available (the
+        others are skipped, and picked up again when they come back)."""
         states = self.ha.states()
+        skip = set()
         for name, c in self.cfg.items():
-            missing = [e for e in c["entities"] if e not in states]
-            gone = [e for e in c["entities"] if e in states and states[e].get("state") == "unavailable"]
-            for e in c["entities"]:
+            ents = c["entities"]
+            missing = [e for e in ents if e not in states]
+            gone = [e for e in ents if e in states and states[e].get("state") == "unavailable"]
+            skip.update(missing + gone)
+            for e in ents:
                 feats = int((states.get(e) or {}).get("attributes", {}).get("supported_features") or 0)
                 self.can_fade[e] = bool(feats & TRANSITION_FEATURE)
-            if missing:
-                self._status(name, "error: not in Home Assistant: %s" % ", ".join(missing))
-            elif gone:
-                idx = [str(c["entities"].index(e) + 1) for e in gone]
-                self._status(name, "ok: %d lights, unavailable in HA: %s" % (len(c["entities"]), ", ".join(idx)))
+            if len(missing) + len(gone) == len(ents):
+                text = "error: none of the %d lights is in Home Assistant" % len(ents)
             else:
-                self._status(name, "ok: %d lights" % len(c["entities"]))
+                text = "ok: %d of %d lights" % (len(ents) - len(missing) - len(gone), len(ents))
+                if missing:
+                    text += "; not in HA: %s" % ", ".join(str(ents.index(e) + 1) for e in missing)
+                if gone:
+                    text += "; unavailable: %s" % ", ".join(str(ents.index(e) + 1) for e in gone)
+            self._status(name, text)
+        for e in skip - self.skip:
+            self.since.pop(e, None)
+        for e in self.skip - skip:                   # back: send it what it should show
+            self.sent.pop(e, None)
+            if self.desired.get(e, "unset") != "unset":
+                self.since[e] = self.clock()
+        self.skip = skip
 
     def _status(self, name: str, text: str) -> None:
         if self.status.get(name) == text:
@@ -580,6 +599,8 @@ class FloodAgent:
         if self.desired.get(entity, "unset") == state:
             return
         self.desired[entity] = state
+        if entity in self.skip:
+            return
         if self.sent.get(entity, "unset") != state:
             self.since.setdefault(entity, now)
             if fade is not None:
@@ -597,20 +618,28 @@ class FloodAgent:
                 self.busy.pop(e, None)
             try:
                 fut.result()
-            except HAError as exc:
-                self._fail(exc, now)
+            except Exception as exc:              # noqa: BLE001 - HAError, or anything from the pool
+                err = exc if isinstance(exc, HAError) else HAError(str(exc))
                 for e in ents:
                     self.sent[e] = "unknown"
-                    self.since.setdefault(e, now)
-                continue
-            except Exception as exc:              # noqa: BLE001
-                self._fail(HAError(str(exc)), now)
-                for e in ents:
-                    self.sent[e] = "unknown"
-                    self.since.setdefault(e, now)
+                    self.since[e] = now               # to the back of the queue
+                    if len(ents) > 1:
+                        # one bad light can fail a shared call: retry them one by one for a while
+                        self.solo_until[e] = now + 30.0
+                if len(ents) == 1 and err.status >= 500:
+                    # HA answered; this one light is the trouble: back off just this light
+                    e = ents[0]
+                    self.fails[e] = self.fails.get(e, 0) + 1
+                    self.retry_at[e] = now + min(30.0, 2.0 ** self.fails[e])
+                    if self.fails[e] in (1, 5) or self.fails[e] % 20 == 0:
+                        log.error("%s (failed %d times)", err, self.fails[e])
+                else:
+                    self._fail(err, now)
                 continue
             self.errors = 0
             for e in ents:
+                self.fails.pop(e, None)
+                self.retry_at.pop(e, None)
                 self.sent[e] = state
                 if self.desired.get(e, "unset") == state:
                     self.since.pop(e, None)
@@ -634,7 +663,9 @@ class FloodAgent:
             self.since.pop(e, None)
         while len(self.calls) < self.workers:
             pending = sorted((t, e) for e, t in self.since.items()
-                             if e not in self.busy and self.desired.get(e, "unset") != "unset"
+                             if e not in self.busy and e not in self.skip
+                             and self.retry_at.get(e, 0.0) <= now
+                             and self.desired.get(e, "unset") != "unset"
                              and self.sent.get(e, "unset") != self.desired[e])
             if not pending:
                 return
@@ -643,7 +674,11 @@ class FloodAgent:
             first = pending[0][1]
             state = self.desired[first]
             fade = self.fade.get(first)
-            group = [e for _t, e in pending if self.desired[e] == state and self.fade.get(e) == fade]
+            if self.solo_until.get(first, 0.0) > now:
+                group = [first]
+            else:
+                group = [e for _t, e in pending if self.desired[e] == state and self.fade.get(e) == fade
+                         and self.solo_until.get(e, 0.0) <= now]
             for e in group:
                 self.fade.pop(e, None)
             if fade is not None and not all(self.can_fade.get(e) for e in group):
@@ -691,8 +726,9 @@ class FloodAgent:
                     log.info("%s: %s", name, json.dumps(t))
                     row.start(t, now)
                     fade = float(t.get("transition", 0.5)) if t.get("on", True) else 0.5
+                scale = self.max_bri / 255.0
                 for e, (color, bri) in zip(ents, row.frame(now)):
-                    self._want(e, light_state(color, bri), now, fade)
+                    self._want(e, light_state(color, bri * scale), now, fade)
         self.dispatch()
 
     def all_off(self, wait: float = 3.0) -> None:
@@ -721,6 +757,7 @@ FLOODS_DEFAULTS = {
     "workers": 4,                        # calls in flight at once
     "fps": 5.0,                          # animation frames a second
     "idle": "off",                       # when the show is not running: off | leave | a setting
+    "max_bri": 255,                      # cap on every light's brightness (0-255), e.g. to spare batteries
     "rows": {},
 }
 
@@ -775,6 +812,10 @@ def load_config(path: Optional[str], broker: Optional[str] = None, need_mqtt: bo
             cfg["idle"] = parse_setting(idle)
         except ValueError as exc:
             raise ConfigError("floods config: idle: %s" % exc)
+    mb = cfg["max_bri"]
+    if isinstance(mb, bool) or not isinstance(mb, (int, float)) or not 1 <= mb <= 255:
+        raise ConfigError("floods config: max_bri must be 1-255")
+    cfg["max_bri"] = int(mb)
     for key in ("rate", "fps"):
         cfg[key] = float(cfg[key])
     cfg["workers"] = int(cfg["workers"])
@@ -800,7 +841,39 @@ def connect(cfg: dict) -> HomeAssistant:
     return HomeAssistant(cfg["home_assistant"], read_token(cfg))
 
 
-def main(cfg: dict) -> None:
+class DryRun:
+    """Reads Home Assistant for real, but only logs the light commands."""
+
+    def __init__(self, ha: HomeAssistant, label: Optional[Dict[str, str]] = None):
+        self.ha = ha
+        self.url = ha.url
+        self.label = label or {}
+        self.n = 0
+
+    def states(self):
+        return self.ha.states()
+
+    def _names(self, entities):
+        return " ".join(self.label.get(e, e) for e in entities)
+
+    def turn_on(self, entities, rgb, brightness, transition=None):
+        self.n += 1
+        log.info("DRY on  %-24s %s bri %d", self._names(entities), _hex(rgb), brightness)
+
+    def turn_off(self, entities, transition=None):
+        self.n += 1
+        log.info("DRY off %s", self._names(entities))
+
+    def close(self):
+        self.ha.close()
+
+
+def _labels(cfg: dict) -> Dict[str, str]:
+    return {e: "%s#%d" % (n if len(cfg["rows"]) > 1 else "", i + 1)
+            for n, c in cfg["rows"].items() for i, e in enumerate(c["entities"])}
+
+
+def main(cfg: dict, dry_run: bool = False) -> None:
     from .bus import MqttBus
     from .config import ConfigError
     if not cfg["rows"]:
@@ -808,9 +881,18 @@ def main(cfg: dict) -> None:
     prefix = cfg["mqtt"].get("prefix", "haunt")
     online = "%s/floods/online" % prefix
     ha = connect(cfg)
-    bus = MqttBus(cfg["mqtt"], "floods", will=(online, "0"), birth=(online, "1"))
+    if dry_run:
+        ha = DryRun(ha, _labels(cfg))
+        log.info("DRY RUN: reading Home Assistant and MQTT, sending nothing to the lights")
+        # no birth/will and no status messages, so the real agent's are left alone
+        bus = MqttBus(cfg["mqtt"], "floods-dry")
+    else:
+        bus = MqttBus(cfg["mqtt"], "floods", will=(online, "0"), birth=(online, "1"))
     agent = FloodAgent(cfg["rows"], ha, bus, prefix=prefix, rate=cfg["rate"],
-                       workers=cfg["workers"], fps=cfg["fps"], idle=cfg["idle"])
+                       workers=cfg["workers"], fps=cfg["fps"], idle=cfg["idle"],
+                       max_bri=cfg["max_bri"])
+    if dry_run:
+        agent._status = lambda name, text: log.info("%s: %s", name, text)
     log.info("Home Assistant %s; rows: %s", ha.url,
              ", ".join("%s = %d lights" % (n, len(c["entities"])) for n, c in cfg["rows"].items()))
     try:
@@ -882,7 +964,7 @@ def bench_test(cfg: dict, row: str, setting, seconds: float) -> None:
     s = parse_setting(setting)
     ha = connect(cfg)
     agent = FloodAgent({row: cfg["rows"][row]}, ha, _NullBus(), rate=cfg["rate"],
-                       workers=cfg["workers"], fps=cfg["fps"])
+                       workers=cfg["workers"], fps=cfg["fps"], max_bri=cfg["max_bri"])
     agent.director_online, agent.phase = True, "running"
     agent.wanted[row] = s
     print("%s: %s for %gs" % (row, json.dumps(s), seconds))

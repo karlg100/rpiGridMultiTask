@@ -71,7 +71,7 @@ scenes:
         start_after: 15
     lights:
       front_lights: {effect: Candle Multi, colors: ["#ff6a00"], speed: 96, intensity: 200, transition: 1}      # candle-lit jack-o-lanterns
-      floods: {color: "#ff6a00", animation: flicker, period: 1.2, low: 0.45, bri: 230}          # a row of jack-o-lanterns
+      floods: {color: "#ff6a00", animation: flicker, period: 2.5, low: 0.45, bri: 230}          # a row of jack-o-lanterns
       graveyard: "#007200"
       living_room: {color: "#ff6a00", effect: candle, bri: 220}                                    # candle-lit, like the jack-o-lanterns
       front_bedroom: {color: "#ff5000", effect: candle, bri: 160}
@@ -129,7 +129,7 @@ scenes:
         level: 50   # eyes loop at 50% in every scene (was 0; old omxplayer vol -99)
     lights:
       front_lights: {effect: Fire 2012, palette: Fire, speed: 120, intensity: 160, transition: 1}   # "burn through the witches"
-      floods: {colors: ["#ff2000", "#ff8000"], animation: flicker, period: 0.7, low: 0.3}         # the house on fire
+      floods: {colors: ["#ff2000", "#ff8000"], animation: flicker, period: 1.5, low: 0.3}         # the house on fire
       graveyard: "#c8c800"
       living_room: {colors: ["#ff3000", "#ff8000"], effect: fire}                                  # burn through the witches
       front_bedroom: {colors: ["#ff2000", "#ff7000"], effect: fire, bri: 200}
@@ -191,7 +191,7 @@ scenes:
         end_at: 225
     lights:
       front_lights: {effect: Colorwaves, palette: Magred, speed: 70, intensity: 128, transition: 1}   # red/magenta dance floor
-      floods: {colors: ["#ff0040", "#a000ff"], animation: chase, direction: bounce, width: 3, period: 3, low: 0.15}   # dance-floor sweep
+      floods: {colors: ["#ff0040", "#a000ff"], animation: chase, direction: bounce, width: 2, period: 6, low: 0.15}   # dance-floor sweep
       graveyard: "#400040"
       living_room: {colors: ["#ff0020", "#c00080"], animation: drift, period: 5}                   # red/magenta dance floor
       front_bedroom: {color: "#a00060", animation: pulse, period: 4, low: 0.2}
@@ -217,7 +217,7 @@ scenes:
         level: 100  # old omxplayer vol: 0
     lights:
       front_lights: {effect: Fairytwinkle, colors: ["#9d00ff", "#20ff40"], speed: 100, intensity: 128, transition: 1}   # witch sparkle
-      floods: {colors: ["#9d00ff", "#20ff40"], pattern: gradient, animation: wave, period: 5, low: 0.15}   # witchy swell
+      floods: {colors: ["#9d00ff", "#20ff40"], pattern: blocks, animation: pulse, period: 4, low: 0.15}   # witchy swell, Window half and Wall half
       graveyard: "#c80000"
       living_room: {colors: ["#9d00ff", "#20ff40"], effect: sparkle}                               # witch sparkle (drift where a bulb has no sparkle)
       front_bedroom: {colors: ["#20ff40", "#9d00ff"], animation: drift, period: 4}
@@ -237,7 +237,7 @@ scenes:
         loop: true
     lights:
       front_lights: {effect: Running, colors: ["#ff6a00", "#000000"], speed: 140, intensity: 80, transition: 1}   # Mountain King march
-      floods: {color: "#ff6a00", animation: chase, width: 2, period: 3, low: 0.05}             # the march
+      floods: {color: "#ff6a00", animation: chase, width: 1, period: 3, low: 0.05}             # the march
       graveyard: "#ffa500"
       living_room: {colors: ["#ff6a00", "#ff2000"], animation: pulse, period: 2.5, low: 0.1}      # the march
       front_bedroom: {colors: ["#ff2000", "#ff6a00"], animation: pulse, period: 2.5, low: 0.1}
@@ -256,7 +256,7 @@ scenes:
         level: 100  # old omxplayer vol: -50
     lights:
       front_lights: {effect: Meteor, o3: true, colors: ["#20ff20"], speed: 150, intensity: 128, transition: 1}   # green slimers zipping by (o3 = WLED 16's "Smooth" option)
-      floods: {color: "#20ff20", animation: chase, width: 3, period: 2, low: 0.05}             # slimer zipping across the house
+      floods: {color: "#20ff20", animation: chase, width: 1, period: 2, low: 0.05}             # slimer zipping across the house
       graveyard: "#c8c800"
       living_room: {colors: ["#20ff20", "#a0ff00", "#00c060"], animation: drift, period: 2}        # slime
       front_bedroom: {color: "#30ff30", animation: flicker, period: 0.8, low: 0.4, bri: 200}        # a slimer in the bedroom
@@ -294,7 +294,7 @@ scenes:
         level: 100  # old omxplayer vol: 0
     lights:
       front_lights: {effect: Aurora, palette: Set Colors, colors: ["#6a00ff", "#00c8a0"], speed: 60, intensity: 150, transition: 1}   # spirit glow
-      floods: {colors: ["#6a00ff", "#00c8a0"], pattern: gradient, animation: pulse, period: 5, low: 0.2}   # spirits breathing
+      floods: {colors: ["#6a00ff", "#00c8a0"], animation: pulse, period: 5, low: 0.2}   # spirits breathing
       graveyard: "#00c800"
       living_room: {colors: ["#6a00ff", "#00c8a0"], animation: drift, period: 6, bri: 180}         # spirit glow
       front_bedroom: {color: "#ff7a20", effect: candle, bri: 120}                                   # seance candles

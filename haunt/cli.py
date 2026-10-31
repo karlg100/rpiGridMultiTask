@@ -112,7 +112,7 @@ def cmd_floods(args) -> None:
         row, setting = args.test
         floods.bench_test(cfg, row, setting, args.seconds)
     else:
-        floods.main(cfg)
+        floods.main(cfg, dry_run=args.dry_run)
 
 
 def _utf8() -> bool:
@@ -277,6 +277,8 @@ def main(argv=None) -> None:
                    help="no MQTT: run SETTING (e.g. '{\"color\":\"#ff6a00\",\"animation\":\"chase\"}') "
                         "on ROW, then off")
     p.add_argument("--seconds", type=float, default=15, help="with --test: how long (default 15)")
+    p.add_argument("--dry-run", action="store_true",
+                   help="follow the show and log what would be sent, without touching the lights")
     p.add_argument("-v", "--verbose", action="store_true")
     p.set_defaults(fn=cmd_floods)
 
