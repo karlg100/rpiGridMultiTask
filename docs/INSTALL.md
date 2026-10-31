@@ -97,6 +97,9 @@ too, or list the bulbs by name: `porch: {lights: [Porch left, Porch right]}`).
 `--list` prints every name the bridge has. Each room reports
 `ok: ...` or the error on `haunt/hue/<name>/status`.
 
+`h` in the console hands the Hue rooms back to the house (and back again);
+see "Handing the rooms back to the house" in SHOW-FILE.md.
+
 ## 2. A player Pi
 
 ### Which Pi

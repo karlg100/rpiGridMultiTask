@@ -47,7 +47,8 @@ per-scene colours.
 
 The two front rooms' Philips Hue lights follow each scene too, through
 `haunt hue` on home-pi (see `docs/SHOW-FILE.md` for the settings). They go
-**off** whenever the show is not running. Colours match the eaves; the rooms
+**off** whenever the show is not running, unless they have been handed to the
+house with `h` in the console, which puts them back as they were. Colours match the eaves; the rooms
 add movement Hue can do smoothly (no strobing: Hue limits how fast bulbs can
 be changed, and it is a house, not a club).
 

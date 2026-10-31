@@ -104,6 +104,10 @@ topics are unchanged.
 | `haunt/player/<id>/state` | yes | JSON: state, cue, file, pos, dur, level, volume, gain_db, error |
 | `haunt/player/<id>/probe` | yes | JSON: which show files exist, their loudness and length |
 | `haunt/player/<id>/cmd` | no | JSON command |
+| `haunt/hue/control` | yes | `show` / `released`, set by the director (console `h`) |
+| `haunt/hue/<name>/set` | yes | JSON: the scene's Hue setting for that room |
+| `haunt/hue/<name>/status` | yes | `ok: ...`, `released to the house`, or the error |
+| `haunt/hue/online` | yes | `1` / `0` (last will of `haunt hue`) |
 
 Two rules fix the old races:
 
@@ -123,6 +127,7 @@ next  prev  restart  pause  resume  toggle  stop  start  reload
 {"cmd":"mute","player":"1"}
 {"cmd":"enable","index":5,"value":false}
 {"cmd":"reset_levels"}
+hue   or  {"cmd":"hue","value":false}  (Hue rooms to the house; true gives them back)
 ```
 
 Player commands (`haunt/player/<id>/cmd`), sent by the director:

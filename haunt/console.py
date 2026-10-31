@@ -33,7 +33,8 @@ ASCII = {"bar_on": "#", "bar_off": "-", "dot": "*", "swatch": "#",
 HELP = [
     "space pause/resume   n next   p previous   r restart scene   enter go to selected",
     "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute",
-    "u undo level changes   R reload show file   up/down select   q quit (show keeps running)",
+    "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
+    "q quit (the show keeps running)",
 ]
 
 
@@ -67,6 +68,7 @@ class Model:
         self.state_seen = -1e9
         self.playlist = {}
         self.players = {}      # pid -> {"online": bool, "state": dict, "seen": t}
+        self.hue_online = None  # the `haunt hue` agent, None = never heard
 
     def _player(self, pid):
         return self.players.setdefault(pid, {"online": False, "state": {}, "seen": -1e9})
@@ -81,6 +83,8 @@ class Model:
                 self.state_seen = self.clock()
             elif topic == t.director_playlist:
                 self.playlist = json.loads(payload)
+            elif topic == t.hue_online:
+                self.hue_online = payload == "1"
             else:
                 parsed = t.parse_player(topic)
                 if not parsed:
@@ -258,11 +262,26 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
 
     # ---- lights --------------------------------------------------------
     lines.append(rule("LIGHTS & EFFECTS", w, sym["rule"]))
+    light_types = model.playlist.get("lights") or {}
+    hue_house = st.get("hue") == "released"
+    if any((v or {}).get("type") == "hue" for v in light_types.values()):
+        hseg: Line = [(" Hue rooms  ", "bold")]
+        if hue_house:
+            hseg += [(sym["dot"] + " HOUSE", "warn"),
+                     ("  left alone for the Hue app and switches   h: give them to the show", "dim")]
+        else:
+            hseg += [(sym["dot"] + " SHOW", "ok"),
+                     ("  follow the scenes (off when stopped)   h: hand them to the house", "dim")]
+        if model.hue_online is False:
+            hseg.append(("   hue agent OFFLINE", "err"))
+        lines.append(hseg)
     lseg: Line = [(" ", "")]
-    for name in (model.playlist.get("lights") or {}):
+    for name in light_types:
         cur = (st.get("lights") or {}).get(name)
         lseg.append((name + " ", ""))
-        if cur is None:
+        if hue_house and (light_types.get(name) or {}).get("type") == "hue":
+            lseg.append(("house", "dim"))
+        elif cur is None:
             lseg.append(("?", "dim"))
         elif not cur.get("on", True):
             lseg.append(("off", "dim"))
@@ -288,7 +307,7 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
 
     # ---- how much room is left -----------------------------------------
     help_lines = HELP if show_help else [" ? keys   space pause   n next   p prev   r restart   "
-                                         "enter go to   s stop/start   +/- master   [ ] level   q quit"]
+                                         "enter go to   s stop/start   +/- master   [ ] level   h hue   q quit"]
     logbuf = st.get("log") or []
     fixed = len(lines) + 2 + 1 + len(help_lines)   # playlist rule+header, log rule, help
     spare = max(0, height - fixed)
@@ -524,6 +543,8 @@ class Controller:
             self.send("reset_levels")
         elif k == "R":
             self.send("reload")
+        elif k == "h":
+            self.send("hue")
 
 
 # --------------------------------------------------------------------------

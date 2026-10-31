@@ -104,6 +104,7 @@ class Director:
         self.master_level = 100.0
         self.levels = {}          # scene name -> {pid: level}
         self.disabled = set()     # scene names
+        self.hue = True           # the show drives the Hue rooms (False: left to the house)
         self.unmute = {}          # (scene, pid) -> level to return to
         self._dirty_at = None
         self._load_state()
@@ -118,6 +119,7 @@ class Director:
 
         self.outputs = Outputs(show.outputs, bus, clock, self.note)
         self.outputs.all_off(force=True)
+        self._publish_hue()
 
         if start_index is not None:
             self.index = max(0, min(len(show.scenes) - 1, start_index))
@@ -170,6 +172,7 @@ class Director:
         self.levels = {k: {str(p): float(v) for p, v in d.items()}
                        for k, d in (data.get("levels") or {}).items()}
         self.disabled = set(data.get("disabled") or [])
+        self.hue = bool(data.get("hue", True))
         names = [s.name for s in self.show.scenes]
         if data.get("scene") in names:
             self.index = names.index(data["scene"])
@@ -179,7 +182,8 @@ class Director:
         if not self.state_path:
             return
         data = {"master": self.master_level, "levels": self.levels,
-                "disabled": sorted(self.disabled), "scene": self.scene.name}
+                "disabled": sorted(self.disabled), "scene": self.scene.name,
+                "hue": self.hue}
         try:
             tmp = self.state_path + ".tmp"
             with open(tmp, "w") as fh:
@@ -331,6 +335,7 @@ class Director:
                 self.t_phase = now
             self.want_loaded = {pid: now - RESEND_AFTER for pid in self.want_loaded}
             self.outputs.republish()
+            self._publish_hue()
         self.outputs.tick()
         handler = getattr(self, "_tick_" + self.phase)
         handler(now)
@@ -679,6 +684,19 @@ class Director:
         self.note("scene %d %s" % (i + 1, "enabled" if on else "disabled"))
         self._touch()
 
+    def _publish_hue(self) -> None:
+        self.bus.publish(self.topics.hue_control, "show" if self.hue else "released", retain=True)
+
+    def _cmd_hue(self, cmd):
+        """Hand the Hue rooms to the house (released) or back to the show."""
+        on = bool(cmd["value"]) if "value" in cmd else not self.hue
+        if on != self.hue:
+            self.hue = on
+            self.note("Hue lights: " + ("the show has them" if on
+                                        else "left to the house (Hue app and switches)"))
+            self._touch()
+        self._publish_hue()
+
     def _cmd_reload(self, cmd):
         if not self.show.path:
             return
@@ -768,6 +786,7 @@ class Director:
             "players": players,
             "lights": self.current_lights,
             "outputs": self.outputs.snapshot(),
+            "hue": "show" if self.hue else "released",
             "log": list(self.logbuf),
             "ver": __version__,
         }

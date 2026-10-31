@@ -10,6 +10,9 @@
     <p>/player/<id>/probe      retained JSON, which show files exist + loudness
     <p>/player/<id>/cmd        JSON commands to the player
 
+    <p>/hue/control            retained "show"/"released": whether `haunt hue`
+                               drives the Hue rooms or leaves them to the house
+
 See docs/DESIGN.md for the payloads.
 """
 
@@ -36,6 +39,14 @@ class Topics:
     @property
     def director_cmd(self) -> str:
         return f"{self.prefix}/director/cmd"
+
+    @property
+    def hue_control(self) -> str:
+        return f"{self.prefix}/hue/control"
+
+    @property
+    def hue_online(self) -> str:
+        return f"{self.prefix}/hue/online"
 
     # players
     def player(self, pid, leaf: str) -> str:

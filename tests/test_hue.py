@@ -48,10 +48,31 @@ class FakeBridge:
                               "lights": [Bulb("f1", "Bedside", True)]},
         }
         self.puts = []
-        self.fail = fail
+        self.gets = 0
+        self.fail = fail            # for puts
+        self.get_fail = None
+        # what the house had on before the show (CLIP v2 light resources)
+        self.state = {}
+        for info in self.rooms.values():
+            for b in info["lights"]:
+                r = {"id": b.id, "on": {"on": True}, "dimming": {"brightness": 40.0}}
+                if b.color:
+                    r["color"] = {"xy": {"x": 0.45, "y": 0.41}}
+                    r["color_temperature"] = {"mirek": 370, "mirek_valid": True}
+                if b.effects:
+                    r["effects"] = {"status": "no_effect",
+                                    "effect_values": ["no_effect"] + sorted(b.effects)}
+                self.state[b.id] = r
 
     def inventory(self):
         return self.rooms
+
+    def get(self, path):
+        assert path == "/resource/light"
+        if self.get_fail:
+            raise self.get_fail
+        self.gets += 1
+        return list(self.state.values())
 
     def put(self, path, body):
         if self.fail:
@@ -67,6 +88,7 @@ CFG = {"living_room": {"room": "Living room", "topic": "haunt/hue/living_room"},
 def make(bridge=None, running=True, rate=100.0):
     bus, clock, bridge = Bus(), Clock(), bridge or FakeBridge()
     a = HueAgent(CFG, bridge, bus, clock=clock, rng=random.Random(1), rate=rate, group_rate=100.0)
+    a.handle("haunt/hue/control", "show")
     if running:
         a.handle("haunt/director/online", "1")
         a.handle("haunt/director/state", json.dumps({"phase": "running"}))
@@ -411,6 +433,7 @@ def test_agent_end_to_end_over_https(fake_bridge):
     bus, clock = Bus(), Clock()
     a = HueAgent({"living_room": {"room": "living_room", "topic": "haunt/hue/living_room"}},
                  b, bus, clock=clock)
+    a.handle("haunt/hue/control", "show")
     a.handle("haunt/director/online", "1")
     a.handle("haunt/director/state", '{"phase": "running"}')
     a.handle("haunt/hue/living_room/set", json.dumps({"color": "#ff6a00", "effect": "candle"}))
@@ -474,6 +497,7 @@ def test_bulbs_by_name_and_floor():
            "lamp_post": {"lights": ["Lamp post"], "floor": 25.0, "topic": "haunt/hue/lamp_post"}}
     bus, clock = Bus(), Clock()
     a = HueAgent(cfg, br, bus, clock=clock, rng=random.Random(3), rate=100, group_rate=100)
+    a.handle("haunt/hue/control", "show")
     a.handle("haunt/director/online", "1")
     a.handle("haunt/director/state", '{"phase": "running"}')
     a.handle("haunt/hue/porch/set", json.dumps({"color": "#0a2a10", "animation": "lightning", "period": 2,
@@ -498,6 +522,7 @@ def test_unknown_bulb_name_is_reported():
     br = FakeBridge(OUTDOOR)
     bus = Bus()
     a = HueAgent({"porch": {"lights": ["Porch lft"], "topic": "haunt/hue/porch"}}, br, bus, clock=Clock())
+    a.handle("haunt/hue/control", "show")
     a.handle("haunt/director/online", "1")
     a.tick()
     status = [p for t, p, r in bus.sent if t == "haunt/hue/porch/status"][-1]
@@ -516,3 +541,115 @@ def test_hue_config_rooms(tmp_path):
     f.write_text("rooms:\n  porch: {bulbs: [x]}\n")
     with pytest.raises(Exception, match="unknown"):
         hue.load_config(str(f), need_mqtt=False)
+
+
+# --------------------------------------------------------------------------
+# released to the house (console "h")
+# --------------------------------------------------------------------------
+
+def test_release_puts_rooms_back_and_stops_driving_them():
+    a, bus, clock, br = make()
+    setting(a, "living_room", {"colors": ["#ff0000", "#00ff00"], "animation": "drift", "period": 2})
+    setting(a, "front_bedroom", {"color": "#ff6a00", "effect": "candle"})
+    a.tick()
+    assert br.gets == 1                                  # remembered before the first change
+    run(a, clock, 5)
+    br.puts.clear()
+    a.handle("haunt/hue/control", "released")
+    run(a, clock, 1)
+    back = dict(br.puts)
+    assert set(back) == {"/resource/light/l1", "/resource/light/l2", "/resource/light/l3",
+                         "/resource/light/f1"}
+    assert back["/resource/light/l1"] == {"on": {"on": True}, "dimming": {"brightness": 40.0},
+                                          "color_temperature": {"mirek": 370},
+                                          "effects": {"effect": "no_effect"},
+                                          "dynamics": {"duration": 1000}}
+    assert back["/resource/light/l3"] == {"on": {"on": True}, "dimming": {"brightness": 40.0},
+                                          "dynamics": {"duration": 1000}}
+    br.puts.clear()
+    setting(a, "living_room", "#0000ff")                 # the show carries on without them
+    a.handle("haunt/director/state", json.dumps({"phase": "stopped"}))
+    run(a, clock, 5)
+    a.all_off(wait=0.1)
+    assert br.puts == []
+    assert [p for t, p, r in bus.sent if t == "haunt/hue/living_room/status"][-1] == "released to the house"
+
+
+def test_taken_back_remembers_again_and_resumes():
+    a, bus, clock, br = make()
+    setting(a, "living_room", "#ff0000")
+    run(a, clock, 1)
+    a.handle("haunt/hue/control", "released")
+    run(a, clock, 1)
+    br.state["l1"]["dimming"]["brightness"] = 77.0      # someone used the lights meanwhile
+    br.puts.clear()
+    a.handle("haunt/hue/control", "show")
+    run(a, clock, 1)
+    assert br.gets == 2
+    assert ("/resource/grouped_light/g-lr", br.puts[0][1]) == br.puts[0] and \
+        br.puts[0][1]["color"]                           # the show's red again
+    a.handle("haunt/hue/control", "released")
+    br.puts.clear()
+    run(a, clock, 1)
+    assert dict(br.puts)["/resource/light/l1"]["dimming"] == {"brightness": 77.0}
+
+
+def test_restart_while_released_never_touches_the_rooms():
+    bus, clock, br = Bus(), Clock(), FakeBridge()
+    a = HueAgent(CFG, br, bus, clock=clock, rate=100, group_rate=100)
+    a.handle("haunt/director/online", "1")
+    a.handle("haunt/director/state", json.dumps({"phase": "stopped"}))
+    run(a, clock, 2)                                     # control not heard yet: waits
+    assert br.puts == [] and br.gets == 0
+    a.handle("haunt/hue/control", "released")            # the retained message
+    run(a, clock, 5)
+    a.all_off(wait=0.1)
+    assert br.puts == [] and br.gets == 0
+
+
+def test_no_control_message_at_all_takes_over_after_a_moment():
+    bus, clock, br = Bus(), Clock(), FakeBridge()
+    a = HueAgent(CFG, br, bus, clock=clock, rate=100, group_rate=100)
+    run(a, clock, 2)
+    assert br.puts == []
+    run(a, clock, 2)
+    assert br.puts and all(b["on"] == {"on": False} for p, b in br.puts)   # no show: dark
+
+
+def test_unreadable_lights_hold_off_rather_than_lose_the_house_state():
+    a, bus, clock, br = make()
+    br.get_fail = HueError("bridge 1.2.3.4: timed out", 0)
+    setting(a, "living_room", "#ff0000")
+    run(a, clock, 1)
+    assert br.puts == []
+    br.get_fail = None
+    run(a, clock, 6)
+    assert br.puts and br.gets == 1
+
+
+def test_restore_body_forms():
+    rb = hue.restore_body
+    assert rb({"id": "x", "on": {"on": False}}) == {"on": {"on": False}, "dynamics": {"duration": 1000}}
+    assert rb({"id": "x", "on": {"on": True}, "dimming": {"brightness": 12.5},
+               "color": {"xy": {"x": 0.3, "y": 0.2}},
+               "color_temperature": {"mirek": None, "mirek_valid": False},
+               "effects": {"status": "candle", "effect_values": ["no_effect", "candle"]}}) == \
+        {"on": {"on": True}, "dimming": {"brightness": 12.5}, "color": {"xy": {"x": 0.3, "y": 0.2}},
+         "effects": {"effect": "candle"}, "dynamics": {"duration": 1000}}
+
+
+def test_director_hue_command_is_retained_persisted_and_toggles(tmp_path):
+    from sim import Sim
+    path = str(tmp_path / "show.state.json")
+    sim = Sim(state_path=path)
+    assert sim.hub.retained["haunt/hue/control"] == "show"
+    sim.cmd("hue")
+    sim.run(0.2)
+    assert sim.hub.retained["haunt/hue/control"] == "released"
+    assert sim.director.snapshot()["hue"] == "released"
+    sim.director._save_state()
+    again = Sim(state_path=path)
+    assert again.director.hue is False and again.hub.retained["haunt/hue/control"] == "released"
+    again.cmd("hue", value=True)
+    again.run(0.2)
+    assert again.hub.retained["haunt/hue/control"] == "show"

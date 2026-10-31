@@ -363,6 +363,31 @@ def _cmd(color: Optional[str], bri: float, bulb_color: bool = True, ms: Optional
     return body
 
 
+def restore_body(r: dict) -> dict:
+    """The command that puts a bulb back the way the bridge reported it
+    (``r`` is a CLIP v2 light resource)."""
+    eff_values = set((r.get("effects") or {}).get("effect_values") or [])
+    status = (r.get("effects") or {}).get("status")
+    body = {"dynamics": {"duration": 1000}}
+    if not (r.get("on") or {}).get("on"):
+        body["on"] = {"on": False}
+    else:
+        body["on"] = {"on": True}
+        bri = (r.get("dimming") or {}).get("brightness")
+        if bri is not None:
+            body["dimming"] = {"brightness": bri}
+        ct = r.get("color_temperature") or {}
+        xy = (r.get("color") or {}).get("xy")
+        if ct.get("mirek_valid") and ct.get("mirek"):
+            body["color_temperature"] = {"mirek": ct["mirek"]}
+        elif xy:
+            body["color"] = {"xy": {"x": xy["x"], "y": xy["y"]}}
+    if eff_values:
+        body["effects"] = {"effect": status if status in eff_values and body["on"]["on"]
+                           else "no_effect"}
+    return body
+
+
 class Room:
     def __init__(self, name: str, group: Optional[str], bulbs: List[Bulb], rng=None,
                  floor: float = 0.0):
@@ -395,6 +420,9 @@ class Room:
         body = self._floored(body)
         if not b.color:
             body = {k: v for k, v in body.items() if k != "color"}
+        return (("light", b.id), "/resource/light/" + b.id, body)
+
+    def _light_raw(self, b: Bulb, body: dict):
         return (("light", b.id), "/resource/light/" + b.id, body)
 
     def _group(self, body: dict):
@@ -560,15 +588,30 @@ class HueAgent:
         self.next_resolve = 0.0
         self.hold_until = 0.0                # back off after a bridge error
         self.status: Dict[str, str] = {}
+        # haunt/hue/control: True = the show drives the rooms, False = left
+        # to the house (released), None = not heard yet (retained, so it
+        # normally arrives at once; give it a moment before taking over).
+        self.control: Optional[bool] = None
+        self.control_wait_until = clock() + 3.0
+        self.saved: Dict[str, list] = {}     # name -> commands that put the room back
+        self.ok_text: Dict[str, str] = {}
         self.by_topic = {c["topic"] + "/set": n for n, c in rooms_cfg.items()}
         for t in self.by_topic:
             bus.subscribe(t)
         bus.subscribe("%s/director/online" % prefix)
         bus.subscribe("%s/director/state" % prefix)
+        bus.subscribe("%s/hue/control" % prefix)
 
     # -- inputs ----------------------------------------------------------
 
     def handle(self, topic: str, payload: str) -> None:
+        if topic == "%s/hue/control" % self.prefix:
+            word = payload.strip().lower()
+            control = word not in ("released", "release", "off", "0", "house")
+            if control != self.control:
+                log.info("Hue rooms: %s", "the show drives them" if control else "released to the house")
+            self.control = control
+            return
         if topic == "%s/director/online" % self.prefix:
             self.director_online = payload.strip() != "0"
             return
@@ -588,6 +631,11 @@ class HueAgent:
             self.wanted[name] = parse_setting(json.loads(payload) if payload.strip()[:1] in "{[\"" else payload)
         except (ValueError, TypeError) as exc:
             log.error("%s: bad setting %r: %s", name, payload[:200], exc)
+
+    def in_control(self) -> bool:
+        if self.control is None:
+            return self.clock() >= self.control_wait_until
+        return self.control
 
     def show_running(self) -> bool:
         return self.director_online is True and self.phase not in (None, "stopped")
@@ -633,9 +681,12 @@ class HueAgent:
                 continue
             self.rooms[name] = Room(real, info["group"], info["lights"], self.rng,
                                     floor=c.get("floor") or 0.0)
-            self.applied[name] = None          # (re)apply what it should be showing
+            if self.applied[name] != "released":
+                self.applied[name] = None      # (re)apply what it should be showing
             log.info("%s -> Hue %s %r: %s", name, info["kind"], real, info["lights"])
-            self._status(name, "ok: %s, %d bulb(s)" % (real, len(info["lights"])))
+            self.ok_text[name] = "ok: %s, %d bulb(s)" % (real, len(info["lights"]))
+            if self.applied.get(name) != "released":
+                self._status(name, self.ok_text[name])
 
     def _status(self, name: str, text: str) -> None:
         if self.status.get(name) == text:
@@ -689,7 +740,15 @@ class HueAgent:
             except HueError as exc:
                 log.error("cannot read rooms from the bridge: %s", exc)
                 self.hold_until = now + 5.0
+        if not self.in_control():
+            if self.control is False:
+                self.release()
+            self.drain()
+            return
+        self.take_over()
         for name, room in self.rooms.items():
+            if name not in self.saved:
+                continue
             t = self.target(name)
             if t != self.applied[name]:
                 self.applied[name] = t
@@ -699,8 +758,46 @@ class HueAgent:
                 self.enqueue(room.tick(now))
         self.drain()
 
+    def take_over(self) -> None:
+        """Remember how each room looks before the show first changes it, so
+        releasing it can put it back."""
+        need = [n for n in self.rooms if n not in self.saved]
+        if not need or self.clock() < self.hold_until:
+            return
+        try:
+            res = {r["id"]: r for r in self.bridge.get("/resource/light")}
+        except HueError as exc:
+            # Do not touch a room before knowing how to put it back.
+            log.warning("cannot read the lights to remember them: %s", exc)
+            self.hold_until = self.clock() + (1.0 if exc.status == 429 else 5.0)
+            return
+        for name in need:
+            room = self.rooms[name]
+            self.saved[name] = [room._light_raw(b, restore_body(res[b.id]))
+                                for b in room.bulbs if b.id in res]
+            if self.applied[name] == "released":
+                self.applied[name] = None
+                self._status(name, self.ok_text.get(name, "ok"))
+
+    def release(self) -> None:
+        """Stop driving the rooms and put them back as they were."""
+        for name, room in self.rooms.items():
+            if self.applied[name] == "released":
+                continue
+            ids = set(b.id for b in room.bulbs)
+            for key in list(self.queue):
+                if key == ("group", room.group) or (key[0] == "light" and key[1] in ids):
+                    self.queue.pop(key)
+            self.enqueue(self.saved.pop(name, []))
+            room.s, room.events, room.next_bulb, room.native = None, [], {}, []
+            self.applied[name] = "released"
+            self._status(name, "released to the house")
+
     def all_off(self, wait: float = 2.0) -> None:
-        """Off now, sent directly (used on the way out)."""
+        """Off now, sent directly (used on the way out). Released rooms
+        are left alone."""
+        if not self.in_control():
+            return
         self.director_online = False
         now = self.clock()
         self.hold_until = 0.0

@@ -379,3 +379,31 @@ def test_console_says_when_the_director_is_down():
     sim.director.bus.drop()
     _, _, text = console(sim)
     assert "DIRECTOR OFFLINE" in text
+
+
+def test_console_hue_key_hands_the_rooms_to_the_house():
+    import copy
+    from sim import SHOW
+    show = copy.deepcopy(SHOW)
+    show["lights"]["living_room"] = {"type": "hue"}
+    show["scenes"][0]["lights"]["living_room"] = "#ff6a00"
+    sim = Sim(show)
+    sim.run_until(lambda: sim.director.phase == "running")
+    model, ctl, text = console(sim)
+    assert "Hue rooms" in text and "SHOW" in text
+    ctl.key("h")
+    sim.run(0.5)
+    assert sim.director.hue is False
+    assert sim.hub.retained["haunt/hue/control"] == "released"
+    _, _, text = console(sim)
+    assert "HOUSE" in text and "living_room house" in text
+    ctl.key("h")
+    sim.run(0.5)
+    assert sim.hub.retained["haunt/hue/control"] == "show"
+
+
+def test_console_without_hue_lights_has_no_hue_line():
+    sim = Sim()
+    sim.run(1)
+    _, _, text = console(sim)
+    assert "Hue rooms" not in text

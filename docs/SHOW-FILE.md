@@ -135,6 +135,17 @@ calls and runs the animation. Which Hue room a light name means is set in
 (percent) below which the light never dims while the show runs. The rooms switch **off** whenever the show is not
 running: show stopped, director offline, or `haunt hue` stopped.
 
+**Handing the rooms back to the house.** Press `h` in the console (or send
+`hue` to the director) and `haunt hue` stops driving the Hue lights and puts
+each bulb back the way it was before the show took it over (on/off,
+brightness, colour or white temperature, effect). From then on the Hue app,
+switches and automations work normally, while the show keeps running on the
+screens, WLED and outputs. `h` again gives them back to the show, which first
+remembers the house's settings afresh. The choice survives restarts of the
+director and of `haunt hue` (it is in `show.state.json` and the retained
+`<prefix>/hue/control`), and the console shows `Hue rooms ● SHOW` or
+`● HOUSE`.
+
 ```yaml
 lights:
   living_room: {type: hue}
