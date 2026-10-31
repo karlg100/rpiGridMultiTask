@@ -28,7 +28,7 @@ lights:
   front_bedroom: {type: hue}   # both switch off whenever the show is not running
   porch: {type: hue}           # accents: the two porch lights ...
   lamp_post: {type: hue}       # ... and the driveway lamp post
-  floods: {type: floods}       # the 15 AiDot solar floods, 1 = Window end .. 15 = Wall end: `haunt floods` drives them through Home Assistant (deploy/floods.example.yaml)
+  floods: {type: floods}       # the 14 AiDot solar floods, Window end .. Wall end: `haunt floods` drives them through Home Assistant (deploy/floods.example.yaml)
 
 # Things the show switches on and off. The director publishes ON/OFF to
 # haunt/output/<name>/set (retained); something else does the switching.

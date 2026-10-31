@@ -1,5 +1,5 @@
 """The AiDot solar flood lights: a row of lights across the front of the
-house (1 by the Window projector ... 15 by the Wall projector), driven through
+house (first by the Window projector ... last by the Wall projector), driven through
 Home Assistant.
 
 The director does not talk to Home Assistant itself. For a light of
@@ -31,7 +31,7 @@ A setting (in show.yaml, per scene or cue):
                                                  lightning | chase | wave | sparkle
       period: 4                                  seconds (see below)
       low: 0.1                                   dimmest point, as a fraction of bri
-      direction: right                           right (1 -> 15) | left | bounce
+      direction: right                           right (Window -> Wall) | left | bounce
       width: 3                                   chase: lights in the moving group
       flash: "#d8e4ff"                           lightning / sparkle flash colour
       transition: 0.5                            fade in, seconds (if the lights can)
@@ -524,6 +524,8 @@ class FloodAgent:
         self.hold_until = 0.0
         self.resolve_every = resolve_every
         self.next_resolve = 0.0
+        self.resolving = None                        # a states() call in the background
+        self.resolved = False
         self.status: Dict[str, str] = {}
         self.errors = 0
         self.last_error_log = -1e9
@@ -573,9 +575,12 @@ class FloodAgent:
     # -- Home Assistant --------------------------------------------------
 
     def resolve(self) -> None:
-        """Read Home Assistant: which lights exist and are available (the
-        others are skipped, and picked up again when they come back)."""
-        states = self.ha.states()
+        """Read Home Assistant now (blocking)."""
+        self.apply_states(self.ha.states())
+
+    def apply_states(self, states: Dict[str, dict]) -> None:
+        """Which lights exist and are available (the others are skipped, and
+        picked up again when they come back)."""
         skip = set()
         for name, c in self.cfg.items():
             ents = c["entities"]
@@ -713,13 +718,20 @@ class FloodAgent:
 
     def tick(self) -> None:
         now = self.clock()
-        if now >= self.next_resolve:
+        # read HA's light list in the background so the animation never stalls
+        if self.resolving is None and now >= self.next_resolve:
             self.next_resolve = now + self.resolve_every
+            self.resolving = self.executor.submit(self.ha.states)
+        if self.resolving is not None and self.resolving.done():
+            fut, self.resolving = self.resolving, None
             try:
-                self.resolve()
-            except HAError as exc:
+                self.apply_states(fut.result())
+                self.resolved = True
+            except Exception as exc:              # noqa: BLE001
                 log.error("cannot read Home Assistant: %s", exc)
                 self.next_resolve = now + 10.0
+        if not self.resolved and self.resolving is not None:
+            return                                   # first look at HA before sending anything
         if self.director_online is None and now < self.start_wait_until:
             return
         if now >= self.next_frame:

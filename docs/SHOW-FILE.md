@@ -178,8 +178,8 @@ animations are slow-ish by design: no strobing.
 
 ### The flood lights (`type: floods`)
 
-`type: floods` is a row of lights in Home Assistant: the 15 AiDot solar
-floods across the front of the house, 1 at the Window end to 15 at the Wall
+`type: floods` is a row of lights in Home Assistant: the 14 AiDot solar
+floods across the front of the house, from the Window end to the Wall
 end. The director publishes the scene's setting as JSON, retained, on
 `<prefix>/floods/<name>/set`, and `python3 -m haunt floods` (the
 `haunt-floods` service) works out every light's colour and brightness a few
@@ -208,7 +208,7 @@ lights:
 | `animation` | `solid` (default), `drift` (pattern crawls along the row), `flicker` (each light on its own, flame-like), `pulse` (whole row breathes; colours swap each breath), `lightning` (held dim, white strikes across part or all of the row), `chase` (a group runs along the row with a tail), `wave` (brightness rolls along the row), `sparkle` (held dim, random lights flare) |
 | `period` | seconds: drift = per step, flicker = how often, pulse = one breath, lightning = average gap, chase = one pass of the row, wave = one wave, sparkle = average gap per light |
 | `low` | dimmest point as a fraction of `bri` |
-| `direction` | `right` (1 to 15, default), `left`, `bounce` (chase) |
+| `direction` | `right` (Window to Wall, default), `left`, `bounce` (chase) |
 | `width` | chase: how many lights in the moving group (default 3) |
 | `flash` | lightning / sparkle colour |
 | `transition` | fade into the setting, seconds, if the lights support it |
