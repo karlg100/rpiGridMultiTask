@@ -10,7 +10,7 @@ mqtt:
   username: home-pi
   # password comes from HAUNT_MQTT_PASSWORD in /etc/haunt/env
 
-bridge: auto                 # or its IP address (give it a DHCP reservation)
+bridge: 192.168.1.148        # or "auto" (mDNS / Philips discovery)
 key_file: /etc/haunt/hue.key # written by --pair; never commit the key
 rate: 10                     # light commands a second (Hue's guidance; lower if the bridge complains)
 
@@ -22,6 +22,6 @@ rate: 10                     # light commands a second (Hue's guidance; lower if
 # `--list` prints every room, zone and bulb name, and marks the ones in use.
 rooms:
   living_room: Living room
-  front_bedroom: Front bedroom
-  porch: Porch                 # the two porch lights; or {lights: [Porch left, Porch right]}
-  lamp_post: Lamp post         # by the driveway; or {lights: [Lamp post]}
+  front_bedroom: Main Bedroom             # the front bedroom is "Main Bedroom" in the Hue app
+  porch: {lights: [Porch 1, Porch 2]}     # the two porch lights (in the "Front yard" room)
+  lamp_post: {lights: [Side Pole Light]}  # by the driveway
