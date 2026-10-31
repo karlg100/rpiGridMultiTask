@@ -14,6 +14,14 @@ from typing import Dict, List, Optional
 
 import yaml
 
+# libyaml when it is there: the generated cues file takes 8 s to parse in pure
+# Python on a Pi 3, 1.5 s with it.
+_Loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
+def _yaml_load(fh):
+    return yaml.load(fh, Loader=_Loader)
+
 
 class ConfigError(Exception):
     """One or more problems in a config file. str() lists them all."""
@@ -376,7 +384,7 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
             cf = os.path.join(os.path.dirname(path), cf)
         try:
             with open(cf) as fh:
-                extra_cues = yaml.safe_load(fh) or {}
+                extra_cues = _yaml_load(fh) or {}
         except (OSError, yaml.YAMLError) as exc:
             problems.append("cues_file: cannot read %s: %s" % (cf, exc))
         if not isinstance(extra_cues, dict):
@@ -488,7 +496,7 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
 def load_show(path: str) -> Show:
     try:
         with open(path) as fh:
-            data = yaml.safe_load(fh)
+            data = _yaml_load(fh)
     except OSError as exc:
         raise ConfigError("cannot read %s: %s" % (path, exc))
     except yaml.YAMLError as exc:
@@ -525,7 +533,7 @@ def load_player_config(path: Optional[str], overrides: Optional[dict] = None) ->
     if path:
         try:
             with open(path) as fh:
-                data = yaml.safe_load(fh) or {}
+                data = _yaml_load(fh) or {}
         except OSError as exc:
             raise ConfigError("cannot read %s: %s" % (path, exc))
         except yaml.YAMLError as exc:
