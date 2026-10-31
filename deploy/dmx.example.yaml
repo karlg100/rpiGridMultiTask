@@ -1,0 +1,22 @@
+# /etc/haunt/dmx.yaml, on whichever Pi has the USB-to-DMX dongle plugged in.
+# Bench test (no MQTT, fires for 3 s):  python3 -m haunt dmx -c /etc/haunt/dmx.yaml --test 3
+
+mqtt:
+  host: 192.168.1.244
+  username: home-pi
+  # password comes from HAUNT_MQTT_PASSWORD in /etc/haunt/env
+
+device: auto        # first FTDI adapter found; or /dev/serial/by-id/usb-FTDI_...; "fake" for a dry run
+fps: 30
+slots: 512
+
+# Each output follows haunt/output/<name>/set from the director (ON/OFF).
+#   channel   DMX channel the fixture reads (fixture DIP address 1 = channel 1)
+#   level     value sent while ON (0-255); lower it if the machine has a fog-volume channel
+#   max_on    this program's own safety cut-off, seconds; independent of the director's
+#   extra     other channels to hold while ON, e.g. {2: 255} for a separate "fire" channel
+outputs:
+  fog_machine:
+    channel: 1
+    level: 255
+    max_on: 15
