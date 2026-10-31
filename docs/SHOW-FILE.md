@@ -205,7 +205,7 @@ lights:
 | `color` / `colors` | 1 to 15 colours, laid along the row by `pattern`. A dark colour is a dim light. |
 | `pattern` | `alternate` (default: 1, 2, 1, 2 ...), `blocks` (one block per colour; two colours = Window half and Wall half), `gradient` (blended along the row) |
 | `bri` | 0-255 (default 255) |
-| `animation` | `solid` (default), `drift` (pattern crawls along the row), `flicker` (each light on its own, flame-like), `pulse` (whole row breathes; colours swap each breath), `lightning` (held dim, white strikes across part or all of the row), `chase` (a group runs along the row with a tail), `wave` (brightness rolls along the row), `sparkle` (held dim, random lights flare) |
+| `animation` | `solid` (default), `drift` (pattern crawls along the row), `flicker` (each light on its own, flame-like), `pulse` (whole row steps between bright and dim; colours swap each breath), `lightning` (held dim, white strikes on 1-3 neighbouring lights), `chase` (a group runs along the row with a tail), `wave` (brightness rolls along the row), `sparkle` (held dim, random lights flare) |
 | `period` | seconds: drift = per step, flicker = how often, pulse = one breath, lightning = average gap, chase = one pass of the row, wave = one wave, sparkle = average gap per light |
 | `low` | dimmest point as a fraction of `bri` |
 | `direction` | `right` (Window to Wall, default), `left`, `bounce` (chase) |
@@ -213,8 +213,23 @@ lights:
 | `flash` | lightning / sparkle colour |
 | `transition` | fade into the setting, seconds, if the lights support it |
 
-Each command goes to a light over Bluetooth through Home Assistant, so keep
-animations gentle: a period of a second or more per step is safe.
+**Speed budget.** The AiDot hub handles light commands one after another,
+about 0.2 s each: roughly **5 light changes a second for the whole row**, and
+a change to all 14 lights sweeps across the house in about 3 s (the agent
+sends from the Window end). What fits:
+
+| Animation | Cost (14 lights) | Comfortable |
+|---|---|---|
+| solid | one sweep at the scene start | anything |
+| drift, pulse | the whole row every step / half period | period 4 s (drift), 8 s (pulse) or more |
+| flicker | one change per light per flicker | period 5 s or more |
+| sparkle | two changes per flare | period 7 s or more |
+| chase | two changes per step | 7 s a pass or more (bounce 13 s) |
+| lightning | 2-6 changes per strike | period 2 s or more |
+| wave | every light several times a wave | 40 s or more; avoid |
+
+`python3 tools/floods_sim.py` runs every scene against a model of the hub and
+shows the load and lag.
 
 A light not mentioned in a scene keeps whatever it had.
 

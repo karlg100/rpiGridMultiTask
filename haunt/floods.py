@@ -10,8 +10,11 @@ The director does not talk to Home Assistant itself. For a light of
 and this program (``python3 -m haunt floods``, on home-pi next to the
 director) works out what every light in the row should show, a few times a
 second, and sends only the lights that changed to Home Assistant's REST API
-(``light.turn_on`` / ``light.turn_off``). Lights that need the same thing at
-the same moment share one call. It also listens to
+(``light.turn_on`` / ``light.turn_off``), one light per call, oldest change
+first and then from the Window end, so a scene change sweeps across the house.
+The AiDot hub takes about 5 light commands a second in all (they are handled
+one after another, 0.2 s each), so animations are written to fit that. It
+also listens to
 
     <prefix>/director/online   "0" = director gone
     <prefix>/director/state    retained JSON; "phase": "stopped" = show over
@@ -44,13 +47,14 @@ A setting (in show.yaml, per scene or cue):
     solid      fixed
     drift      the pattern crawls along the row one light every period
     flicker    each light flickers on its own (flame, failing bulb); period = how often
-    pulse      the whole row breathes between bri and low; period = one breath;
-               with several colours, the colours swap each breath
-    lightning  held dim, random white strikes across part or all of the row;
+    pulse      the whole row steps between bri and low (half a period each);
+               period = one breath; several colours swap each breath
+    lightning  held dim, random white strikes on 1-3 neighbouring lights;
                period = average gap between strikes
     chase      a group of `width` lights runs along the row with a fading tail;
                period = one pass of the row
     wave       brightness rolls along the row like a swell; period = one wave
+               (heavy: every light changes several times a wave; 40 s or more)
     sparkle    held dim, random lights flare up; period = average gap per light
 
 Config: /etc/haunt/floods.yaml (deploy/floods.example.yaml). Token: a Home
@@ -269,10 +273,13 @@ class Row:
                 out.append((self.base(i), bri * self.level[i]))
             return out
         if anim == "pulse":
+            # bright for half the period, dim for the other half. (A smooth
+            # fade would change every light every frame, far beyond the ~5
+            # commands a second the AiDot hub takes; this way each half is one
+            # sweep along the row.) Colours swap at each dim point.
             phase = t / period
-            lv = low + (1.0 - low) * (0.5 + 0.5 * math.cos(2 * math.pi * phase))
-            lv = round(lv * 10) / 10.0
-            shift = int(phase + 0.5)                                 # swap colours at the dim point
+            lv = 1.0 if (phase % 1.0) < 0.5 else low
+            shift = int(phase + 0.5)
             return [(self.base(i, shift), bri * lv) for i in range(n)]
         if anim == "wave":
             for i in range(n):
@@ -312,14 +319,16 @@ class Row:
             return out
         if anim == "lightning":
             if now >= self.next_strike:
+                # 1 to 3 neighbouring lights: each light is its own command,
+                # so a wide strike would ripple instead of flash
                 flash = s.get("flash", DEFAULT_FLASH)
-                w = self.rng.randint(max(3, n // 3), n)
+                w = self.rng.randint(1, min(3, n))
                 lo = self.rng.randint(0, n - w)
-                end = now + self.rng.uniform(0.12, 0.22)
+                end = now + self.rng.uniform(0.25, 0.4)
                 self.strikes.append((now, end, lo, lo + w, flash))
-                if self.rng.random() < 0.5:                         # a second strike
-                    t2 = end + self.rng.uniform(0.15, 0.35)
-                    self.strikes.append((t2, t2 + self.rng.uniform(0.08, 0.16), lo, lo + w, flash))
+                if self.rng.random() < 0.3:                         # a second strike
+                    t2 = end + self.rng.uniform(0.3, 0.6)
+                    self.strikes.append((t2, t2 + self.rng.uniform(0.2, 0.3), lo, lo + w, flash))
                 self.next_strike = now + period * self.rng.uniform(0.5, 1.5) + 0.8
             self.strikes = [st for st in self.strikes if st[1] > now]
             lit = [st for st in self.strikes if st[0] <= now]
@@ -484,7 +493,7 @@ class _InlineExecutor:
 class FloodAgent:
     def __init__(self, rows_cfg: Dict[str, dict], ha, bus, prefix: str = "haunt",
                  clock: Callable[[], float] = time.monotonic, rng=None,
-                 rate: float = 10.0, workers: int = 4, fps: float = 5.0, idle="off",
+                 rate: float = 5.0, workers: int = 3, fps: float = 5.0, idle="off",
                  executor=None, resolve_every: float = 30.0, max_bri: int = 255):
         self.cfg = rows_cfg              # show light name -> {"entities": [...], "topic": ...}
         self.ha = ha
@@ -506,9 +515,11 @@ class FloodAgent:
                                                        thread_name_prefix="floods")
         # per entity
         self.entity_row: Dict[str, str] = {}
+        self.pos: Dict[str, int] = {}                # place along its row, 0 = Window end
         for n, c in rows_cfg.items():
-            for e in c["entities"]:
+            for i, e in enumerate(c["entities"]):
                 self.entity_row[e] = n
+                self.pos[e] = i
         self.desired: Dict[str, object] = {}
         self.sent: Dict[str, object] = {}
         self.since: Dict[str, float] = {}
@@ -682,7 +693,7 @@ class FloodAgent:
         for e in [e for e in self.since if self.sent.get(e, "unset") == self.desired.get(e, "unset")]:
             self.since.pop(e, None)
         while len(self.calls) < self.workers:
-            pending = sorted((t, e) for e, t in self.since.items()
+            pending = sorted((t, self.pos.get(e, 0), e) for e, t in self.since.items()
                              if e not in self.busy and e not in self.skip
                              and self.retry_at.get(e, 0.0) <= now
                              and self.desired.get(e, "unset") != "unset"
@@ -691,14 +702,14 @@ class FloodAgent:
                 return
             if not self.bucket.take():
                 return
-            first = pending[0][1]
+            # One light per call. The AiDot hub handles about 5 light commands a
+            # second one after another, whatever the grouping, so a shared call
+            # only hides a queue. Oldest change first, then along the row from
+            # the Window end, so a scene change sweeps across the house.
+            first = pending[0][2]
             state = self.desired[first]
             fade = self.fade.get(first)
-            if self.solo_until.get(first, 0.0) > now:
-                group = [first]
-            else:
-                group = [e for _t, e in pending if self.desired[e] == state and self.fade.get(e) == fade
-                         and self.solo_until.get(e, 0.0) <= now]
+            group = [first]
             for e in group:
                 self.fade.pop(e, None)
             if fade is not None and not all(self.can_fade.get(e) for e in group):
@@ -785,8 +796,8 @@ FLOODS_DEFAULTS = {
     "home_assistant": "http://homeassistant.local:8123",
     "token": None,                       # normally in token_file instead
     "token_file": "/etc/haunt/ha.token",
-    "rate": 10.0,                        # calls a second to Home Assistant
-    "workers": 4,                        # calls in flight at once
+    "rate": 5.0,                         # light commands a second (the AiDot hub manages ~5.2)
+    "workers": 3,                        # light commands in flight at once (more only queues in the hub)
     "fps": 5.0,                          # animation frames a second
     "idle": "off",                       # when the show is not running: off | leave | a setting
     "max_bri": 255,                      # cap on every light's brightness (0-255), e.g. to spare batteries

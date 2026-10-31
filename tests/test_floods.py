@@ -192,14 +192,21 @@ def test_off_frame():
 # the agent
 # --------------------------------------------------------------------------
 
-def test_solid_is_one_call_for_the_whole_row():
+def test_scene_change_sweeps_along_the_row_once():
     agent, ha, bus, clock = make()
     go(agent, "#ff6a00")
     run(agent, clock, 1.0)
     on = [c for c in ha.calls if c[0] == "on"]
-    assert len(on) == 1 and set(on[0][1]) == set(ENTS)
+    assert [c[1] for c in on] == [(e,) for e in ENTS]          # one per light, Window end first
     run(agent, clock, 2.0)
-    assert len([c for c in ha.calls if c[0] == "on"]) == 1     # nothing resent when nothing changes
+    assert len([c for c in ha.calls if c[0] == "on"]) == len(ENTS)   # nothing resent when nothing changes
+
+
+def test_sweep_at_hub_speed():
+    agent, ha, bus, clock = make(rate=5.0, workers=3)
+    go(agent, "#ff6a00")
+    run(agent, clock, 1.0)
+    assert 5 <= len(ha.calls) <= 9                               # about 5 a second, plus a small burst
 
 
 def test_off_when_show_stops_and_when_director_goes():
