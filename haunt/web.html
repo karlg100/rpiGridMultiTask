@@ -226,6 +226,15 @@ body.testing .show-only { display: none !important; }
   <div class="hint" id="hue-hint"></div>
 </section>
 
+<section class="card" id="floods-card" hidden>
+  <div class="stepper">
+    <div class="label"><b>Flood brightness</b><span>all 14 floods, on top of the show</span></div>
+    <button class="sbtn" data-cmd="floods_level" data-delta="-10" aria-label="Dimmer">−</button>
+    <div class="val" id="floods-level">--</div>
+    <button class="sbtn" data-cmd="floods_level" data-delta="10" aria-label="Brighter">+</button>
+  </div>
+</section>
+
 <section class="card" id="out-card" hidden>
   <div class="stepper"><div class="label"><b>Fog &amp; mister</b><span>Auto follows the show</span></div></div>
   <div id="outputs"></div>
@@ -444,6 +453,10 @@ function render() {
   }).concat((S.outputs || []).map(o => '<span class="chip ' + (o.on ? "on-out" : "") + '"><span class="n">' + esc(o.label)
       + "</span>" + (o.on ? (o.burst !== null && o.burst !== undefined ? "ON " + Math.max(0, Math.round(o.burst)) + "s" : "ON") : "off") + "</span>"));
   setHTML("lights", chips.join("") || '<span class="empty">none</span>');
+
+  // floods master brightness
+  $("floods-card").hidden = S.floods_level === null || S.floods_level === undefined;
+  if (!$("floods-card").hidden) $("floods-level").textContent = Math.round(S.floods_level) + "%";
 
   // fog and mister: auto / forced on / forced off
   $("out-card").hidden = !(S.outputs || []).length;

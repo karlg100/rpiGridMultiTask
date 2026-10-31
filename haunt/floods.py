@@ -584,10 +584,21 @@ class FloodAgent:
             bus.subscribe(t)
         bus.subscribe("%s/director/online" % prefix)
         bus.subscribe("%s/director/state" % prefix)
+        bus.subscribe("%s/floods/level" % prefix)
+        self.level = 1.0                 # master brightness from the console (haunt/floods/level, %)
 
     # -- inputs ----------------------------------------------------------
 
     def handle(self, topic: str, payload: str) -> None:
+        if topic == "%s/floods/level" % self.prefix:
+            try:
+                lv = max(0.0, min(100.0, float(payload))) / 100.0
+            except ValueError:
+                return
+            if lv != self.level:
+                log.info("master brightness %d%%", round(lv * 100))
+            self.level = lv
+            return
         if topic == "%s/director/online" % self.prefix:
             self.director_online = payload.strip() != "0"
             return
@@ -847,7 +858,8 @@ class FloodAgent:
                     fade = float(t.get("transition", 0.5)) if t.get("on", True) else 0.5
                 scale = self.max_bri / 255.0
                 for e, (color, bri) in zip(ents, row.frame(now)):
-                    self._want(e, light_state(color, bri * scale * self.battery_factor(e)), now, fade)
+                    self._want(e, light_state(color, bri * scale * self.level * self.battery_factor(e)),
+                               now, fade)
             if self.keepalive and self.show_running():
                 for e, want in self.desired.items():
                     if (want not in ("unset", OFF) and e not in self.busy and e not in self.skip

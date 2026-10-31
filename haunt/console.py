@@ -34,7 +34,7 @@ HELP = [
     "space pause/resume   n next   p previous   r restart scene   enter go to selected",
     "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo",
     "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
-    "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)",
+    "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)   , . floods brightness",
     "t test mode (lights scene by scene, without the videos)   q quit (the show keeps running)",
 ]
 
@@ -355,9 +355,14 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         if model.hue_online is False:
             hseg.append(("   hue agent OFFLINE", "err"))
         lines.append(hseg)
-    if model.floods_online is False and any((v or {}).get("type") == "floods"
-                                            for v in light_types.values()):
-        lines.append([(" Floods  ", "bold"), ("floods agent OFFLINE", "err")])
+    has_floods = any((v or {}).get("type") == "floods" for v in light_types.values())
+    if has_floods:
+        fseg: Line = [(" Floods  ", "bold"), ("brightness %d%%" % round(st.get("floods_level", 100)),
+                                               "warn" if st.get("floods_level", 100) < 100 else "")]
+        fseg.append(("   , dimmer  . brighter", "dim"))
+        if model.floods_online is False:
+            fseg.append(("   floods agent OFFLINE", "err"))
+        lines.append(fseg)
     lseg: Line = [(" ", "")]
     for name in light_types:
         cur = (st.get("lights") or {}).get(name)
@@ -611,7 +616,8 @@ def render_test(model: Model, w: int, height: int, sym: dict, test_sel: int, wal
         lines.append(oseg)
     help_lines = [
         " up/down pick a light (or ALL)   1 white  2 red  3 green  4 blue  0 off  s the scene's look",
-        " n/p next/prev scene   f fog  w mister  h Hue show/house   g play this scene   t leave test   q quit",
+        " n/p next/prev scene   f fog  w mister  , . floods dimmer/brighter (%d%%)   h Hue show/house   g play   t leave   q quit"
+        % round(st.get("floods_level", 100)),
     ]
     logbuf = st.get("log") or []
     room = (height - len(lines) - len(help_lines) - 1) if height else 4
@@ -756,6 +762,10 @@ class Controller:
             self.send("mute", player=self.focus)
         elif k == "c" and self.focus:
             self.send("mono", player=self.focus)
+        elif k in (",", "<"):
+            self.send("floods_level", delta=-10)
+        elif k in (".", ">"):
+            self.send("floods_level", delta=10)
         elif k == "u":
             self.send("reset_levels")
         elif k == "R":

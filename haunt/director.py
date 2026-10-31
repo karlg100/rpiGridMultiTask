@@ -105,6 +105,7 @@ class Director:
         self.levels = {}          # scene name -> {pid: level}
         self.disabled = set()     # scene names
         self.hue = True           # the show drives the Hue rooms (False: left to the house)
+        self.floods_level = 100.0  # master brightness for the floods, percent (console , and .)
         self.forced_off = set()   # outputs forced off from the console (kept across restarts)
         self.test = None          # test mode: {"scene": i, "light": name|"all", "pattern": ...}
         self.test_pending = False # enter test mode once the show has stopped
@@ -127,6 +128,7 @@ class Director:
         self._restore_overrides()
         self.outputs.all_off(force=True)
         self._publish_hue()
+        self._publish_floods_level()
 
         if start_index is not None:
             self.index = max(0, min(len(show.scenes) - 1, start_index))
@@ -181,6 +183,7 @@ class Director:
         self.disabled = set(data.get("disabled") or [])
         self.hue = bool(data.get("hue", True))
         self.forced_off = set(data.get("outputs_off") or [])
+        self.floods_level = max(0.0, min(100.0, float(data.get("floods_level", 100))))
         names = [s.name for s in self.show.scenes]
         if data.get("scene") in names:
             self.index = names.index(data["scene"])
@@ -191,7 +194,8 @@ class Director:
             return
         data = {"master": self.master_level, "levels": self.levels,
                 "disabled": sorted(self.disabled), "scene": self.scene.name,
-                "hue": self.hue, "outputs_off": sorted(self.forced_off)}
+                "hue": self.hue, "outputs_off": sorted(self.forced_off),
+                "floods_level": self.floods_level}
         try:
             tmp = self.state_path + ".tmp"
             with open(tmp, "w") as fh:
@@ -344,6 +348,7 @@ class Director:
             self.want_loaded = {pid: now - RESEND_AFTER for pid in self.want_loaded}
             self.outputs.republish()
             self._publish_hue()
+            self._publish_floods_level()
         self.outputs.tick()
         handler = getattr(self, "_tick_" + self.phase)
         handler(now)
@@ -863,6 +868,18 @@ class Director:
         if before != self.forced_off:
             self._touch()
 
+    def _publish_floods_level(self) -> None:
+        self.bus.publish("%s/floods/level" % self.topics.prefix, "%g" % self.floods_level, retain=True)
+
+    def _cmd_floods_level(self, cmd):
+        """Master brightness for the floods, percent: {"value": 40} or {"delta": -10}."""
+        v = self._value(cmd, self.floods_level, 100.0)
+        if v != self.floods_level:
+            self.floods_level = v
+            self.note("floods brightness %d%%" % round(v))
+            self._touch()
+        self._publish_floods_level()
+
     def _publish_hue(self) -> None:
         self.bus.publish(self.topics.hue_control, "show" if self.hue else "released", retain=True)
 
@@ -970,6 +987,7 @@ class Director:
             "lights": self.current_lights,
             "outputs": self.outputs.snapshot(),
             "hue": "show" if self.hue else "released",
+            "floods_level": round(self.floods_level),
             "test": dict(self.test, scene_name=self.show.scenes[self.test["scene"]].name)
             if self.test and self.phase == "test" else None,
             "test_pending": self.test_pending,

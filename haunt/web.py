@@ -40,7 +40,7 @@ COMMANDS = {
     "goto": ("index",), "enable": ("index", "value"),
     "master": ("delta", "value"), "level": ("player", "delta", "value"),
     "mute": ("player",), "reset_levels": (), "output": ("name", "value"),
-    "mono": ("player", "value"),
+    "mono": ("player", "value"), "floods_level": ("value", "delta"),
     "test": ("value",), "test_scene": ("index", "delta"), "test_light": ("name", "pattern"),
 }
 
@@ -202,6 +202,8 @@ class WebApp:
             "master": str(st.get("master")) if st.get("master") is not None else None,
             "master_level": st.get("master_level"),
             "hue": st.get("hue") if has_hue else None, "hue_online": m.hue_online,
+            "floods_level": st.get("floods_level") if any((v or {}).get("type") == "floods"
+                                                           for v in light_types.values()) else None,
             "players": players, "scenes": scenes, "lights": lights, "outputs": outputs,
             "test": st.get("test"), "test_pending": bool(st.get("test_pending")),
             "log": (st.get("log") or [])[-12:],

@@ -510,3 +510,17 @@ def test_battery_settings_are_checked(tmp_path):
     f.write_text("rows: {floods: {entities: [light.a]}}\nbattery_low: 20\nbattery_empty: 30\n")
     with pytest.raises(ConfigError, match="battery_empty"):
         floods.load_config(str(f), need_mqtt=False)
+
+
+def test_master_brightness_scales_every_flood():
+    agent, ha, bus, clock = make()
+    go(agent, "#ff6a00")
+    run(agent, clock, 2.0)
+    assert ha.light[ENTS[0]][1] == 255
+    agent.handle("haunt/floods/level", "40")
+    run(agent, clock, 3.0)
+    assert all(100 <= ha.light[e][1] <= 104 for e in ENTS)      # 40% of 255, rounded to the step
+    agent.handle("haunt/floods/level", "junk")                     # ignored
+    agent.handle("haunt/floods/level", "100")
+    run(agent, clock, 3.0)
+    assert ha.light[ENTS[0]][1] == 255

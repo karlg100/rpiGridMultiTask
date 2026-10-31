@@ -186,3 +186,10 @@ def test_test_mode_from_the_phone(web):
     post(base + "/api/cmd", {"cmd": "test", "value": False})
     sim.run(0.3)
     assert sim.director.phase == "stopped"
+
+
+def test_floods_brightness_from_the_phone(web):
+    sim, app, base = web
+    assert post(base + "/api/cmd", {"cmd": "floods_level", "delta": -10})[0] == 200
+    sim.run(0.3)
+    assert sim.director.floods_level == 90

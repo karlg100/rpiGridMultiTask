@@ -57,6 +57,12 @@ full brightness with calm drifts instead of chases and deep pulses, which also
 cut their commands from about 225 a minute to about 88 (the AiDot hub manages
 about 300 a minute, and every command wakes a light's radio).
 
+**Flood brightness (master).** `,` and `.` in the console (or the Flood
+brightness card on the phone page) turn every flood down or up in 10% steps,
+on top of the show and the battery dimming; for testing before dark without
+using up the batteries. The level is kept across restarts (show.state.json)
+and sent to `haunt floods` as `haunt/floods/level` (retained, percent).
+
 **Flood batteries.** Each flood's battery (`sensor.<light>_battery` in Home
 Assistant) is read every 10 s. Below 40% a flood is dimmed in proportion to
 what is left, down to a quarter of its brightness at 10% and below, so the

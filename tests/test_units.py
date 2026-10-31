@@ -664,3 +664,20 @@ def test_console_test_mode_screen_and_keys():
     ctl2.key("ESC")
     sim.run(0.3)
     assert sim.director.phase == "stopped"
+
+
+def test_floods_master_brightness_from_console_kept_across_restarts(tmp_path):
+    path = str(tmp_path / "show.state.json")
+    sim = Sim(state_path=path)
+    sim.run(0.5)
+    assert sim.hub.retained["haunt/floods/level"] == "100"
+    model, ctl, text = console(sim)
+    ctl.key(","); ctl.key(",")
+    sim.run(0.3)
+    assert sim.director.floods_level == 80 and sim.hub.retained["haunt/floods/level"] == "80"
+    sim.cmd("floods_level", value=30)
+    sim.run(0.3)
+    sim.director._save_state()
+    again = Sim(state_path=path)
+    again.run(0.3)
+    assert again.director.floods_level == 30 and again.hub.retained["haunt/floods/level"] == "30"
