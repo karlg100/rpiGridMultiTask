@@ -50,10 +50,11 @@ KEEPALIVE = 15.0         # comment line on a quiet event stream
 class WebApp:
     """The MQTT side: a console Model kept current, and commands out."""
 
-    def __init__(self, bus, topics: Topics, clock=time.monotonic):
+    def __init__(self, bus, topics: Topics, clock=time.monotonic, wallclock=time.time):
         self.bus = bus
         self.topics = topics
         self.clock = clock
+        self.wallclock = wallclock
         self.model = Model(topics, clock=clock)
         self.lock = threading.Lock()
         self.changed = threading.Condition(self.lock)
@@ -158,6 +159,10 @@ class WebApp:
                 "start_after": r.get("start_after") or 0,
                 "gain_db": ps.get("gain_db"),
                 "mono": ps.get("mono") if p["online"] else None,
+                "host": ps.get("host"), "ip": ps.get("ip"),
+                # seconds since the player's last report (its own timestamp; it reports
+                # several times a second while up)
+                "age": max(0, round(self.wallclock() - float(ps["ts"]))) if ps.get("ts") else None,
             })
         lights = []
         for name, info in light_types.items():

@@ -19,7 +19,7 @@ def web():
     sim = Sim()
     bus = sim.hub.client()
     bus.subscribe("haunt/#")
-    app = WebApp(bus, Topics("haunt"), clock=sim.clock)
+    app = WebApp(bus, Topics("haunt"), clock=sim.clock, wallclock=sim.clock)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(app, load_page(), _png(32)))
     httpd.daemon_threads = True
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
@@ -152,3 +152,20 @@ def test_mono_from_the_phone(web):
     assert post(base + "/api/cmd", {"cmd": "mono", "player": "1", "value": False})[0] == 200
     sim.run(0.5)
     assert sim.agents["1"].mono is False
+
+
+def test_players_say_online_and_which_machine(web):
+    import socket
+    sim, app, base = web
+    sim.run(1)
+    app.pump(0)
+    s = json.loads(get(base + "/api/state")[2])
+    p1 = s["players"][0]
+    assert p1["online"] and p1["host"] == socket.gethostname() and p1["age"] is not None and p1["age"] <= 2
+    gone = sim.agents.pop("2")                     # the Wall Pi drops off (its last will fires)
+    gone.bus.drop()
+    sim.run(30)
+    app.pump(0)
+    s = json.loads(get(base + "/api/state")[2])
+    assert s["players"][1]["online"] is False and s["players"][1]["state"] == "offline"
+    assert 29 <= s["players"][1]["age"] <= 32       # from the player's own timestamp, not when we heard it

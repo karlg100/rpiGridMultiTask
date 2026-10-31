@@ -268,6 +268,15 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
             wait = float(info.get("start_after") or 0) - master_pos
             if wait > 0:
                 detail.append(("starts in %s" % mmss(wait), "dim"))
+        if len(detail) == 1:
+            # nothing playing: say which machine it is, and when it was last heard from if gone
+            where = "  ".join(x for x in (ps.get("host"), ps.get("ip")) if x)
+            if not p["online"]:
+                ts = ps.get("ts")
+                when = ("last heard %s ago" % mmss(wallclock() - float(ts))) if ts else "never heard from"
+                detail.append(((where + "  " if where else "") + when, "err"))
+            elif where:
+                detail.append((where, "dim"))
         if p["online"] and state not in ("idle", "OFFLINE", "?"):
             used = sum(len(t) for t, _ in detail)
             # The scene's level as the playlist shows it (before the master fader).

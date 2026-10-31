@@ -81,6 +81,11 @@ h2 { font-size: 13px; letter-spacing: .1em; color: var(--dim); margin: 18px 4px 
 .player .role { font-size: 12px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 1px 8px; }
 .player .role.master { color: var(--orange); border-color: #5a3410; }
 .player .st { margin-left: auto; font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 6px; }
+.player .host { font-size: 13px; color: var(--dim); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+.player .host b { font-weight: 600; }
+.player .host.ok b { color: var(--green); }
+.player .host.err b { color: var(--red); }
+.player .host.warn b { color: var(--yellow); }
 .player .file { color: var(--dim); font-size: 13px; margin-top: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .player .err { color: var(--red); font-size: 13px; margin-top: 4px; }
 .player .ctl { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
@@ -333,10 +338,18 @@ function render() {
     else if (p.role === "follower" && !p.playing && S.phase === "running" && p.start_after > (S.pos || 0) + 0.5)
       sub = "starts in " + mmss(p.start_after - (S.pos || 0));
     const bar = p.playing && p.dur ? '<div class="bar small"><i data-pid="' + p.id + '"></i></div>' : "";
+    const ago = (s) => s === null || s === undefined ? "" : (s < 90 ? s + " s" : Math.round(s / 60) + " min") + " ago";
+    const where = [p.host, p.ip].filter(Boolean).map(esc).join(" · ");
+    let conn;
+    if (!p.online) conn = ["err", "OFFLINE", (where ? where + " · " : "") + (p.age !== null && p.age !== undefined ? "last heard " + ago(p.age) : "never heard from")];
+    else if (p.age !== null && p.age !== undefined && p.age > 10) conn = ["warn", "not reporting", where + " · last report " + ago(p.age)];
+    else conn = ["ok", "online", where];
+    const hostLine = '<div class="host ' + conn[0] + '"><span class="dot ' + conn[0] + '"></span><b>' + conn[1] + "</b>"
+      + (conn[2] ? "<span>" + conn[2] + "</span>" : "") + "</div>";
     return '<div class="player"><div class="head"><span class="name">' + esc(p.name) + "</span>"
       + (p.role && p.role !== "unused" ? '<span class="role ' + (p.role === "master" ? "master" : "") + '">' + esc(p.role) + "</span>" : "")
       + '<span class="st"><span class="dot ' + (PSTATE[p.state] || "") + '"></span>' + esc(p.state) + "</span></div>"
-      + '<div class="file">' + (sub || "&nbsp;") + "</div>" + bar
+      + hostLine + (sub ? '<div class="file">' + sub + "</div>" : "") + bar
       + (c ? '<div class="ctl"><button class="sbtn" data-cmd="level" data-player="' + p.id + '" data-delta="-5" aria-label="Quieter">−</button>'
         + '<span class="val">' + lvlText + "</span>"
         + '<button class="sbtn" data-cmd="level" data-player="' + p.id + '" data-delta="5" aria-label="Louder">+</button>'

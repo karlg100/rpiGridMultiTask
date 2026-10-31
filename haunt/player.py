@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import socket
 import time
 from typing import Optional
 
@@ -111,6 +112,11 @@ class PlayerAgent:
         if "mono" in saved:
             self.mono = bool(saved["mono"])
         backend.set_mono(self.mono)
+
+        # Which machine this is, for the console and the phone page.
+        self.host = socket.gethostname()
+        self.ip = None
+        self._ip_checked = -1e9
 
         bus.subscribe(self.topics.player(self.id, "cmd"))
 
@@ -240,6 +246,23 @@ class PlayerAgent:
         if cmd.get("cue") not in (None, self.cue):
             return
         self.level.to(value, float(cmd.get("ramp", LEVEL_RAMP)), self.clock())
+
+    def _local_ip(self) -> Optional[str]:
+        """The address this Pi reaches the broker from (looked up once a minute; no traffic)."""
+        now = self.clock()
+        if now - self._ip_checked >= 60:
+            self._ip_checked = now
+            host = (self.cfg.get("mqtt") or {}).get("host") or "192.168.1.1"
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                try:
+                    s.connect((host, 1883))
+                    self.ip = s.getsockname()[0]
+                finally:
+                    s.close()
+            except OSError:
+                pass
+        return self.ip
 
     def _cmd_mono(self, cmd):
         """{"cmd": "mono", "value": true/false}; no value toggles."""
@@ -393,6 +416,8 @@ class PlayerAgent:
             "lufs": self.lufs,
             "fade": round(self.fade.value(now), 2),
             "mono": self.mono,
+            "host": self.host,
+            "ip": self._local_ip(),
             "error": self.error,
             "backend": self.backend.name,
             "ver": __version__,
