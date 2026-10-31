@@ -278,6 +278,14 @@ stopped, to try an output.
 Something else does the actual switching by listening on `<topic>/set`. For a
 plug in Home Assistant, see `deploy/home-assistant/haunt-outputs.yaml`.
 
+### Cues from a file (generated lighting timelines)
+
+`cues_file: show-cues.yaml` at the top of show.yaml adds cues to scenes by
+name from another file: `{"Scene name": [{at: .., lights: {...}}, ...]}`.
+show-cues.yaml is generated from the videos (see EFFECTS.md, "Following the
+videos"); regenerate it rather than editing it by hand. Hand-written cues in
+show.yaml stay, and the generator leaves their lights alone for 30 s.
+
 ### Cues
 
 Fire once when the master's position passes `at`. A cue can change lights,

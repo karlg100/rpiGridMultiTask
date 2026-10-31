@@ -8,6 +8,7 @@
 # See docs/SHOW-FILE.md for every setting.
 
 name: Halloween
+cues_file: show-cues.yaml   # lighting timelines generated from the videos (tools/make_cues.py)
 
 mqtt:
   host: 192.168.1.244    # Home Assistant (Mosquitto add-on)

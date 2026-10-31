@@ -65,6 +65,33 @@ in the console and on the phone lists any that are dimmed ("dimmed for
 battery: 12 (35%)"). `battery_low`, `battery_empty` and `battery_min_bri` in
 floods.yaml change the curve; `max_bri` still caps all of them.
 
+## Following the videos (2026-10-31)
+
+Each scene's lights now change with its video, from show-cues.yaml (about
+480 cues across the show). How it was made:
+
+1. `tools/analyze_video.py` on a player Pi (it has the files) reads each
+   scene's master video from its start point: the colours of every keyframe
+   (cuts show up as big colour changes; most of these files have a keyframe
+   every second), and the soundtrack's loudness every 0.5 s and tempo. It
+   also makes a contact sheet per video.
+2. `tools/make_cues.py ANALYSIS_DIR show.yaml '{"Scene": seconds, ...}' >
+   show-cues.yaml` turns that into cues: a new look at each cut (or every 8 s,
+   6 s in high-energy scenes, where the picture does not cut), in the
+   section's two strongest colours at full brightness, swapped on alternate
+   cuts for contrast. Loud passages in high-energy scenes (many cuts, or a
+   loud mix) get fast effects (Running, fast Colorwaves, Popcorn, Meteor) and
+   Hue pulses on the beat; quieter ones Colorwaves, Fairytwinkle, Candle Multi
+   and slow drifts. Near-black video (the witch scenes) uses the scene's theme
+   colours.
+3. Each system changes only as often as it can: eaves every cut down to
+   2.5 s apart, graveyard 4 s, Hue rooms 6 s, floods 20 s and only slow drifts
+   (the AiDot hub and the solar batteries). The longest stretch without a
+   change in any scene is about 14 s.
+
+High-energy scenes (Dragula, Frankenstein, Ghostbusters, Skeletons, Guardians,
+Ghosts n Stuff, Stayin' Undead) change the eaves 30-70 times each.
+
 ## Hue rooms (living room, front bedroom)
 
 The two front rooms' Philips Hue lights follow each scene too, through

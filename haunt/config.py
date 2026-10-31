@@ -366,7 +366,29 @@ def parse_show(data: dict, path: Optional[str] = None) -> Show:
 
     scenes = []
     seen = set()
+    # Extra cues from another file (generated lighting timelines), by scene name:
+    #   cues_file: show-cues.yaml        (next to the show file)
+    #   that file:  {"Scene name": [ {at: .., lights: {...}}, ... ], ...}
+    extra_cues = {}
+    if data.get("cues_file"):
+        cf = str(data["cues_file"])
+        if path and not os.path.isabs(cf):
+            cf = os.path.join(os.path.dirname(path), cf)
+        try:
+            with open(cf) as fh:
+                extra_cues = yaml.safe_load(fh) or {}
+        except (OSError, yaml.YAMLError) as exc:
+            problems.append("cues_file: cannot read %s: %s" % (cf, exc))
+        if not isinstance(extra_cues, dict):
+            problems.append("cues_file: %s must map scene names to lists of cues" % cf)
+            extra_cues = {}
+        names = {str((r or {}).get("name")) for r in (data.get("scenes") or [])}
+        for n in extra_cues:
+            if str(n) not in names:
+                problems.append("cues_file: no scene called %r" % n)
     for i, raw in enumerate(data.get("scenes") or []):
+        if raw and extra_cues.get(str(raw.get("name"))):
+            raw = dict(raw, cues=list(raw.get("cues") or []) + list(extra_cues[str(raw.get("name"))]))
         raw = raw or {}
         name = str(raw.get("name") or "Scene %d" % (i + 1))
         where = "scene %d (%s)" % (i + 1, name)

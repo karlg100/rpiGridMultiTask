@@ -367,3 +367,21 @@ def test_bad_output_settings_are_reported():
         parse_show(show)
     assert "output 'smoke_machine' is not defined" in str(err.value)
     assert "pond_mister: 'maybe' is not on, off or a number" in str(err.value)
+
+
+def test_cues_from_a_cues_file(tmp_path):
+    import copy
+    import yaml
+    from haunt.config import ConfigError, load_show
+    from sim import SHOW
+    show = copy.deepcopy(SHOW)
+    show["cues_file"] = "extra.yaml"
+    (tmp_path / "extra.yaml").write_text(yaml.safe_dump({"A": [{"at": 3, "lights": {"front_lights": "#ff0000"}},
+                                                               {"at": 1, "lights": {"graveyard": "#00ff00"}}]}))
+    (tmp_path / "show.yaml").write_text(yaml.safe_dump(show))
+    s = load_show(str(tmp_path / "show.yaml"))
+    a = s.scenes[0]
+    assert [c.at for c in a.cues][:2] == [1.0, 3.0] and a.cues[1].lights["front_lights"]["color"] == "#ff0000"
+    (tmp_path / "extra.yaml").write_text(yaml.safe_dump({"No such scene": []}))
+    with pytest.raises(ConfigError, match="No such scene"):
+        load_show(str(tmp_path / "show.yaml"))
