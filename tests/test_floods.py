@@ -405,3 +405,12 @@ def test_http_client():
         assert ei.value.status == 401
     finally:
         srv.shutdown()
+
+
+def test_fast_chase_lights_every_light_in_order():
+    agent, ha, bus, clock = make(rate=1000.0)
+    go(agent, {"color": "#20ff20", "animation": "chase", "width": 1, "period": 2, "low": 0.05})
+    run(agent, clock, 2.0, step=0.02)
+    heads = [c[1][0] for c in ha.calls if c[0] == "on" and c[3] == 255 and len(c[1]) == 1]
+    order = [int(e.rsplit("_", 1)[1]) for e in heads]
+    assert order[:15] == list(range(1, 16))

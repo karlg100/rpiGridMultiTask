@@ -256,7 +256,7 @@ scenes:
         level: 100  # old omxplayer vol: -50
     lights:
       front_lights: {effect: Meteor, o3: true, colors: ["#20ff20"], speed: 150, intensity: 128, transition: 1}   # green slimers zipping by (o3 = WLED 16's "Smooth" option)
-      floods: {color: "#20ff20", animation: chase, width: 1, period: 2, low: 0.05}             # slimer zipping across the house
+      floods: {color: "#20ff20", animation: chase, width: 1, period: 3, low: 0.05}             # slimer zipping across the house
       graveyard: "#c8c800"
       living_room: {colors: ["#20ff20", "#a0ff00", "#00c060"], animation: drift, period: 2}        # slime
       front_bedroom: {color: "#30ff30", animation: flicker, period: 0.8, low: 0.4, bri: 200}        # a slimer in the bedroom

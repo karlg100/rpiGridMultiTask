@@ -281,17 +281,18 @@ class Row:
                 out.append((self.base(i), bri * round(lv * 6) / 6.0))
             return out
         if anim == "chase":
+            # the head steps one light at a time (never skips one: see step_interval)
             width = int(s.get("width") or 3)
             if s.get("direction") == "bounce":
                 span = max(1, 2 * (n - 1))
-                pos = (t / period * span) % span
+                pos = int(t / period * span) % span
                 head = pos if pos <= n - 1 else span - pos
-                moving_right = pos <= n - 1
+                moving_right = pos < n - 1
                 for i in range(n):
                     behind = (head - i) if moving_right else (i - head)
                     out.append((self.base(i), bri * self._tail(behind, width, low)))
                 return out
-            head = (t / period * n) % n
+            head = int(t / period * n) % n
             if self._dir() < 0:
                 head = n - 1 - head
             for i in range(n):
@@ -329,13 +330,27 @@ class Row:
         return [(self.base(i), bri) for i in range(n)]
 
     @staticmethod
-    def _tail(behind: float, width: int, low: float) -> float:
-        """Chase brightness for a light `behind` lights behind the head."""
-        if behind < -0.5 or behind >= width + 0.5:
+    def _tail(behind: int, width: int, low: float) -> float:
+        """Chase brightness for a light `behind` lights behind the head:
+        the head full, then width-1 lights fading, the rest at low."""
+        if behind < 0 or behind >= width:
             return low
-        if behind < 1.0:
-            return 1.0
-        return max(low, 1.0 - (behind / (width + 0.5)) * (1.0 - low))
+        return 1.0 - (behind / float(width)) * (1.0 - low)
+
+    def step_interval(self) -> Optional[float]:
+        """Seconds between steps of a stepping animation (chase, drift), so
+        frames can come at least that often; None for the others."""
+        s = self.s
+        if not s or not s.get("on", True):
+            return None
+        anim = s.get("animation", "solid")
+        period = self._par("period", DEFAULT_PERIOD.get(anim, 4.0)) or 1.0
+        if anim == "chase":
+            steps = 2 * (self.n - 1) if s.get("direction") == "bounce" else self.n
+            return period / max(1, steps)
+        if anim == "drift":
+            return period
+        return None
 
 
 # --------------------------------------------------------------------------
@@ -708,7 +723,12 @@ class FloodAgent:
         if self.director_online is None and now < self.start_wait_until:
             return
         if now >= self.next_frame:
-            self.next_frame = now + self.frame_every
+            every = self.frame_every
+            for row in self.rows.values():
+                step = row.step_interval()
+                if step:
+                    every = min(every, step / 2.0)      # sample each step at least twice
+            self.next_frame = now + max(0.04, every)
             for name, row in self.rows.items():
                 ents = self.cfg[name]["entities"]
                 t = self.target(name)
