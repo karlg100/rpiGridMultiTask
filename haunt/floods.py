@@ -880,6 +880,9 @@ class FloodAgent:
                 fut = self.executor.submit(self.ha.turn_on, [grp], rgb, b, fade)
             self.n_calls += 1
             self.n_group_calls += 1
+            log.info("%s: group %s, %d of %d behind (group call %d)", name,
+                     "off" if state is OFF else "#%02x%02x%02x bri %d" % (tuple(state[0]) + (state[1],)),
+                     len(behind), len(ents), self.n_group_calls)
             for e in ents:
                 self.busy[e] = fut
             # every light in the row now shows `state`; the ones that should
