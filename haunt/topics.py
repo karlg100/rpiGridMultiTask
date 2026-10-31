@@ -54,6 +54,18 @@ class Topics:
     def floods_online(self) -> str:
         return f"{self.prefix}/floods/online"
 
+    def light_online(self, name: str) -> str:
+        """Online/offline of a light controller that has no last will of its
+        own (published by `haunt devwatch`)."""
+        return f"{self.prefix}/light/{name}/online"
+
+    def parse_light_online(self, topic: str):
+        head, tail = f"{self.prefix}/light/", "/online"
+        if topic.startswith(head) and topic.endswith(tail):
+            name = topic[len(head):-len(tail)]
+            return name if name and "/" not in name else None
+        return None
+
     # players
     def player(self, pid, leaf: str) -> str:
         return f"{self.prefix}/player/{pid}/{leaf}"

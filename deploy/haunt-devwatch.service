@@ -1,0 +1,19 @@
+# Installed by deploy/install.sh, which fills in @USER@ and @DIR@.
+# Online/offline for the graveyard Photon, from the 192.168.1.243 broker's log
+# (deploy/legacy-mqtt-243/). The user must be able to read the system journal (group adm).
+[Unit]
+Description=Halloween show device online watcher (haunt devwatch)
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+User=@USER@
+SupplementaryGroups=adm systemd-journal
+WorkingDirectory=@DIR@
+EnvironmentFile=-/etc/haunt/env
+ExecStart=/usr/bin/python3 -m haunt devwatch show.yaml --client halloweentree=graveyard
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

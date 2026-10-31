@@ -21,6 +21,14 @@ Outputs a scene does not mention are off during it. Safety rules:
   * the switching side should also turn the output off when
     ``haunt/director/online`` goes to ``0`` (the director's last will), in case
     the director dies with something on
+
+Overrides (console and phone): an output can be forced ``on`` or ``off``
+instead of following the show (``auto``). Forced off stays off, across
+scenes and restarts, until it is put back to auto (e.g. the pond is low).
+Forced on is still bound by ``max_on`` (so for the fog machine it is a burst
+of max_on seconds, then back to auto), and is dropped when the show stops,
+pauses or the director shuts down; while the show is stopped it can be used
+to try an output.
 """
 
 from __future__ import annotations
@@ -35,7 +43,9 @@ class Outputs:
         self.bus = bus
         self.clock = clock
         self.note = note
-        self.state: Dict[str, bool] = {}      # what we last published
+        self.state: Dict[str, bool] = {}      # what the show wants
+        self.sent: Dict[str, bool] = {}       # what we last published (after overrides)
+        self.override: Dict[str, str] = {}    # name -> "on" / "off"; absent = auto
         self.held = set()                      # on for the rest of the scene
         self.until: Dict[str, float] = {}      # burst end times
         self.on_since: Dict[str, float] = {}
@@ -46,20 +56,49 @@ class Outputs:
     def _publish(self, name: str, on: bool) -> None:
         self.bus.publish(self.defs[name]["topic"] + "/set", "ON" if on else "OFF", retain=True)
 
-    def _set(self, name: str, on: bool, force: bool = False) -> None:
-        if not force and self.state.get(name) == on:
+    def effective(self, name: str) -> bool:
+        o = self.override.get(name)
+        if o == "on":
+            return True
+        if o == "off":
+            return False
+        return bool(self.state.get(name))
+
+    def _sync(self, name: str, force: bool = False) -> None:
+        on = self.effective(name)
+        if not force and self.sent.get(name) == on:
             return
-        self.state[name] = on
+        self.sent[name] = on
         if on:
             self.on_since[name] = self.clock()
         else:
             self.on_since.pop(name, None)
         self._publish(name, on)
 
+    def _set(self, name: str, on: bool, force: bool = False) -> None:
+        self.state[name] = on
+        self._sync(name, force)
+
     def republish(self) -> None:
         """Send every output's state again (after a broker reconnect)."""
         for name in self.defs:
-            self._publish(name, bool(self.state.get(name)))
+            self._publish(name, self.effective(name))
+
+    def set_override(self, name: str, mode: str) -> None:
+        """mode: "on", "off" or "auto"."""
+        if name not in self.defs:
+            raise ValueError("no output called %r (have: %s)" % (name, ", ".join(self.defs)))
+        if mode not in ("on", "off", "auto"):
+            raise ValueError("output mode must be on, off or auto")
+        if mode == "auto":
+            self.override.pop(name, None)
+        else:
+            self.override[name] = mode
+        self._sync(name)
+
+    def _drop_on_overrides(self) -> None:
+        for name in [n for n, o in self.override.items() if o == "on"]:
+            del self.override[name]
 
     # -- what the director calls ------------------------------------------
 
@@ -102,6 +141,7 @@ class Outputs:
         self.held = set()
         self.until = {}
         self.suspended = False
+        self._drop_on_overrides()
         for name in self.defs:
             self._set(name, False, force=force)
 
@@ -109,6 +149,7 @@ class Outputs:
         """Pause: everything off, but remember what the scene wanted on."""
         self.suspended = True
         self.until = {}
+        self._drop_on_overrides()
         for name in self.defs:
             self._set(name, False)
 
@@ -128,9 +169,11 @@ class Outputs:
                     self._set(name, False)
         for name, since in list(self.on_since.items()):
             max_on = float(self.defs.get(name, {}).get("max_on") or 0)
-            if max_on and now - since >= max_on and self.state.get(name):
+            if max_on and now - since >= max_on and self.sent.get(name):
                 self.held.discard(name)
                 self.until.pop(name, None)
+                if self.override.get(name) == "on":
+                    del self.override[name]
                 self._set(name, False)
                 self.note("%s switched off after its %gs limit" % (self.defs[name]["label"], max_on),
                           "warning")
@@ -140,9 +183,16 @@ class Outputs:
         out = {}
         for name, d in self.defs.items():
             left = self.until.get(name)
+            since = self.on_since.get(name)
+            max_on = float(d.get("max_on") or 0)
+            burst = round(left - now, 1) if left and name not in self.held else None
+            if self.override.get(name) == "on" and max_on and since is not None:
+                burst = round(max(0.0, since + max_on - now), 1)
             out[name] = {
                 "label": d["label"],
-                "on": bool(self.state.get(name)),
-                "burst": round(left - now, 1) if left and name not in self.held else None,
+                "on": self.effective(name),
+                "burst": burst if self.effective(name) else None,
+                "override": self.override.get(name),
+                "show": bool(self.state.get(name)),
             }
         return out

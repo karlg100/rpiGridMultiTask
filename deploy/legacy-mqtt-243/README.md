@@ -27,6 +27,12 @@ sudo systemctl daemon-reload && sudo systemctl enable --now mosquitto
 The old full-network listener from the temporary broker is kept as
 `/etc/mosquitto/conf.d/haunt.conf.disabled`.
 
+The Photon never says whether it is online, so `haunt devwatch`
+(`sudo deploy/install.sh devwatch`) follows this broker's log in the journal
+and publishes `haunt/light/graveyard/online` (1/0, retained). The console and
+the phone page show the graveyard as online or OFFLINE from that. For the
+journal, legacy-243.conf also sends mosquitto's log to stdout.
+
 **192.168.1.243 must not be handed to anything else.** It used to be client2's
 wired address; give client2's wired port a different reservation and keep .243
 out of the DHCP pool.

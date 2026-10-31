@@ -105,6 +105,7 @@ class Director:
         self.levels = {}          # scene name -> {pid: level}
         self.disabled = set()     # scene names
         self.hue = True           # the show drives the Hue rooms (False: left to the house)
+        self.forced_off = set()   # outputs forced off from the console (kept across restarts)
         self.unmute = {}          # (scene, pid) -> level to return to
         self._dirty_at = None
         self._load_state()
@@ -118,6 +119,7 @@ class Director:
         bus.subscribe(self.topics.director_cmd)
 
         self.outputs = Outputs(show.outputs, bus, clock, self.note)
+        self._restore_overrides()
         self.outputs.all_off(force=True)
         self._publish_hue()
 
@@ -173,6 +175,7 @@ class Director:
                        for k, d in (data.get("levels") or {}).items()}
         self.disabled = set(data.get("disabled") or [])
         self.hue = bool(data.get("hue", True))
+        self.forced_off = set(data.get("outputs_off") or [])
         names = [s.name for s in self.show.scenes]
         if data.get("scene") in names:
             self.index = names.index(data["scene"])
@@ -183,7 +186,7 @@ class Director:
             return
         data = {"master": self.master_level, "levels": self.levels,
                 "disabled": sorted(self.disabled), "scene": self.scene.name,
-                "hue": self.hue}
+                "hue": self.hue, "outputs_off": sorted(self.forced_off)}
         try:
             tmp = self.state_path + ".tmp"
             with open(tmp, "w") as fh:
@@ -684,6 +687,42 @@ class Director:
         self.note("scene %d %s" % (i + 1, "enabled" if on else "disabled"))
         self._touch()
 
+    def _restore_overrides(self) -> None:
+        for name in sorted(self.forced_off):
+            if name in self.outputs.defs:
+                self.outputs.set_override(name, "off")
+
+    def _cmd_output(self, cmd):
+        """{"cmd":"output","name":"fog_machine","value":"on"|"off"|"auto"}; without
+        a value it steps auto -> on -> off -> auto."""
+        name = str(cmd["name"])
+        if name not in self.outputs.defs:
+            raise ValueError("no output called %r" % name)
+        mode = cmd.get("value")
+        if mode is True:
+            mode = "on"
+        elif mode is False:
+            mode = "off"
+        elif mode is None:
+            mode = {None: "on", "on": "off", "off": "auto"}[self.outputs.override.get(name)]
+        mode = str(mode).lower()
+        self.outputs.set_override(name, mode)
+        label = self.outputs.defs[name]["label"]
+        max_on = float(self.outputs.defs[name].get("max_on") or 0)
+        if mode == "on":
+            self.note("%s forced ON%s" % (label, " for %gs" % max_on if max_on else ""))
+        elif mode == "off":
+            self.note("%s forced OFF until set back to auto" % label)
+        else:
+            self.note("%s back to following the show" % label)
+        before = set(self.forced_off)
+        if mode == "off":
+            self.forced_off.add(name)
+        else:
+            self.forced_off.discard(name)
+        if before != self.forced_off:
+            self._touch()
+
     def _publish_hue(self) -> None:
         self.bus.publish(self.topics.hue_control, "show" if self.hue else "released", retain=True)
 
@@ -715,6 +754,7 @@ class Director:
             # Switch the old ones off before forgetting them.
             self.outputs.all_off()
             self.outputs = Outputs(new.outputs, self.bus, self.clock, self.note)
+            self._restore_overrides()
             self.outputs.all_off(force=True)
         self.show = new
         names = [s.name for s in new.scenes]

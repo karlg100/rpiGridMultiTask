@@ -418,3 +418,75 @@ def test_wled_grouping_and_mirror_stretch_an_effect_and_reset_after():
     assert seg["grp"] == 1 and seg["mi"] is False            # the next scene gets the whole strip back
     with pytest.raises(ValueError):
         parse_light({"effect": "Fire 2012", "grouping": 0})
+
+
+# -- output overrides ----------------------------------------------------------
+
+def test_output_overrides_force_on_off_and_auto(tmp_path):
+    import copy
+    from sim import SHOW
+    show = copy.deepcopy(SHOW)
+    show["outputs"] = {"pond_mister": {"label": "mister"}, "fog_machine": {"label": "fog", "max_on": 10}}
+    show["scenes"][0]["outputs"] = {"pond_mister": True}
+    path = str(tmp_path / "show.state.json")
+    sim = Sim(show, state_path=path)
+    sim.run_until(lambda: sim.director.phase == "running")
+    sent = lambda: sim.hub.retained.get("haunt/output/pond_mister/set")
+    fog = lambda: sim.hub.retained.get("haunt/output/fog_machine/set")
+    assert sent() == "ON"
+    sim.cmd("output", name="pond_mister", value="off")
+    sim.run(0.2)
+    assert sent() == "OFF" and sim.director.snapshot()["outputs"]["pond_mister"]["override"] == "off"
+    sim.cmd("output", name="fog_machine")              # steps auto -> on: one burst of max_on
+    sim.run(0.2)
+    assert fog() == "ON"
+    sim.run(11)
+    assert fog() == "OFF" and sim.director.outputs.override.get("fog_machine") is None
+    sim.director._save_state()
+    again = Sim(show, state_path=path)                  # forced off survives a restart
+    again.run_until(lambda: again.director.phase == "running")
+    assert again.hub.retained.get("haunt/output/pond_mister/set") == "OFF"
+    again.cmd("output", name="pond_mister", value="auto")
+    again.run(0.2)
+    assert again.hub.retained.get("haunt/output/pond_mister/set") == "ON"
+    again.cmd("output", name="pond_mister", value="on")
+    again.cmd("stop")
+    again.run_until(lambda: again.director.phase == "stopped")
+    again.run(1)
+    assert again.hub.retained.get("haunt/output/pond_mister/set") == "OFF"    # stop drops forced on
+    again.cmd("output", name="pond_mister", value="on")                       # but can try it while stopped
+    again.run(0.2)
+    assert again.hub.retained.get("haunt/output/pond_mister/set") == "ON"
+
+
+def test_console_output_keys_and_light_online():
+    import copy
+    from sim import SHOW
+    show = copy.deepcopy(SHOW)
+    show["outputs"] = {"pond_mister": {"label": "mister"}, "fog_machine": {"label": "fog", "max_on": 10}}
+    sim = Sim(show)
+    sim.run_until(lambda: sim.director.phase == "running")
+    sim.hub.client().publish("haunt/light/graveyard/online", "0", retain=True)
+    model, ctl, text = console(sim)
+    assert "graveyard OFFLINE" in text and "mister (w)" in text and "fog (f)" in text and "auto" in text
+    ctl.key("w")
+    sim.run(0.3)
+    assert sim.director.outputs.override.get("pond_mister") == "on"
+    ctl.key("w")
+    sim.run(0.3)
+    sim.hub.client().publish("haunt/light/graveyard/online", "1", retain=True)
+    _, _, text = console(sim)
+    assert "FORCED OFF" in text and "graveyard OFFLINE" not in text and "graveyard ●" in text
+
+
+def test_devwatch_follows_the_broker_log():
+    from haunt.devwatch import Watcher
+    w = Watcher({"halloweentree": "graveyard", "fridgemon_*": "freezer"})
+    assert w.line("1: New client connected from 192.168.3.1:64419 as halloweentree (p1, c1, k15).") == {"graveyard": True}
+    assert w.line("1: New client connected from 192.168.3.1:64420 as halloweentree (p1, c1, k15).") == {}
+    assert w.line("1: Client halloweentree closed its connection.") == {"graveyard": False}
+    assert w.line("1: New client connected from 192.168.2.225:4 as fridgemon_6644 (p2, c1, k15, u'home-pi').") == {"freezer": True}
+    assert w.line("1: Client halloweentree has exceeded timeout, disconnecting.") == {}
+    w.line("1: New client connected from 192.168.3.1:1 as halloweentree (p1, c1, k15).")
+    assert w.line("1: mosquitto version 2.0.11 terminating") == {"graveyard": False, "freezer": False}
+    assert w.line("1: New client connected from 192.168.1.45:1 as auto-ABC (p2, c1, k60).") == {}

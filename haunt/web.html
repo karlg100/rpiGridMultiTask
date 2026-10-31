@@ -92,6 +92,18 @@ h2 { font-size: 13px; letter-spacing: .1em; color: var(--dim); margin: 18px 4px 
 .chip .n { color: var(--dim); }
 .chip .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex: none; }
 .chip.on-out { background: #3b2a06; color: var(--yellow); }
+.chip .off-line { color: var(--red); font-weight: 700; }
+.out { padding-top: 12px; }
+.out + .out { border-top: 1px solid var(--line); margin-top: 12px; }
+.out .head { display: flex; align-items: center; gap: 8px; }
+.out .head b { flex: 1; }
+.out .st { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 6px; }
+.out .st.on { color: var(--yellow); }
+.seg3 { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--card2); border-radius: 12px; padding: 4px; gap: 4px; margin-top: 8px; }
+.seg3 button { border: 0; background: transparent; border-radius: 9px; min-height: 44px; font-weight: 600; color: var(--dim); }
+.seg3 button.on.auto { background: #3a3446; color: var(--text); }
+.seg3 button.on.force-on { background: var(--yellow); color: #221800; }
+.seg3 button.on.force-off { background: var(--red); color: #fff; }
 .list .item { display: flex; align-items: center; gap: 10px; padding: 12px 4px; border-top: 1px solid var(--line); }
 .list .item:first-child { border-top: 0; }
 .list .num { width: 26px; text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; flex: none; }
@@ -173,6 +185,11 @@ details summary::-webkit-details-marker { display: none; }
   <div class="hint" id="hue-hint"></div>
 </section>
 
+<section class="card" id="out-card" hidden>
+  <div class="stepper"><div class="label"><b>Fog &amp; mister</b><span>Auto follows the show</span></div></div>
+  <div id="outputs"></div>
+</section>
+
 <h2>Players</h2>
 <section class="card" id="players"><div class="empty">waiting for the players…</div></section>
 
@@ -232,6 +249,8 @@ document.addEventListener("click", (ev) => {
   if (b.dataset.delta) extra.delta = Number(b.dataset.delta);
   if (b.dataset.player) extra.player = b.dataset.player;
   if (b.dataset.index) extra.index = Number(b.dataset.index);
+  if (b.dataset.name) extra.name = b.dataset.name;
+  if (b.dataset.value) extra.value = b.dataset.value;
   send(b.dataset.cmd, extra);
   if (b.closest(".acts")) { openRow = null; render(); }
 });
@@ -328,10 +347,25 @@ function render() {
   // lights and outputs
   const chips = (S.lights || []).map(l => {
     const sw = (l.colors || []).map(c => '<span class="sw" style="background:' + esc(c) + '"></span>').join("");
-    return '<span class="chip"><span class="n">' + esc(l.name.replace(/_/g, " ")) + "</span>" + sw + esc(l.text) + "</span>";
+    const st = l.online === false ? '<span class="off-line">OFFLINE</span>'
+             : (l.online === true ? '<span class="dot ok"></span>' : "");
+    return '<span class="chip"><span class="n">' + esc(l.name.replace(/_/g, " ")) + "</span>" + st + sw + esc(l.text) + "</span>";
   }).concat((S.outputs || []).map(o => '<span class="chip ' + (o.on ? "on-out" : "") + '"><span class="n">' + esc(o.label)
       + "</span>" + (o.on ? (o.burst !== null && o.burst !== undefined ? "ON " + Math.max(0, Math.round(o.burst)) + "s" : "ON") : "off") + "</span>"));
   setHTML("lights", chips.join("") || '<span class="empty">none</span>');
+
+  // fog and mister: auto / forced on / forced off
+  $("out-card").hidden = !(S.outputs || []).length;
+  setHTML("outputs", (S.outputs || []).map(o => {
+    const mode = o.override || "auto";
+    const state = o.on ? (o.burst !== null && o.burst !== undefined ? "ON " + Math.max(0, Math.round(o.burst)) + "s" : "ON") : "off";
+    const onLabel = o.max_on ? "On " + Math.round(o.max_on) + "s" : "On";
+    const b = (v, label, cls) => '<button class="' + (mode === v ? "on " + cls : "") + '" data-cmd="output" data-name="'
+      + esc(o.name) + '" data-value="' + v + '">' + label + "</button>";
+    return '<div class="out"><div class="head"><b>' + esc(o.label) + '</b><span class="st ' + (o.on ? "on" : "") + '">'
+      + '<span class="dot ' + (o.on ? "warn" : "") + '"></span>' + state + "</span></div>"
+      + '<div class="seg3">' + b("auto", "Auto", "auto") + b("on", onLabel, "force-on") + b("off", "Off", "force-off") + "</div></div>";
+  }).join(""));
 
   // playlist
   const pnames = {}; (S.players || []).forEach(p => pnames[p.id] = p.name);

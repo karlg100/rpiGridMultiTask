@@ -132,3 +132,12 @@ def test_hue_shown_when_the_show_has_hue_lights():
     s = app.snapshot()
     assert s["hue"] == "released"
     assert next(l for l in s["lights"] if l["name"] == "living_room")["text"] == "house"
+
+
+def test_output_override_from_the_phone(web):
+    sim, app, base = web
+    assert post(base + "/api/cmd", {"cmd": "output", "name": "x", "value": "sideways"})[0] == 400
+    code, body = post(base + "/api/cmd", {"cmd": "output", "name": "fog_machine", "value": "on"})
+    assert code == 200
+    sent = [p for t, p in sim.hub.history if t == "haunt/director/cmd"]
+    assert json.loads(sent[-1]) == {"cmd": "output", "name": "fog_machine", "value": "on"}

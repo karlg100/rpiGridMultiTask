@@ -89,8 +89,8 @@ class Sim:
         raise AssertionError("condition not reached within %ss (phase=%s scene=%s)"
                              % (limit, self.director.phase, self.director.scene.name))
 
-    def cmd(self, name, **kw):
-        self.observer.publish(self.topics.director_cmd, dict(kw, cmd=name))
+    def cmd(self, _cmd, **kw):
+        self.observer.publish(self.topics.director_cmd, dict(kw, cmd=_cmd))
         self.step()
 
     def sent(self, topic):

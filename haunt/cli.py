@@ -1,4 +1,4 @@
-"""Command line: haunt director | player | dmx | hue | floods | console | web | demo | check | send"""
+"""Command line: haunt director | player | dmx | hue | floods | console | web | devwatch | demo | check | send"""
 
 from __future__ import annotations
 
@@ -128,6 +128,13 @@ def cmd_console(args) -> None:
     bus = MqttBus(mqtt, "console")
     bus.subscribe(topics.everything)
     run_curses(Model(topics), bus, broker=mqtt["host"], unicode=_utf8() and not args.ascii)
+
+
+def cmd_devwatch(args) -> None:
+    from . import devwatch
+    _logging(args.verbose)
+    _sigterm_is_ctrl_c()
+    devwatch.main(_mqtt_for_client(args), devwatch.parse_clients(args.client), unit=args.unit)
 
 
 def cmd_web(args) -> None:
@@ -294,6 +301,16 @@ def main(argv=None) -> None:
     p.add_argument("--broker", help="MQTT broker host (default: from the show file)")
     p.add_argument("--ascii", action="store_true", help="plain ASCII, no box-drawing characters")
     p.set_defaults(fn=cmd_console)
+
+    p = sub.add_parser("devwatch", help="publish online/offline for MQTT devices with no last will (the graveyard)")
+    show_arg(p)
+    p.add_argument("--broker", help="MQTT broker host (default: from the show file)")
+    p.add_argument("--client", action="append", metavar="CLIENT_ID=LIGHT",
+                   help="MQTT client id (trailing * for a prefix) and the light it is; "
+                        "default halloweentree=graveyard")
+    p.add_argument("--unit", default="mosquitto", help="systemd unit whose log shows the connections")
+    p.add_argument("-v", "--verbose", action="store_true")
+    p.set_defaults(fn=cmd_devwatch)
 
     p = sub.add_parser("web", help="the console as a web page for a phone (on home-pi; http://home-pi.local:8080)")
     show_arg(p)

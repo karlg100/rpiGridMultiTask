@@ -34,8 +34,16 @@ HELP = [
     "space pause/resume   n next   p previous   r restart scene   enter go to selected",
     "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute",
     "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
+    "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)",
     "q quit (the show keeps running)",
 ]
+
+
+OUTPUT_KEYS = {"fog": "f", "mister": "w"}     # console keys for the outputs, by label
+
+
+def output_key(label: str) -> Optional[str]:
+    return OUTPUT_KEYS.get((label or "").lower())
 
 
 def mmss(seconds) -> str:
@@ -70,6 +78,7 @@ class Model:
         self.players = {}      # pid -> {"online": bool, "state": dict, "seen": t}
         self.hue_online = None  # the `haunt hue` agent, None = never heard
         self.floods_online = None  # the `haunt floods` agent
+        self.light_online = {}     # light name -> bool, for controllers watched by `haunt devwatch`
 
     def _player(self, pid):
         return self.players.setdefault(pid, {"online": False, "state": {}, "seen": -1e9})
@@ -88,6 +97,12 @@ class Model:
                 self.hue_online = payload == "1"
             elif topic == t.floods_online:
                 self.floods_online = payload == "1"
+            elif t.parse_light_online(topic):
+                name = t.parse_light_online(topic)
+                if payload.strip():
+                    self.light_online[name] = payload.strip() == "1"
+                else:
+                    self.light_online.pop(name, None)
             else:
                 parsed = t.parse_player(topic)
                 if not parsed:
@@ -285,6 +300,10 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
     for name in light_types:
         cur = (st.get("lights") or {}).get(name)
         lseg.append((name + " ", ""))
+        if model.light_online.get(name) is False:
+            lseg.append(("OFFLINE ", "err"))
+        elif model.light_online.get(name):
+            lseg.append((sym["dot"] + " ", "ok"))
         if hue_house and (light_types.get(name) or {}).get("type") == "hue":
             lseg.append(("house", "dim"))
         elif cur is None:
@@ -300,16 +319,29 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
             if cur.get("preset") is not None:
                 lseg.append((" preset %s" % cur["preset"], "dim"))
         lseg.append(("    ", ""))
-    outs = st.get("outputs") or {}
-    for name, o in outs.items():
-        on = o.get("on")
-        lseg.append((o.get("label", name) + " ", ""))
-        txt = "ON" if on else "off"
-        if on and o.get("burst") is not None:
-            txt = "ON %ds" % max(0, round(o["burst"]))
-        lseg.append((sym["dot"] + " " + txt, "warn" if on else "dim"))
-        lseg.append(("    ", ""))
     lines.append(lseg)
+    outs = st.get("outputs") or {}
+    if outs:
+        oseg: Line = [(" ", "")]
+        for name, o in outs.items():
+            on = o.get("on")
+            label = o.get("label", name)
+            key = output_key(label)
+            oseg.append((label + (" (%s) " % key if key else " "), "bold"))
+            txt = "ON" if on else "off"
+            if on and o.get("burst") is not None:
+                txt = "ON %ds" % max(0, round(o["burst"]))
+            oseg.append((sym["dot"] + " " + txt, "warn" if on else "dim"))
+            ov = o.get("override")
+            if ov == "off":
+                oseg.append(("  FORCED OFF", "err"))
+            elif ov == "on":
+                oseg.append(("  FORCED ON", "warn"))
+            else:
+                oseg.append(("  auto", "dim"))
+            oseg.append(("     ", ""))
+        oseg.append(("keys: auto > on > off", "dim"))
+        lines.append(oseg)
 
     # ---- how much room is left -----------------------------------------
     help_lines = HELP if show_help else [" ? keys   space pause   n next   p prev   r restart   "
@@ -479,8 +511,8 @@ class Controller:
         self.quit = False
         self._last_index = None
 
-    def send(self, name: str, **kw) -> None:
-        self.bus.publish(self.model.topics.director_cmd, dict(kw, cmd=name))
+    def send(self, _cmd: str, **kw) -> None:
+        self.bus.publish(self.model.topics.director_cmd, dict(kw, cmd=_cmd))
 
     def sync(self) -> None:
         """Keep selection/focus valid as state arrives."""
@@ -551,6 +583,12 @@ class Controller:
             self.send("reload")
         elif k == "h":
             self.send("hue")
+        else:
+            outs = self.model.playlist.get("outputs") or {}
+            for name, o in outs.items():
+                if output_key(o.get("label", name)) == k:
+                    self.send("output", name=name)
+                    break
 
 
 # --------------------------------------------------------------------------

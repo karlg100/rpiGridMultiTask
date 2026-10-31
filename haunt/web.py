@@ -39,7 +39,7 @@ COMMANDS = {
     "stop": (), "start": (), "reload": (), "hue": ("value",),
     "goto": ("index",), "enable": ("index", "value"),
     "master": ("delta", "value"), "level": ("player", "delta", "value"),
-    "mute": ("player",), "reset_levels": (),
+    "mute": ("player",), "reset_levels": (), "output": ("name", "value"),
 }
 
 PUSH_EVERY = 0.25        # at most this often, while things change
@@ -102,7 +102,11 @@ class WebApp:
                 v = body[k]
                 if k == "player":
                     v = str(v)
+                elif k == "name" and isinstance(v, str):
+                    pass
                 elif k == "value" and isinstance(v, bool):
+                    pass
+                elif k == "value" and name == "output" and v in ("on", "off", "auto"):
                     pass
                 elif isinstance(v, bool) or not isinstance(v, (int, float)):
                     return "%s: %s must be a number" % (name, k)
@@ -168,9 +172,14 @@ class WebApp:
                 item["on"] = True
                 item["colors"] = [c for c in (cur.get("colors") or [cur.get("color")]) if c][:3]
                 item["text"] = effect_label(cur) or cur.get("color") or "on"
+            if name in m.light_online:
+                item["online"] = m.light_online[name]
             lights.append(item)
+        out_defs = m.playlist.get("outputs") or {}
         outputs = [{"name": k, "label": o.get("label", k), "on": bool(o.get("on")),
-                    "burst": o.get("burst")} for k, o in (st.get("outputs") or {}).items()]
+                    "burst": o.get("burst"), "override": o.get("override"),
+                    "max_on": (out_defs.get(k) or {}).get("max_on")}
+                   for k, o in (st.get("outputs") or {}).items()]
         has_hue = any((v or {}).get("type") == "hue" for v in light_types.values())
         return {
             "connected": bool(getattr(self.bus, "connected", True)),

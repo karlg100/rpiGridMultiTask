@@ -7,6 +7,7 @@
 #   sudo deploy/install.sh hue            (Philips Hue rooms; usually home-pi)
 #   sudo deploy/install.sh floods         (AiDot floods through Home Assistant; usually home-pi)
 #   sudo deploy/install.sh web            (the phone console on port 8080; usually home-pi)
+#   sudo deploy/install.sh devwatch       (graveyard online/offline, from the .243 broker; home-pi)
 #
 # Safe to run again: it never overwrites an existing /etc/haunt/* file.
 set -euo pipefail
@@ -27,8 +28,8 @@ case "$role" in
     dmx) pkgs="python3-paho-mqtt python3-yaml python3-serial" ;;
     hue) pkgs="python3-paho-mqtt python3-yaml avahi-utils" ;;
     floods) pkgs="python3-paho-mqtt python3-yaml" ;;
-    web) pkgs="python3-paho-mqtt python3-yaml" ;;
-    *) echo "usage: $0 director | player <id> | dmx | hue | floods | web" >&2; exit 1 ;;
+    web|devwatch) pkgs="python3-paho-mqtt python3-yaml" ;;
+    *) echo "usage: $0 director | player <id> | dmx | hue | floods | web | devwatch" >&2; exit 1 ;;
 esac
 
 echo "== installing packages: $pkgs"

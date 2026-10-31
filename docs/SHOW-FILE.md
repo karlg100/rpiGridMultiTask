@@ -247,6 +247,16 @@ Then in a scene, or in a cue:
 `off`. Outputs a scene does not mention are off during it. Everything is
 switched off when the show is paused, stopped or the director shuts down.
 
+**Overriding from the console.** `f` (fog) and `w` (mister) in the console,
+or the Fog & mister card on the phone page, set an output to **auto** (follow
+the show), **forced on** or **forced off** (director command
+`{"cmd":"output","name":"fog_machine","value":"on|off|auto"}`; without a
+value it steps auto > on > off > auto). Forced off stays off through every
+scene and across restarts until it is put back to auto. Forced on still obeys
+`max_on`, so for the fog machine it is one 10 s burst and then back to auto;
+it is dropped when the show stops or pauses, but works while the show is
+stopped, to try an output.
+
 Something else does the actual switching by listening on `<topic>/set`. For a
 plug in Home Assistant, see `deploy/home-assistant/haunt-outputs.yaml`.
 
