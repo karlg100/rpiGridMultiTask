@@ -34,7 +34,7 @@ HELP = [
     "space pause/resume   n next   p previous   r restart scene   enter go to selected",
     "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo",
     "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
-    "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)   , . floods brightness",
+    "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)   o floods on/off   , . floods brightness",
     "t test mode (lights scene by scene, without the videos)   q quit (the show keeps running)",
 ]
 
@@ -357,9 +357,11 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         lines.append(hseg)
     has_floods = any((v or {}).get("type") == "floods" for v in light_types.values())
     if has_floods:
-        fseg: Line = [(" Floods  ", "bold"), ("brightness %d%%" % round(st.get("floods_level", 100)),
-                                               "warn" if st.get("floods_level", 100) < 100 else "")]
-        fseg.append(("   , dimmer  . brighter", "dim"))
+        fon = st.get("floods_on", True) is not False
+        fseg: Line = [(" Floods  ", "bold"), ("ON" if fon else "OFF during the show", "ok" if fon else "err"),
+                      ("   brightness %d%%" % round(st.get("floods_level", 100)),
+                       "warn" if st.get("floods_level", 100) < 100 else "")]
+        fseg.append(("   o on/off  , dimmer  . brighter", "dim"))
         if model.floods_online is False:
             fseg.append(("   floods agent OFFLINE", "err"))
         lines.append(fseg)
@@ -762,6 +764,8 @@ class Controller:
             self.send("mute", player=self.focus)
         elif k == "c" and self.focus:
             self.send("mono", player=self.focus)
+        elif k == "o":
+            self.send("floods_on")
         elif k in (",", "<"):
             self.send("floods_level", delta=-10)
         elif k in (".", ">"):

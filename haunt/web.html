@@ -233,6 +233,10 @@ body.testing .show-only { display: none !important; }
     <div class="val" id="floods-level">--</div>
     <button class="sbtn" data-cmd="floods_level" data-delta="10" aria-label="Brighter">+</button>
   </div>
+  <div class="seg">
+    <button id="floods-on">On</button>
+    <button id="floods-off">Off during show</button>
+  </div>
 </section>
 
 <section class="card" id="out-card" hidden>
@@ -329,6 +333,8 @@ $("testbtn").addEventListener("click", () => {
 });
 $("hue-show").addEventListener("click", () => send("hue", {value: true}));
 $("hue-house").addEventListener("click", () => send("hue", {value: false}));
+$("floods-on").addEventListener("click", () => send("floods_on", {value: true}));
+$("floods-off").addEventListener("click", () => send("floods_on", {value: false}));
 $("playlist").addEventListener("click", (ev) => {
   const it = ev.target.closest(".item");
   if (!it) return;
@@ -456,7 +462,12 @@ function render() {
 
   // floods master brightness
   $("floods-card").hidden = S.floods_level === null || S.floods_level === undefined;
-  if (!$("floods-card").hidden) $("floods-level").textContent = Math.round(S.floods_level) + "%";
+  if (!$("floods-card").hidden) {
+    $("floods-level").textContent = Math.round(S.floods_level) + "%";
+    const fon = S.floods_on !== false;
+    $("floods-on").className = fon ? "on" : "";
+    $("floods-off").className = fon ? "" : "on house";
+  }
 
   // fog and mister: auto / forced on / forced off
   $("out-card").hidden = !(S.outputs || []).length;

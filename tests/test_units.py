@@ -681,3 +681,22 @@ def test_floods_master_brightness_from_console_kept_across_restarts(tmp_path):
     again = Sim(state_path=path)
     again.run(0.3)
     assert again.director.floods_level == 30 and again.hub.retained["haunt/floods/level"] == "30"
+
+
+def test_floods_on_off_switch_from_console_kept_across_restarts(tmp_path):
+    path = str(tmp_path / "show.state.json")
+    sim = Sim(state_path=path)
+    sim.run(0.5)
+    assert sim.hub.retained["haunt/floods/enabled"] == "1"
+    model, ctl, text = console(sim)
+    ctl.key("o")
+    sim.run(0.3)
+    assert sim.director.floods_on is False and sim.hub.retained["haunt/floods/enabled"] == "0"
+    assert sim.director.snapshot()["floods_on"] is False
+    sim.director._save_state()
+    again = Sim(state_path=path)
+    again.run(0.3)
+    assert again.director.floods_on is False and again.hub.retained["haunt/floods/enabled"] == "0"
+    again.cmd("floods_on", value=True)
+    again.run(0.3)
+    assert again.director.floods_on is True and again.hub.retained["haunt/floods/enabled"] == "1"

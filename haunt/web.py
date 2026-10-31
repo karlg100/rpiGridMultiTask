@@ -40,7 +40,7 @@ COMMANDS = {
     "goto": ("index",), "enable": ("index", "value"),
     "master": ("delta", "value"), "level": ("player", "delta", "value"),
     "mute": ("player",), "reset_levels": (), "output": ("name", "value"),
-    "mono": ("player", "value"), "floods_level": ("value", "delta"),
+    "mono": ("player", "value"), "floods_level": ("value", "delta"), "floods_on": ("value",),
     "test": ("value",), "test_scene": ("index", "delta"), "test_light": ("name", "pattern"),
 }
 
@@ -204,6 +204,7 @@ class WebApp:
             "hue": st.get("hue") if has_hue else None, "hue_online": m.hue_online,
             "floods_level": st.get("floods_level") if any((v or {}).get("type") == "floods"
                                                            for v in light_types.values()) else None,
+            "floods_on": st.get("floods_on", True) is not False,
             "players": players, "scenes": scenes, "lights": lights, "outputs": outputs,
             "test": st.get("test"), "test_pending": bool(st.get("test_pending")),
             "log": (st.get("log") or [])[-12:],

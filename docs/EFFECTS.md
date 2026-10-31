@@ -63,6 +63,13 @@ on top of the show and the battery dimming; for testing before dark without
 using up the batteries. The level is kept across restarts (show.state.json)
 and sent to `haunt floods` as `haunt/floods/level` (retained, percent).
 
+**Floods on/off.** `o` in the console (or On / Off during show on the phone
+page's flood card) keeps every flood dark while the show plays; the cues still
+run for the other lights. It only applies while the show is running: a
+stopped show leaves the floods to their own motion sensors either way, and
+test mode still drives them. Kept across restarts and sent as
+`haunt/floods/enabled` (retained, 1/0).
+
 **Flood batteries.** Each flood's battery (`sensor.<light>_battery` in Home
 Assistant) is read every 10 s. Below 40% a flood is dimmed in proportion to
 what is left, down to a quarter of its brightness at 10% and below, so the

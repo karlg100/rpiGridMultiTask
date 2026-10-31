@@ -524,3 +524,27 @@ def test_master_brightness_scales_every_flood():
     agent.handle("haunt/floods/level", "100")
     run(agent, clock, 3.0)
     assert ha.light[ENTS[0]][1] == 255
+
+
+def test_switch_turns_the_floods_off_during_the_show():
+    agent, ha, bus, clock = make()
+    go(agent, "#ff6a00")
+    run(agent, clock, 2.0)
+    assert all(ha.light[e] is not None for e in ENTS)
+    agent.handle("haunt/floods/enabled", "0")
+    agent.handle("haunt/floods/floods/set", json.dumps(parse_setting("#00ff00")))  # cues keep coming
+    run(agent, clock, 3.0)
+    assert all(ha.light[e] is None for e in ENTS)
+    agent.handle("haunt/floods/enabled", "1")
+    run(agent, clock, 3.0)
+    assert ha.light[ENTS[0]][0] == (0, 255, 0)
+
+
+def test_switch_off_still_lets_test_mode_drive_the_floods():
+    agent, ha, bus, clock = make()
+    agent.handle("haunt/floods/enabled", "0")
+    agent.handle("haunt/director/online", "1")
+    agent.handle("haunt/director/state", json.dumps({"phase": "test"}))
+    agent.handle("haunt/floods/floods/set", json.dumps(parse_setting("#ff0000")))
+    run(agent, clock, 3.0)
+    assert ha.light[ENTS[0]] is not None

@@ -193,3 +193,13 @@ def test_floods_brightness_from_the_phone(web):
     assert post(base + "/api/cmd", {"cmd": "floods_level", "delta": -10})[0] == 200
     sim.run(0.3)
     assert sim.director.floods_level == 90
+
+
+def test_floods_on_off_from_the_phone(web):
+    sim, app, base = web
+    assert post(base + "/api/cmd", {"cmd": "floods_on", "value": False})[0] == 200
+    sim.run(0.3)
+    assert sim.director.floods_on is False
+    assert post(base + "/api/cmd", {"cmd": "floods_on", "value": True})[0] == 200
+    sim.run(0.3)
+    assert sim.director.floods_on is True

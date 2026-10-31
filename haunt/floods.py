@@ -586,10 +586,18 @@ class FloodAgent:
         bus.subscribe("%s/director/state" % prefix)
         bus.subscribe("%s/floods/level" % prefix)
         self.level = 1.0                 # master brightness from the console (haunt/floods/level, %)
+        bus.subscribe("%s/floods/enabled" % prefix)
+        self.enabled = True              # console switch: False keeps the floods off during the show
 
     # -- inputs ----------------------------------------------------------
 
     def handle(self, topic: str, payload: str) -> None:
+        if topic == "%s/floods/enabled" % self.prefix:
+            on = payload.strip().lower() not in ("0", "off", "false")
+            if on != self.enabled:
+                log.info("floods %s during the show", "on" if on else "OFF")
+            self.enabled = on
+            return
         if topic == "%s/floods/level" % self.prefix:
             try:
                 lv = max(0.0, min(100.0, float(payload))) / 100.0
@@ -626,6 +634,8 @@ class FloodAgent:
         """The setting a row should show now, or "leave"."""
         if not self.show_running():
             return self.idle if self.idle != "off" else {"on": False, "color": None}
+        if not self.enabled and self.phase != "test":      # test mode still drives them
+            return {"on": False, "color": None}
         w = self.wanted.get(name)
         return w if w is not None else {"on": False, "color": None}
 
