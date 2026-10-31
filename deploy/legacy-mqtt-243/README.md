@@ -31,7 +31,7 @@ The Photon never says whether it is online, so `haunt devwatch`
 (`sudo deploy/install.sh devwatch`) follows this broker's log in the journal
 and publishes `haunt/light/graveyard/online` (1/0, retained). The console and
 the phone page show the graveyard as online or OFFLINE from that. For the
-journal, legacy-243.conf also sends mosquitto's log to stdout.
+journal, legacy-243.conf also sends mosquitto's log to syslog.
 
 **192.168.1.243 must not be handed to anything else.** It used to be client2's
 wired address; give client2's wired port a different reservation and keep .243
