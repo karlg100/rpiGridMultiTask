@@ -104,7 +104,39 @@ class PlayerAgent:
         self._start_failures = 0
         self._probe = None        # the last probe request, to re-answer as scans finish
 
+        # Mono (one-speaker PA): player.yaml's default, unless the console
+        # switched it for this player, which is remembered in state_file.
+        self.mono = bool(cfg.get("mono", True))
+        saved = self._load_state()
+        if "mono" in saved:
+            self.mono = bool(saved["mono"])
+        backend.set_mono(self.mono)
+
         bus.subscribe(self.topics.player(self.id, "cmd"))
+
+    def _load_state(self) -> dict:
+        path = self.cfg.get("state_file")
+        if not path:
+            return {}
+        try:
+            with open(path) as fh:
+                data = json.load(fh)
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def _save_state(self) -> None:
+        path = self.cfg.get("state_file")
+        if not path:
+            return
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            tmp = path + ".tmp"
+            with open(tmp, "w") as fh:
+                json.dump({"mono": self.mono}, fh)
+            os.replace(tmp, path)
+        except OSError as exc:
+            log.warning("cannot save %s: %s", path, exc)
 
     # -- commands --------------------------------------------------------
 
@@ -208,6 +240,14 @@ class PlayerAgent:
         if cmd.get("cue") not in (None, self.cue):
             return
         self.level.to(value, float(cmd.get("ramp", LEVEL_RAMP)), self.clock())
+
+    def _cmd_mono(self, cmd):
+        """{"cmd": "mono", "value": true/false}; no value toggles."""
+        value = cmd.get("value")
+        self.mono = (not self.mono) if value is None else bool(value)
+        self.backend.set_mono(self.mono)
+        self._save_state()
+        log.info("audio: %s", "mono" if self.mono else "stereo")
 
     def _cmd_probe(self, cmd):
         self._probe = cmd
@@ -352,6 +392,7 @@ class PlayerAgent:
             "total_db": round(self.total_db, 1),
             "lufs": self.lufs,
             "fade": round(self.fade.value(now), 2),
+            "mono": self.mono,
             "error": self.error,
             "backend": self.backend.name,
             "ver": __version__,

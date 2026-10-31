@@ -88,6 +88,10 @@ class Backend:
         """Picture fade: 0.0 = black, 1.0 = normal."""
         raise NotImplementedError
 
+    def set_mono(self, mono: bool) -> None:
+        """Mix to mono, the same on both output channels."""
+        self.mono = bool(mono)
+
     def status(self) -> Status:
         raise NotImplementedError
 
@@ -108,6 +112,7 @@ class FakeBackend(Backend):
         self.volume = 0.0
         self.gain = 0.0
         self.fade = 1.0
+        self.mono = False
         self._path = None
         self._loop = False
         self._dur = None
@@ -200,6 +205,11 @@ class MpvBackend(Backend):
     # The label lets the gain be changed later with af-command.
     AUDIO_FILTER = ("@haunt:lavfi=[volume=%.2fdB,"
                     "alimiter=limit=0.891:level=0:attack=5:release=100]")
+    # Mono for a one-speaker PA: any layout to stereo (5.1 gets a proper
+    # downmix), then both channels become (L+R)/2, so whichever pin of the
+    # jack the PA is wired to it gets the whole mix at the same level.
+    MONO_FILTER = ("@mono:lavfi=[aformat=channel_layouts=stereo,"
+                   "pan=stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1]")
 
     def __init__(self, mpv_path: str = "mpv", rotate: int = 0,
                  audio_device: str = "auto", extra_args=None,
@@ -226,6 +236,7 @@ class MpvBackend(Backend):
         self._last_brightness = None
         self._gain = 0.0
         self._gain_sent = None
+        self.mono = False
 
     # -- process ---------------------------------------------------------
 
@@ -385,9 +396,24 @@ class MpvBackend(Backend):
         self._command("set", "start", "%.3f" % start if start else "none")
         self._command("set", "loop-file", "inf" if loop else "no")
         # The filter chain is rebuilt for each file; start it at the right gain.
-        self._command("set", "af", self.AUDIO_FILTER % self._gain)
+        self._command("set", "af", self._af())
         self._gain_sent = self._gain
         self._command("loadfile", path, "replace")
+
+    def _af(self) -> str:
+        chain = self.AUDIO_FILTER % self._gain
+        return (self.MONO_FILTER + "," + chain) if self.mono else chain
+
+    def set_mono(self, mono):
+        mono = bool(mono)
+        if mono == self.mono:
+            return
+        self.mono = mono
+        with self._lock:
+            playing = not self._awaiting_start and not self._props.get("idle-active", True)
+        if playing:   # rebuild the chain now (a short blip); otherwise load() does it
+            self._command("set", "af", self._af())
+            self._gain_sent = self._gain
 
     def play(self):
         self._command("set", "pause", "no")

@@ -687,6 +687,20 @@ class Director:
         self.note("scene %d %s" % (i + 1, "enabled" if on else "disabled"))
         self._touch()
 
+    def _cmd_mono(self, cmd):
+        """{"cmd":"mono","player":"2","value":true}; no value toggles. Kept by the player."""
+        pid = str(cmd["player"])
+        if pid not in self.show.players:
+            raise ValueError("no player %r" % pid)
+        out = {"cmd": "mono"}
+        if "value" in cmd:
+            out["value"] = bool(cmd["value"])
+            self.note("%s: %s" % (self.pname(pid), "mono" if out["value"] else "stereo"))
+        else:
+            now = not bool(self.players[pid].state.get("mono", True))
+            self.note("%s: %s" % (self.pname(pid), "mono" if now else "stereo"))
+        self.send(pid, out)
+
     def _restore_overrides(self) -> None:
         for name in sorted(self.forced_off):
             if name in self.outputs.defs:

@@ -532,3 +532,46 @@ def test_repeating_fog_bursts_through_a_scene():
         parse_output_value({"burst": 5, "every": 6})    # no time to recover
     with pytest.raises(ValueError):
         parse_output_value({"burst": 5, "often": 30})
+
+
+# -- mono (one-speaker PA) -------------------------------------------------------
+
+def test_player_is_mono_by_default_and_remembers_a_toggle(tmp_path):
+    state = str(tmp_path / "player-state.json")
+    rig = Rig(state_file=state)
+    rig.run(0.2)
+    assert rig.backend.mono is True and rig.state()["mono"] is True
+    rig.cmd(cmd="mono")                                # toggle
+    assert rig.backend.mono is False and rig.state()["mono"] is False
+    again = Rig(state_file=state)                      # a restart keeps the console's choice
+    assert again.backend.mono is False
+    again.cmd(cmd="mono", value=True)
+    assert again.backend.mono is True and json.load(open(state)) == {"mono": True}
+    assert Rig(mono=False).backend.mono is False       # player.yaml can default to stereo
+
+
+def test_mpv_filter_chain_with_and_without_mono():
+    from haunt.backends import MpvBackend
+    b = MpvBackend()
+    b._gain = 3.0
+    assert b._af().startswith("@haunt:lavfi=[volume=3.00dB")
+    b.mono = True
+    af = b._af()
+    assert af.startswith("@mono:lavfi=[aformat=channel_layouts=stereo,pan=stereo|c0=0.5*c0+0.5*c1|c1=")
+    assert af.endswith("alimiter=limit=0.891:level=0:attack=5:release=100]")
+
+
+def test_mono_from_the_console_reaches_the_player():
+    sim = Sim()
+    sim.run_until(lambda: sim.director.phase == "running")
+    model, ctl, text = console(sim)
+    assert "mono" in text
+    ctl.key("TAB")                                     # focus player 2
+    ctl.key("c")
+    sim.run(0.5)
+    assert sim.agents["2"].mono is False and sim.agents["1"].mono is True
+    _, _, text = console(sim)
+    assert "STEREO" in text
+    sim.cmd("mono", player="2", value=True)
+    sim.run(0.5)
+    assert sim.agents["2"].mono is True

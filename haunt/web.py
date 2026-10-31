@@ -40,6 +40,7 @@ COMMANDS = {
     "goto": ("index",), "enable": ("index", "value"),
     "master": ("delta", "value"), "level": ("player", "delta", "value"),
     "mute": ("player",), "reset_levels": (), "output": ("name", "value"),
+    "mono": ("player", "value"),
 }
 
 PUSH_EVERY = 0.25        # at most this often, while things change
@@ -156,6 +157,7 @@ class WebApp:
                 "role": r.get("role", ""), "level": r.get("level"),
                 "start_after": r.get("start_after") or 0,
                 "gain_db": ps.get("gain_db"),
+                "mono": ps.get("mono") if p["online"] else None,
             })
         lights = []
         for name, info in light_types.items():

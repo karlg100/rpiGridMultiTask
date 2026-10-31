@@ -485,6 +485,8 @@ PLAYER_DEFAULTS = {
     "rotate": 0,               # 0 / 90 / 180 / 270, for an upside-down projector
     "audio_device": "auto",    # run `mpv --audio-device=help` on the Pi to list them
     "trim": 100,               # percent; evens out two players with different amps
+    "mono": True,              # mix every clip to mono on both jack channels (one-speaker PA); the
+                               # console can switch it per player, and that choice is remembered
     "video_fade": True,        # fade the picture to/from black (needs --vo=gpu)
     "normalize": True,         # measure each file's loudness once and even them out
     "max_boost_db": 18.0,      # never amplify a quiet file by more than this (a limiter catches the peaks)
@@ -534,4 +536,5 @@ def load_player_config(path: Optional[str], overrides: Optional[dict] = None) ->
     if problems:
         raise ConfigError(problems)
     cfg["cache_dir"] = os.path.expanduser(str(cfg["cache_dir"]))
+    cfg["state_file"] = os.path.join(cfg["cache_dir"], "player-state.json")   # console toggles
     return cfg

@@ -141,3 +141,14 @@ def test_output_override_from_the_phone(web):
     assert code == 200
     sent = [p for t, p in sim.hub.history if t == "haunt/director/cmd"]
     assert json.loads(sent[-1]) == {"cmd": "output", "name": "fog_machine", "value": "on"}
+
+
+def test_mono_from_the_phone(web):
+    sim, app, base = web
+    sim.run(1)
+    app.pump(0)
+    s = json.loads(get(base + "/api/state")[2])
+    assert all(p["mono"] is True for p in s["players"])
+    assert post(base + "/api/cmd", {"cmd": "mono", "player": "1", "value": False})[0] == 200
+    sim.run(0.5)
+    assert sim.agents["1"].mono is False

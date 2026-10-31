@@ -32,7 +32,7 @@ ASCII = {"bar_on": "#", "bar_off": "-", "dot": "*", "swatch": "#",
 
 HELP = [
     "space pause/resume   n next   p previous   r restart scene   enter go to selected",
-    "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute",
+    "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo",
     "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
     "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)",
     "q quit (the show keeps running)",
@@ -234,6 +234,8 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
                       (" %-9s" % {"master": "MASTER", "follower": "follower"}.get(role, ""),
                        "info" if role == "master" else "dim"),
                       (sym["dot"] + " ", style), ("%-9s" % state, style)]
+        if p["online"] and "mono" in ps:
+            head.append(("mono   " if ps["mono"] else "STEREO ", "dim" if ps["mono"] else "warn"))
         used = sum(len(t) for t, _ in head)
         file = os.path.basename(ps.get("file") or "") if p["online"] else ""
         if state == "error":
@@ -582,6 +584,8 @@ class Controller:
             self.send("level", player=self.focus, delta=-5)
         elif k == "m" and self.focus:
             self.send("mute", player=self.focus)
+        elif k == "c" and self.focus:
+            self.send("mono", player=self.focus)
         elif k == "u":
             self.send("reset_levels")
         elif k == "R":

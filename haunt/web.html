@@ -250,7 +250,7 @@ document.addEventListener("click", (ev) => {
   if (b.dataset.player) extra.player = b.dataset.player;
   if (b.dataset.index) extra.index = Number(b.dataset.index);
   if (b.dataset.name) extra.name = b.dataset.name;
-  if (b.dataset.value) extra.value = b.dataset.value;
+  if (b.dataset.value) extra.value = b.dataset.cmd === "mono" ? b.dataset.value === "mono" : b.dataset.value;
   send(b.dataset.cmd, extra);
   if (b.closest(".acts")) { openRow = null; render(); }
 });
@@ -341,6 +341,9 @@ function render() {
         + '<span class="val">' + lvlText + "</span>"
         + '<button class="sbtn" data-cmd="level" data-player="' + p.id + '" data-delta="5" aria-label="Louder">+</button>'
         + '<button class="mute ' + (lvl ? "" : "on") + '" data-cmd="mute" data-player="' + p.id + '">' + (lvl ? "Mute" : "Unmute") + "</button></div>" : "")
+      + (p.mono !== null && p.mono !== undefined ? '<div class="ctl"><span class="hint" style="margin:0;flex:1">Sound: <b>' + (p.mono ? "mono" : "stereo") + "</b>"
+        + (p.mono ? "" : " (one-speaker PA hears only one side)") + '</span><button class="mute" data-cmd="mono" data-player="' + p.id + '" data-value="'
+        + (p.mono ? "stereo" : "mono") + '">' + (p.mono ? "Make stereo" : "Make mono") + "</button></div>" : "")
       + "</div>";
   }).join("") || '<div class="empty">no players yet</div>');
 

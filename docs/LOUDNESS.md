@@ -7,6 +7,24 @@ Measured 2026-10-30 on the players with `ffmpeg -af ebur128=peak=true`: 66 video
 - **Peak**: true peak in dBFS. Above 0 means the file itself already clips.
 - **Gain**: what the player applies to reach the -14 LUFS target (boost capped at +18 dB). Peaks that would go over -1 dBFS are caught by the limiter; **Limited** is roughly how much the loudest peak gets pulled down.
 
+## Mono (one-speaker PA)
+
+Each player feeds a single-channel JBL PA, so by default every clip is mixed
+to mono before the gain and limiter: any layout becomes stereo (5.1 gets a
+normal downmix), then both channels carry (L + R) / 2. Whichever pin of the
+3.5 mm jack the PA is wired to, it gets the whole mix; before, it heard only
+one side, and anything panned to the other side was lost. Checked in mpv: a
+left-only test tone comes out on both channels at -6 dB (the average); a mono
+source keeps its level; music mixed to the centre (most of it) is unchanged.
+The measurements below are of the files, so hard-panned stereo can come out up
+to 3 dB quieter in mono than the table suggests.
+
+Set per player with `mono:` in player.yaml (default true). `c` in the console
+(on the focused player) or "Make stereo / Make mono" on the phone page switches
+it while playing (a short audio blip); the player remembers the choice.
+
+## Measurements
+
 | Clip | LUFS | LRA | Peak | Gain | Limited | Length | Used in |
 |---|---:|---:|---:|---:|---:|---:|---|
 | `Bone Chillers - Jittery Bones/Doorway - Horizontal/BC_Buffer_Holl_H.mp4` | silent | 0.0 | — | — | — | 0:10 |  |

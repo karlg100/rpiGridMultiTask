@@ -16,6 +16,9 @@ rotate: 0                      # 180 for the upside-down projector (was --orient
 audio_device: auto
 
 trim: 100                      # percent; evens out two players with different amps
+mono: true                     # one-speaker PA (JBL Eon/Ion): every clip mixed to mono, the same
+                               # on both jack channels; `c` in the console switches a player to
+                               # stereo and back (remembered in ~/.cache/haunt/player-state.json)
 normalize: true                # measure each file's loudness once and even them out
 video_fade: true               # fade picture to/from black. Needs --vo=gpu (the default)
 
