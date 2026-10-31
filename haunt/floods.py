@@ -69,6 +69,7 @@ import logging
 import math
 import os
 import random
+import re
 import threading
 import time
 import urllib.parse
@@ -175,6 +176,22 @@ def _hex(rgb) -> str:
 def _mix(a: str, b: str, f: float) -> str:
     ra, rb = _rgb(a), _rgb(b)
     return _hex([x + (y - x) * f for x, y in zip(ra, rb)])
+
+
+def _battery_of(states: Dict[str, dict], entity: str) -> Optional[float]:
+    """The light's battery %, from sensor.<light object id>_battery, if HA has it."""
+    st = (states.get("sensor.%s_battery" % entity.split(".", 1)[-1]) or {}).get("state")
+    try:
+        b = float(st)
+    except (TypeError, ValueError):
+        return None
+    return b if 0 <= b <= 100 else None
+
+
+def _label(entity: str, ents: List[str]) -> str:
+    """How people call a light: the number at the end of its id (spotlight_12 -> 12)."""
+    m = re.search(r"(\d+)$", entity)
+    return str(int(m.group(1))) if m else str(ents.index(entity) + 1)
 
 
 def light_state(color: Optional[str], bri: float, step: int = 4):
@@ -495,7 +512,8 @@ class FloodAgent:
                  clock: Callable[[], float] = time.monotonic, rng=None,
                  rate: float = 5.0, workers: int = 3, fps: float = 5.0, idle="off",
                  executor=None, resolve_every: float = 10.0, max_bri: int = 255,
-                 keepalive: float = 20.0):
+                 keepalive: float = 20.0, battery_low: float = 40.0, battery_empty: float = 10.0,
+                 battery_min_bri: float = 0.25):
         self.cfg = rows_cfg              # show light name -> {"entities": [...], "topic": ...}
         self.ha = ha
         self.bus = bus
@@ -539,6 +557,14 @@ class FloodAgent:
         # `keepalive` seconds, and a light Home Assistant shows in the wrong
         # state (off by its timer, on by motion) is put right.
         self.keepalive = float(keepalive or 0)
+        # Solar batteries: a light whose battery is below battery_low (%) is
+        # dimmed in proportion, down to battery_min_bri of its brightness at
+        # battery_empty and below. Read from sensor.<light>_battery each poll.
+        self.battery_low = float(battery_low or 0)
+        self.battery_empty = float(battery_empty)
+        self.battery_min_bri = max(0.05, min(1.0, float(battery_min_bri)))
+        self.battery: Dict[str, float] = {}
+        self._dimmed: set = set()
         self.sent_at: Dict[str, float] = {}
         self.corrected = 0
         self.hold_until = 0.0
@@ -610,6 +636,10 @@ class FloodAgent:
             for e in ents:
                 feats = int((states.get(e) or {}).get("attributes", {}).get("supported_features") or 0)
                 self.can_fade[e] = bool(feats & TRANSITION_FEATURE)
+            for e in ents:
+                b = _battery_of(states, e)
+                if b is not None:
+                    self.battery[e] = b
             if len(missing) + len(gone) == len(ents):
                 text = "error: none of the %d lights is in Home Assistant" % len(ents)
             else:
@@ -618,7 +648,18 @@ class FloodAgent:
                     text += "; not in HA: %s" % ", ".join(str(ents.index(e) + 1) for e in missing)
                 if gone:
                     text += "; unavailable: %s" % ", ".join(str(ents.index(e) + 1) for e in gone)
+                dim = [e for e in ents if self.battery_factor(e) < 1.0]
+                if dim:
+                    text += "; dimmed for battery: %s" % ", ".join(
+                        "%s (%d%%)" % (_label(e, ents), round(self.battery[e])) for e in dim)
             self._status(name, text)
+        dimmed = {e for e in self.battery if self.battery_factor(e) < 1.0}
+        for e in sorted(dimmed - self._dimmed):
+            log.warning("%s: battery %d%%, dimmed to %d%%", e, round(self.battery[e]),
+                        round(100 * self.battery_factor(e)))
+        for e in sorted(self._dimmed - dimmed):
+            log.info("%s: battery %d%%, full brightness again", e, round(self.battery.get(e, 0)))
+        self._dimmed = dimmed
         for e in skip - self.skip:
             self.since.pop(e, None)
         for e in self.skip - skip:                   # back: send it what it should show
@@ -642,6 +683,15 @@ class FloodAgent:
                          "motion?" if st == "on" else "its 30 s timer?")
                 self.sent[e] = "drifted"
                 self.since[e] = now
+
+    def battery_factor(self, entity: str) -> float:
+        """1.0, or less for a light whose battery is below battery_low."""
+        b = self.battery.get(entity)
+        if b is None or self.battery_low <= 0 or b >= self.battery_low:
+            return 1.0
+        span = max(1.0, self.battery_low - self.battery_empty)
+        f = self.battery_min_bri + (1.0 - self.battery_min_bri) * (b - self.battery_empty) / span
+        return max(self.battery_min_bri, min(1.0, f))
 
     def _status(self, name: str, text: str) -> None:
         if self.status.get(name) == text:
@@ -797,7 +847,7 @@ class FloodAgent:
                     fade = float(t.get("transition", 0.5)) if t.get("on", True) else 0.5
                 scale = self.max_bri / 255.0
                 for e, (color, bri) in zip(ents, row.frame(now)):
-                    self._want(e, light_state(color, bri * scale), now, fade)
+                    self._want(e, light_state(color, bri * scale * self.battery_factor(e)), now, fade)
             if self.keepalive and self.show_running():
                 for e, want in self.desired.items():
                     if (want not in ("unset", OFF) and e not in self.busy and e not in self.skip
@@ -836,6 +886,9 @@ FLOODS_DEFAULTS = {
     "max_bri": 255,                      # cap on every light's brightness (0-255), e.g. to spare batteries
     "keepalive": 20.0,                   # re-send a lit light this often (s): the floods switch
                                          # themselves off ~30 s after a command; 0 = never
+    "battery_low": 40,                   # below this battery %, a light is dimmed in proportion (0 = never)
+    "battery_empty": 10,                 # ... down to battery_min_bri at this % and below
+    "battery_min_bri": 0.25,             # fraction of its brightness a nearly flat light keeps
     "rows": {},
 }
 
@@ -894,6 +947,12 @@ def load_config(path: Optional[str], broker: Optional[str] = None, need_mqtt: bo
     if isinstance(mb, bool) or not isinstance(mb, (int, float)) or not 1 <= mb <= 255:
         raise ConfigError("floods config: max_bri must be 1-255")
     cfg["max_bri"] = int(mb)
+    for key, lo, hi in (("battery_low", 0, 100), ("battery_empty", 0, 100), ("battery_min_bri", 0.05, 1.0)):
+        v = cfg[key]
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not lo <= v <= hi:
+            raise ConfigError("floods config: %s must be %g-%g" % (key, lo, hi))
+    if cfg["battery_low"] and cfg["battery_empty"] >= cfg["battery_low"]:
+        raise ConfigError("floods config: battery_empty must be below battery_low")
     for key in ("rate", "fps"):
         cfg[key] = float(cfg[key])
     cfg["workers"] = int(cfg["workers"])
@@ -968,7 +1027,9 @@ def main(cfg: dict, dry_run: bool = False) -> None:
         bus = MqttBus(cfg["mqtt"], "floods", will=(online, "0"), birth=(online, "1"))
     agent = FloodAgent(cfg["rows"], ha, bus, prefix=prefix, rate=cfg["rate"],
                        workers=cfg["workers"], fps=cfg["fps"], idle=cfg["idle"],
-                       max_bri=cfg["max_bri"], keepalive=float(cfg["keepalive"] or 0))
+                       max_bri=cfg["max_bri"], keepalive=float(cfg["keepalive"] or 0),
+                       battery_low=float(cfg["battery_low"] or 0), battery_empty=float(cfg["battery_empty"]),
+                       battery_min_bri=float(cfg["battery_min_bri"]))
     if dry_run:
         agent._status = lambda name, text: log.info("%s: %s", name, text)
     log.info("Home Assistant %s; rows: %s", ha.url,

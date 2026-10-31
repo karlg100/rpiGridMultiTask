@@ -57,6 +57,14 @@ full brightness with calm drifts instead of chases and deep pulses, which also
 cut their commands from about 225 a minute to about 88 (the AiDot hub manages
 about 300 a minute, and every command wakes a light's radio).
 
+**Flood batteries.** Each flood's battery (`sensor.<light>_battery` in Home
+Assistant) is read every 10 s. Below 40% a flood is dimmed in proportion to
+what is left, down to a quarter of its brightness at 10% and below, so the
+low ones last the night while the others stay at full power. The floods line
+in the console and on the phone lists any that are dimmed ("dimmed for
+battery: 12 (35%)"). `battery_low`, `battery_empty` and `battery_min_bri` in
+floods.yaml change the curve; `max_bri` still caps all of them.
+
 ## Hue rooms (living room, front bedroom)
 
 The two front rooms' Philips Hue lights follow each scene too, through

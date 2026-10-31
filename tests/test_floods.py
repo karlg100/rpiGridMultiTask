@@ -469,3 +469,44 @@ def test_left_alone_as_motion_lights_when_the_show_is_stopped():
     ha.light[ENTS[2]] = ((255, 255, 255), 255)                # motion turns one on
     run(agent, clock, 40.0)
     assert len(ha.calls) == n and ha.light[ENTS[2]] is not None
+
+
+# --------------------------------------------------------------------------
+# solar batteries: a light below 40% is dimmed in proportion
+# --------------------------------------------------------------------------
+
+class BatteryHA(FakeHA):
+    def __init__(self, battery, **kw):
+        super().__init__(**kw)
+        self.bat = battery                 # entity -> percent
+
+    def states(self):
+        st = super().states()
+        for e, b in self.bat.items():
+            sid = "sensor.%s_battery" % e.split(".", 1)[1]
+            st[sid] = {"entity_id": sid, "state": str(b), "attributes": {}}
+        return st
+
+
+def test_low_battery_lights_are_dimmed_one_by_one():
+    ha = BatteryHA({ENTS[0]: 90, ENTS[1]: 40, ENTS[2]: 25, ENTS[3]: 5, ENTS[4]: "unavailable"})
+    agent, ha, bus, clock = make(ha=ha)
+    go(agent, {"color": "#ff6a00", "bri": 255})
+    run(agent, clock, 3.0)
+    bri = {e: ha.light[e][1] for e in ENTS}
+    assert bri[ENTS[0]] == bri[ENTS[1]] == bri[ENTS[4]] == bri[ENTS[5]] == 255   # 90%, exactly 40%, unknown, no sensor
+    assert 150 <= bri[ENTS[2]] <= 165          # 25%: halfway between 10% (x0.25) and 40% (x1) -> x0.625
+    assert 60 <= bri[ENTS[3]] <= 68            # 5%: the floor, x0.25
+    status = [p for t, p, r in bus.sent if t == "haunt/floods/floods/status"][-1]
+    assert "dimmed for battery: 3 (25%), 4 (5%)" in status
+    ha.bat[ENTS[2]] = 60                       # recharged (or a sunny afternoon)
+    run(agent, clock, 12.0)
+    assert ha.light[ENTS[2]][1] == 255
+
+
+def test_battery_settings_are_checked(tmp_path):
+    from haunt.config import ConfigError
+    f = tmp_path / "floods.yaml"
+    f.write_text("rows: {floods: {entities: [light.a]}}\nbattery_low: 20\nbattery_empty: 30\n")
+    with pytest.raises(ConfigError, match="battery_empty"):
+        floods.load_config(str(f), need_mqtt=False)
