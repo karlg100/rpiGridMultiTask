@@ -1,0 +1,13 @@
+# /etc/mosquitto/legacy-243.acl on home-pi
+# Clients on 192.168.1.243 may use only these topics: anonymous ones
+# (graveyard Photon) and the freezer monitor, which logs in as home-pi.
+topic readwrite graveyard/#
+topic readwrite ghosts/#
+topic readwrite basement_freezer/#
+topic readwrite outTopic/#
+
+user home-pi
+topic readwrite graveyard/#
+topic readwrite ghosts/#
+topic readwrite basement_freezer/#
+topic readwrite outTopic/#
