@@ -22,10 +22,13 @@ max_bri: 255   # cap every light's brightness (1-255); lower it when the solar b
 # show.yaml light name: its Home Assistant lights, in order along the house.
 # First = the Window (player 1) end, last = the Wall (player 2) end.
 # This house: 14 lights, labelled 01-12, 14, 15 (there is no 13; the labels skip it).
+# On the house, Window to Wall, they run 14, 15, 1, 2 ... 12 (walked by Karl 2026-10-31).
 # A light that is missing or unavailable in HA is skipped and picked up when it comes back.
 rows:
   floods:
     entities:
+      - light.sl5c_solar_spotlight_14
+      - light.sl5c_solar_spotlight_15
       - light.sl5c_solar_spotlight_01
       - light.sl5c_solar_spotlight_02
       - light.sl5c_solar_spotlight_03
@@ -38,5 +41,3 @@ rows:
       - light.sl5c_solar_spotlight_10
       - light.sl5c_solar_spotlight_11
       - light.sl5c_solar_spotlight_12
-      - light.sl5c_solar_spotlight_14
-      - light.sl5c_solar_spotlight_15
