@@ -358,7 +358,8 @@ function render() {
   $("out-card").hidden = !(S.outputs || []).length;
   setHTML("outputs", (S.outputs || []).map(o => {
     const mode = o.override || "auto";
-    const state = o.on ? (o.burst !== null && o.burst !== undefined ? "ON " + Math.max(0, Math.round(o.burst)) + "s" : "ON") : "off";
+    const state = o.on ? (o.burst !== null && o.burst !== undefined ? "ON " + Math.max(0, Math.round(o.burst)) + "s" : "ON")
+      : (o.next !== null && o.next !== undefined && mode !== "off" ? "off · next in " + Math.max(0, Math.round(o.next)) + "s" : "off");
     const onLabel = o.max_on ? "On " + Math.round(o.max_on) + "s" : "On";
     const b = (v, label, cls) => '<button class="' + (mode === v ? "on " + cls : "") + '" data-cmd="output" data-name="'
       + esc(o.name) + '" data-value="' + v + '">' + label + "</button>";

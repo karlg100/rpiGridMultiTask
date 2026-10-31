@@ -131,10 +131,25 @@ def parse_light(value) -> dict:
 
 
 def parse_output_value(value):
-    """An output setting: True (on for the scene), False (off), or a number of
-    seconds (a burst)."""
+    """An output setting: True (on for the scene), False (off), a number of
+    seconds (one burst), or {burst: N, every: M, first: K} (a burst of N
+    seconds every M seconds through the scene, the first K seconds in)."""
     if isinstance(value, bool):
         return value
+    if isinstance(value, dict):
+        unknown = sorted(set(value) - {"burst", "every", "first"})
+        if unknown:
+            raise ValueError("unknown setting(s) %s (burst, every, first)" % ", ".join(map(repr, unknown)))
+        try:
+            burst, every = float(value["burst"]), float(value["every"])
+            first = float(value.get("first", 0))
+        except KeyError as exc:
+            raise ValueError("repeating bursts need %s" % exc)
+        except (TypeError, ValueError):
+            raise ValueError("burst, every and first are seconds")
+        if burst <= 0 or every < burst + 5 or first < 0:
+            raise ValueError("bursts: burst > 0, every at least burst + 5 s, first >= 0")
+        return {"burst": burst, "every": every, "first": first}
     if isinstance(value, str):
         v = value.strip().lower()
         if v in ("on", "true", "yes"):

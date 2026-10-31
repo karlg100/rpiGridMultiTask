@@ -177,7 +177,7 @@ class WebApp:
             lights.append(item)
         out_defs = m.playlist.get("outputs") or {}
         outputs = [{"name": k, "label": o.get("label", k), "on": bool(o.get("on")),
-                    "burst": o.get("burst"), "override": o.get("override"),
+                    "burst": o.get("burst"), "override": o.get("override"), "next": o.get("next"),
                     "max_on": (out_defs.get(k) or {}).get("max_on")}
                    for k, o in (st.get("outputs") or {}).items()]
         has_hue = any((v or {}).get("type") == "hue" for v in light_types.values())

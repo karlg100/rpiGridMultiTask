@@ -331,6 +331,8 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
             txt = "ON" if on else "off"
             if on and o.get("burst") is not None:
                 txt = "ON %ds" % max(0, round(o["burst"]))
+            elif not on and o.get("next") is not None and o.get("override") != "off":
+                txt = "off, next in %ds" % max(0, round(o["next"]))
             oseg.append((sym["dot"] + " " + txt, "warn" if on else "dim"))
             ov = o.get("override")
             if ov == "off":
@@ -446,6 +448,8 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         for oname, val in (sc.get("outputs") or {}).items():
             if val is True:
                 extra.append("%s on" % out_labels.get(oname, oname))
+            elif isinstance(val, dict):
+                extra.append("%s %gs every %gs" % (out_labels.get(oname, oname), val["burst"], val["every"]))
             elif val:
                 extra.append("%s %gs burst" % (out_labels.get(oname, oname), val))
         for cue in sc.get("cues") or []:
@@ -455,7 +459,8 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
             for lname, setting in (cue.get("lights") or {}).items():
                 what.append("%s %s" % (lname, effect_label(setting) or setting.get("color") or "off"))
             for oname, val in (cue.get("outputs") or {}).items():
-                what.append("%s %s" % (oname, "on" if val is True else ("off" if not val else "%gs" % val)))
+                what.append("%s %s" % (oname, "on" if val is True else ("off" if not val else (
+                    "%gs every %gs" % (val["burst"], val["every"]) if isinstance(val, dict) else "%gs" % val))))
             extra.append("cue @%s %s" % (mmss(cue["at"]), ", ".join(what)))
         rows.append([(" " + clip_text("   ".join(extra), w - 2, ell), "dim")])
         rows = rows[:detail_rows]

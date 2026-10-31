@@ -11,6 +11,9 @@ In show.yaml a scene (or a cue) sets each output to:
     on      on for the rest of the scene
     off     off
     N       a burst of N seconds
+    {burst: N, every: M, first: K}
+            a burst of N seconds every M seconds for the whole scene, the
+            first one K seconds in (default 0)
 
 Outputs a scene does not mention are off during it. Safety rules:
 
@@ -49,6 +52,8 @@ class Outputs:
         self.held = set()                      # on for the rest of the scene
         self.until: Dict[str, float] = {}      # burst end times
         self.on_since: Dict[str, float] = {}
+        self.repeat: Dict[str, dict] = {}      # name -> {"burst", "every", "next"}
+        self.paused_left: Dict[str, float] = {}  # repeat: time to the next burst, while paused
         self.suspended = False
 
     # -- low level -------------------------------------------------------
@@ -102,7 +107,24 @@ class Outputs:
 
     # -- what the director calls ------------------------------------------
 
+    def _burst(self, name: str, secs: float) -> None:
+        max_on = float(self.defs[name].get("max_on") or 0)
+        if max_on and secs > max_on:
+            secs = max_on
+        self.until[name] = max(self.until.get(name, 0.0), self.clock() + secs)
+        self._set(name, True)
+
     def _apply_one(self, name: str, value) -> None:
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            self.repeat.pop(name, None)       # a one-off burst leaves repeating bursts running
+        if isinstance(value, dict):
+            self.held.discard(name)
+            self.repeat[name] = {"burst": float(value["burst"]), "every": float(value["every"]),
+                                 "next": self.clock() + float(value.get("first", 0))}
+            if float(value.get("first", 0)) <= 0:
+                self.repeat[name]["next"] = self.clock() + float(value["every"])
+                self._burst(name, float(value["burst"]))
+            return
         if value is True:
             self.held.add(name)
             self.until.pop(name, None)
@@ -112,12 +134,7 @@ class Outputs:
             self.until.pop(name, None)
             self._set(name, False)
         else:
-            secs = float(value)
-            max_on = float(self.defs[name].get("max_on") or 0)
-            if max_on and secs > max_on:
-                secs = max_on
-            self.until[name] = max(self.until.get(name, 0.0), self.clock() + secs)
-            self._set(name, True)
+            self._burst(name, float(value))
 
     def scene(self, settings: dict) -> None:
         """A scene starts: set every output from the scene's settings."""
@@ -140,6 +157,8 @@ class Outputs:
     def all_off(self, force: bool = False) -> None:
         self.held = set()
         self.until = {}
+        self.repeat = {}
+        self.paused_left = {}
         self.suspended = False
         self._drop_on_overrides()
         for name in self.defs:
@@ -149,6 +168,8 @@ class Outputs:
         """Pause: everything off, but remember what the scene wanted on."""
         self.suspended = True
         self.until = {}
+        now = self.clock()
+        self.paused_left = {n: max(0.0, r["next"] - now) for n, r in self.repeat.items()}
         self._drop_on_overrides()
         for name in self.defs:
             self._set(name, False)
@@ -157,11 +178,21 @@ class Outputs:
         if not self.suspended:
             return
         self.suspended = False
+        now = self.clock()
+        for name, left in self.paused_left.items():
+            if name in self.repeat:
+                self.repeat[name]["next"] = now + left
+        self.paused_left = {}
         for name in self.held:
             self._set(name, True)
 
     def tick(self) -> None:
         now = self.clock()
+        if not self.suspended:
+            for name, r in self.repeat.items():
+                if now >= r["next"]:
+                    r["next"] = max(r["next"] + r["every"], now + 1.0)
+                    self._burst(name, r["burst"])
         for name, end in list(self.until.items()):
             if now >= end:
                 del self.until[name]
@@ -193,6 +224,8 @@ class Outputs:
                 "on": self.effective(name),
                 "burst": burst if self.effective(name) else None,
                 "override": self.override.get(name),
+                "next": round(self.repeat[name]["next"] - now, 1)
+                if name in self.repeat and not self.suspended else None,
                 "show": bool(self.state.get(name)),
             }
         return out

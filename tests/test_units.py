@@ -490,3 +490,45 @@ def test_devwatch_follows_the_broker_log():
     w.line("1: New client connected from 192.168.3.1:1 as halloweentree (p1, c1, k15).")
     assert w.line("1: mosquitto version 2.0.11 terminating") == {"graveyard": False, "freezer": False}
     assert w.line("1: New client connected from 192.168.1.45:1 as auto-ABC (p2, c1, k60).") == {}
+
+
+def test_repeating_fog_bursts_through_a_scene():
+    from haunt.config import parse_output_value
+    from haunt.outputs import Outputs
+
+    class Bus:
+        def __init__(self): self.sent = []
+        def publish(self, t, p, retain=False): self.sent.append((round(clock.t, 1), p))
+
+    class Clock:
+        t = 0.0
+        def __call__(self): return self.t
+    clock, bus = Clock(), Bus()
+    o = Outputs({"fog_machine": {"label": "fog", "max_on": 10, "topic": "f"}}, bus, clock, lambda *a: None)
+
+    def run(secs):
+        end = clock.t + secs
+        while clock.t < end - 1e-9:
+            clock.t = round(clock.t + 0.1, 1)
+            o.tick()
+    o.scene({"fog_machine": parse_output_value({"burst": 4, "every": 30, "first": 5})})
+    run(70)
+    ons = [t for t, p in bus.sent if p == "ON"]
+    offs = [t for t, p in bus.sent if p == "OFF"]
+    assert ons == [5.0, 35.0, 65.0] and offs[:2] == [9.0, 39.0]
+    o.apply({"fog_machine": 8})                         # a one-off cue burst keeps the repeats going
+    run(30)
+    assert [t for t, p in bus.sent if p == "ON"][-1] == 95.0
+    o.suspend()                                         # pause: off, and the clock to the next burst stops
+    run(60)
+    assert bus.sent[-1][1] == "OFF"
+    o.resume()
+    run(30)
+    assert [t for t, p in bus.sent if p == "ON"][-1] == 185.0
+    o.scene({})                                         # next scene without fog: no more bursts
+    run(60)
+    assert bus.sent[-1][1] == "OFF" and not o.repeat
+    with pytest.raises(ValueError):
+        parse_output_value({"burst": 5, "every": 6})    # no time to recover
+    with pytest.raises(ValueError):
+        parse_output_value({"burst": 5, "often": 30})

@@ -27,21 +27,21 @@ per-scene colours.
 
 | # | Scene | Front lights | Why | Mister | Fog |
 |---|---|---|---|---|---|
-| 1 | Pumpkin Song | **Candle Multi**, orange | Each LED flickers like its own candle: a row of lit jack-o-lanterns under the singing pumpkins. | | |
-| 2 | Wicked Brew | **Popcorn**, green on purple | Pops of green rising and falling: the cauldron bubbling. | on | |
-| 3 | Twas the Night | **Halloween Eyes**, red on black | Pairs of eyes open and blink at random along the eaves while the pumpkins tell the story. | | |
-| 4 | Dragula APT | **Fire 2012**, Fire palette, grouping 5, mirrored, speed (cooling) 30 | "Burn through the witches": a real fire simulation, flames rising from both corners of the house to meet in the middle. Measured on the strip (WLED live view, 10 s): plain Fire 2012 lit only the left 26% (31% of the length), grouping 4 + mirror 73%, grouping 5 + mirror + cooling 30 lights 97%, brightest at the corners with flame tips flickering in the middle. | | |
-| 5 | Cat Crow Canzonet | **Dancing Shadows**, purple and green | Spotlights sweeping past each other, like the cat and crow flitting around the witch. | on | |
-| 6 | Frankenstein | **Lightning**, blue-white over dark green | Random lightning strikes for the lab scene; the Wraiths appear in the flashes. | | 6 s at start |
-| 7 | Thriller | **Colorwaves**, Magred palette | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. | | 8 s at start, 6 s at 7:00 when the zombie animation starts |
-| 8 | Witching Hour | **Fairytwinkle**, purple and green | Witchy sparkle that starts from a lit strip. | on | |
-| 9 | In the Hall (Mountain King) | **Running**, orange on black | Marching waves along the eaves. Speed is a slider, so it could be cued to accelerate with the music. | | |
-| 10 | Ghostbusters | **Meteor** with "Smooth" on, green | Green streaks with fading tails: slimers zipping along the roof. | | |
-| 11 | Spooky Scary Skeletons | **Bouncing Balls**, white on dark purple | Bone-white balls bouncing to a bouncy song. | | |
-| 12 | Seance | **Aurora**, purple and teal | A slow, shifting spirit glow. | on | 5 s at start |
-| 13 | Guardians Inferno | **Bpm**, Party palette | Pulses on the beat across a party palette: disco. | | |
-| 14 | Ghosts n Stuff | **Juggle** | Eight coloured dots chasing with trails: EDM energy. | | |
-| 15 | Stayin' Undead | **Glitter**, Party palette | Rainbow with white sparkles: a disco ball. | | |
+| 1 | Pumpkin Song | **Candle Multi**, orange | Each LED flickers like its own candle: a row of lit jack-o-lanterns under the singing pumpkins. | | 3 s every 40 s |
+| 2 | Wicked Brew | **Popcorn**, green on purple | Pops of green rising and falling: the cauldron bubbling. | on | 3 s every 35 s |
+| 3 | Twas the Night | **Halloween Eyes**, red on black | Pairs of eyes open and blink at random along the eaves while the pumpkins tell the story. | | 3 s every 30 s |
+| 4 | Dragula APT | **Fire 2012**, Fire palette, grouping 5, mirrored, speed (cooling) 30 | "Burn through the witches": a real fire simulation, flames rising from both corners of the house to meet in the middle. Measured on the strip (WLED live view, 10 s): plain Fire 2012 lit only the left 26% (31% of the length), grouping 4 + mirror 73%, grouping 5 + mirror + cooling 30 lights 97%, brightest at the corners with flame tips flickering in the middle. | | 4 s every 35 s |
+| 5 | Cat Crow Canzonet | **Dancing Shadows**, purple and green | Spotlights sweeping past each other, like the cat and crow flitting around the witch. | on | 3 s every 30 s |
+| 6 | Frankenstein | **Lightning**, blue-white over dark green | Random lightning strikes for the lab scene; the Wraiths appear in the flashes. | | 6 s every 25 s |
+| 7 | Thriller | **Colorwaves**, Magred palette | Slow red/magenta waves, the Thriller palette, without strobing for 13 minutes. | | 6 s every 45 s, + 6 s at 7:00 |
+| 8 | Witching Hour | **Fairytwinkle**, purple and green | Witchy sparkle that starts from a lit strip. | on | 3 s every 35 s |
+| 9 | In the Hall (Mountain King) | **Running**, orange on black | Marching waves along the eaves. Speed is a slider, so it could be cued to accelerate with the music. | | 3 s every 30 s |
+| 10 | Ghostbusters | **Meteor** with "Smooth" on, green | Green streaks with fading tails: slimers zipping along the roof. | | 4 s every 35 s |
+| 11 | Spooky Scary Skeletons | **Bouncing Balls**, white on dark purple | Bone-white balls bouncing to a bouncy song. | | 4 s every 35 s |
+| 12 | Seance | **Aurora**, purple and teal | A slow, shifting spirit glow. | on | 5 s every 30 s |
+| 13 | Guardians Inferno | **Bpm**, Party palette | Pulses on the beat across a party palette: disco. | | 4 s every 30 s |
+| 14 | Ghosts n Stuff | **Juggle** | Eight coloured dots chasing with trails: EDM energy. | | 4 s every 30 s |
+| 15 | Stayin' Undead | **Glitter**, Party palette | Rainbow with white sparkles: a disco ball. | | 4 s every 30 s |
 
 ## Hue rooms (living room, front bedroom)
 
@@ -127,8 +127,14 @@ They are hard on neighbours and anyone sensitive to flashing light.
   scenes: Wicked Brew, Cat Crow Canzonet, Seance, Witching Hour. It's
   switched by a Tapo plug in Home Assistant; the automation is in
   `deploy/home-assistant/haunt-outputs.yaml`.
-- The **fog machine** gets short bursts (it is limited to 10 s at a time in
-  `show.yaml`): Frankenstein, Thriller, Seance. How to switch it is not
+- The **fog machine** (by the wall projector) runs repeating short bursts
+  in every scene (`fog_machine: {burst: N, every: M, first: K}`), 3-6 s every
+  25-45 s: a steady haze rather than one cloud at the start. About 6 minutes
+  of fog in the 48-minute loop (13%). The witch scenes on the wall get 3 s
+  bursts so the picture is not washed out; Frankenstein, Thriller and Seance
+  get the most. Never more than 10 s at a time (`max_on`). If the machine
+  cannot keep up (its "ready" light goes out between bursts), lengthen
+  `every`. How to switch it is not
   decided; the show already publishes to `haunt/output/fog_machine/set`.
   Switch its fire button with a relay rather than its power through a smart
   plug (see the notes in that HA file).

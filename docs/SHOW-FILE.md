@@ -259,6 +259,9 @@ Then in a scene, or in a cue:
 ```
 
 `on` = on until the scene ends; a number = a burst of that many seconds;
+`{burst: 4, every: 30, first: 5}` = a 4 s burst every 30 s for the whole
+scene, the first 5 s in (`first` defaults to 0; `every` must leave at least
+5 s between bursts; a one-off burst from a cue does not stop the repeats);
 `off`. Outputs a scene does not mention are off during it. Everything is
 switched off when the show is paused, stopped or the director shuts down.
 
