@@ -743,3 +743,53 @@ def test_floods_on_off_switch_from_console_kept_across_restarts(tmp_path):
     again.cmd("floods_on", value=True)
     again.run(0.3)
     assert again.director.floods_on is True and again.hub.retained["haunt/floods/enabled"] == "1"
+
+
+# -- projection off: lights only ---------------------------------------------------
+
+def test_lights_only_runs_the_scenes_and_cues_without_players(tmp_path):
+    path = str(tmp_path / "show.state.json")
+    sim = Sim(state_path=path)
+    sim.run_until(lambda: sim.director.phase == "running" and sim.director.started)
+    sim.run(1.0)
+    assert sim.director.durations["1"]["a1.mp4"] == 20      # learned from the players' probes
+    sim.kill_player("1"); sim.kill_player("2")                # projectors taken down
+    sim.cmd("video", value=False)
+    sim.run_until(lambda: sim.director.phase == "running" and sim.director.scene.name == "A")
+    t0 = sim.t
+    sim.run_until(lambda: sim.director.scene.name == "B", limit=40)
+    assert 19.5 <= sim.t - t0 <= 22.0                          # a1.mp4's 20 s, no video
+    assert sim.state()["video"] is False and sim.state()["dur"] == 12   # B ends at its end_at
+    sim.run_until(lambda: sim.director.scene.name == "C", limit=20)
+    sim.run_until(lambda: "startle" in sim.sent("ghosts/command"), limit=8)   # C's cue at 5 s
+    sim.director._save_state()
+    again = Sim(state_path=path, online=())
+    assert again.director.video is False and again.director.durations["1"]["c1.mp4"] == 10
+
+
+def test_lights_only_pauses_and_switches_back_to_video():
+    sim = Sim()
+    sim.run_until(lambda: sim.director.phase == "running" and sim.director.started)
+    sim.run(1.0)
+    sim.cmd("video", value=False)
+    sim.run_until(lambda: sim.director.phase == "running" and not sim.director.video)
+    sim.run(0.5)
+    assert all(a.state in ("idle", "ended") for a in sim.agents.values())   # nothing on screen
+    sim.cmd("pause"); p = sim.director.pos
+    sim.run(3.0)
+    assert sim.director.pos == p
+    sim.cmd("resume"); sim.run(1.0)
+    assert sim.director.pos > p
+    sim.cmd("video", value=True)                               # back on: the scene restarts with video
+    sim.run_until(lambda: sim.agents["1"].state == "playing", limit=20)
+
+
+def test_projection_switch_from_console_and_phone():
+    sim = Sim()
+    sim.run_until(lambda: sim.director.phase == "running")
+    model, ctl, text = console(sim)
+    ctl.key("V")
+    sim.run(0.5)
+    assert sim.director.video is False
+    _, _, text = console(sim)
+    assert "PROJECTION OFF" in text

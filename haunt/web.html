@@ -226,6 +226,14 @@ body.testing .show-only { display: none !important; }
   <div class="hint" id="hue-hint"></div>
 </section>
 
+<section class="card" id="video-card">
+  <div class="stepper"><div class="label"><b>Projection</b><span id="video-sub">videos on both projectors</span></div></div>
+  <div class="seg">
+    <button id="video-on">On</button>
+    <button id="video-off">Off (lights only)</button>
+  </div>
+</section>
+
 <section class="card" id="floods-card" hidden>
   <div class="stepper">
     <div class="label"><b>Flood brightness</b><span>all 14 floods, on top of the show</span></div>
@@ -335,6 +343,8 @@ $("testbtn").addEventListener("click", () => {
 $("hue-show").addEventListener("click", () => send("hue", {value: true}));
 $("hue-house").addEventListener("click", () => send("hue", {value: false}));
 $("floods-on").addEventListener("click", () => send("floods_on", {value: true}));
+$("video-on").addEventListener("click", () => send("video", {value: true}));
+$("video-off").addEventListener("click", () => send("video", {value: false}));
 $("floods-off").addEventListener("click", () => send("floods_on", {value: false}));
 $("playlist").addEventListener("click", (ev) => {
   const it = ev.target.closest(".item");
@@ -465,6 +475,10 @@ function render() {
   setHTML("lights", chips.join("") || '<span class="empty">none</span>');
 
   // floods master brightness
+  const von = S.video !== false;
+  $("video-on").className = von ? "on" : "";
+  $("video-off").className = von ? "" : "on house";
+  $("video-sub").textContent = von ? "videos on both projectors" : "lights only: the scenes run without video";
   $("floods-card").hidden = S.floods_level === null || S.floods_level === undefined;
   if (!$("floods-card").hidden) {
     $("floods-level").textContent = Math.round(S.floods_level) + "%";

@@ -37,6 +37,7 @@ log = logging.getLogger("haunt.director")
 MASTER_OFFLINE_GRACE = 3.0   # s to wait for an offline master before skipping
 STALE_AFTER = 6.0            # s without a report from the master = it is gone
 RESEND_AFTER = 2.5           # s before repeating a load/play nobody acted on
+LIGHTS_ONLY_GUESS = 180.0    # s a lights-only scene lasts if its video's length was never learned
 RETRY_WAIT = 5.0             # s to sit in "waiting" before trying again
 PUBLISH_EVERY = 0.5
 SAVE_DELAY = 2.0
@@ -107,6 +108,9 @@ class Director:
         self.hue = True           # the show drives the Hue rooms (False: left to the house)
         self.floods_level = 100.0  # master brightness for the floods, percent (console , and .)
         self.floods_on = True      # False: the floods stay off during the show (console o)
+        self.video = True          # False: lights only, no projection; scenes run on the director's clock (console V)
+        self.durations = {}        # player id -> {file: seconds}, from the players' probes; kept for lights-only
+        self._lo_last = None       # lights-only: last tick time while running
         self.forced_off = set()   # outputs forced off from the console (kept across restarts)
         self.test = None          # test mode: {"scene": i, "light": name|"all", "pattern": ...}
         self.test_pending = False # enter test mode once the show has stopped
@@ -187,6 +191,9 @@ class Director:
         self.forced_off = set(data.get("outputs_off") or [])
         self.floods_level = max(0.0, min(100.0, float(data.get("floods_level", 100))))
         self.floods_on = bool(data.get("floods_on", True))
+        self.video = bool(data.get("video", True))
+        self.durations = {str(p): {str(f): float(d) for f, d in (v or {}).items()}
+                          for p, v in (data.get("durations") or {}).items()}
         names = [s.name for s in self.show.scenes]
         if data.get("scene") in names:
             self.index = names.index(data["scene"])
@@ -198,7 +205,8 @@ class Director:
         data = {"master": self.master_level, "levels": self.levels,
                 "disabled": sorted(self.disabled), "scene": self.scene.name,
                 "hue": self.hue, "outputs_off": sorted(self.forced_off),
-                "floods_level": self.floods_level, "floods_on": self.floods_on}
+                "floods_level": self.floods_level, "floods_on": self.floods_on,
+                "video": self.video, "durations": self.durations}
         try:
             tmp = self.state_path + ".tmp"
             with open(tmp, "w") as fh:
@@ -262,7 +270,7 @@ class Director:
         preroll = float(self.show.defaults["follower_preroll"])
         for pid in self.show.players:
             clip = scene.clips.get(pid)
-            if clip is None:
+            if clip is None or not self.video:
                 self.send(pid, {"cmd": "stop", "fade": 0})
             elif pid == scene.master or clip.start_after <= preroll:
                 self._load(pid)
@@ -275,6 +283,13 @@ class Director:
         self.phase = "running"
         self.t_phase = self.clock()
         self.skips = 0
+        if not self.video:
+            self.started = True
+            self.pos = scene.clips[scene.master].start      # cue times are the master file's time
+            self._lo_last = self.t_phase
+            self.set_lights(scene.lights)
+            self.outputs.scene(scene.outputs)
+            return
         self._play(scene.master)
         for pid in self.want_loaded:
             # Followers with no offset start in the same breath as the master.
@@ -382,6 +397,8 @@ class Director:
                 self._load(pid)
 
     def _tick_preparing(self, now):
+        if not self.video:
+            return self._begin()
         scene = self.scene
         waited = now - self.t_phase
         timeout = float(self.show.defaults["ready_timeout"])
@@ -412,7 +429,40 @@ class Director:
                           % (self.pname(pid), why if v.online else "offline"), "warning")
         self._begin()
 
+    def lights_only_end(self, scene=None) -> Optional[float]:
+        """Lights only: where the scene ends, in the master file's time."""
+        scene = scene or self.scene
+        if scene.end_at is not None:
+            return float(scene.end_at)
+        clip = scene.clips[scene.master]
+        d = self.durations.get(scene.master, {}).get(clip.file)
+        if d is None:
+            return clip.start + LIGHTS_ONLY_GUESS
+        return float(d)
+
+    def _tick_lights_only(self, now):
+        scene = self.scene
+        if not self.paused and self._lo_last is not None:
+            self.pos += max(0.0, now - self._lo_last)
+        self._lo_last = now
+        end = self.lights_only_end()
+        if self.pos >= end:
+            return self.end_scene(self.index + 1, 0.0)
+        self._run_cues(scene)
+
+    def _run_cues(self, scene):
+        while self.cue_idx < len(scene.cues) and self.pos >= scene.cues[self.cue_idx].at:
+            cue = scene.cues[self.cue_idx]
+            self.cue_idx += 1
+            self.set_lights(cue.lights)
+            self.outputs.apply(cue.outputs)
+            if cue.mqtt:
+                self.bus.publish(cue.mqtt["topic"], cue.mqtt.get("payload", ""))
+            self.note("cue at %ds" % cue.at)
+
     def _tick_running(self, now):
+        if not self.video:
+            return self._tick_lights_only(now)
         scene = self.scene
         m = self.players[scene.master]
         m_state = m.at(self.cue)
@@ -476,14 +526,7 @@ class Director:
             if self.players[pid].at(self.cue) == "ready" and (sent is None or now - sent > RESEND_AFTER):
                 self._play(pid)
 
-        while self.cue_idx < len(scene.cues) and self.pos >= scene.cues[self.cue_idx].at:
-            cue = scene.cues[self.cue_idx]
-            self.cue_idx += 1
-            self.set_lights(cue.lights)
-            self.outputs.apply(cue.outputs)
-            if cue.mqtt:
-                self.bus.publish(cue.mqtt["topic"], cue.mqtt.get("payload", ""))
-            self.note("cue at %ds" % cue.at)
+        self._run_cues(scene)
 
     def _tick_ending(self, now):
         waited = now - self.t_phase
@@ -553,7 +596,12 @@ class Director:
                 v.probe = json.loads(payload)
                 self._playlist_dirty = True
             except ValueError:
-                pass
+                return
+            got = {f: float(i["dur"]) for f, i in (v.probe.get("files") or {}).items()
+                   if isinstance(i, dict) and i.get("dur")}
+            if got and any(self.durations.get(pid, {}).get(f) != d for f, d in got.items()):
+                self.durations.setdefault(pid, {}).update(got)
+                self._touch()
 
     def probe(self, pid: Optional[str] = None) -> None:
         """Ask players which of their show files exist (and how loud they are)."""
@@ -898,6 +946,21 @@ class Director:
             self._touch()
         self._publish_floods_level()
 
+    def _cmd_video(self, cmd):
+        """Projection on/off: {"value": false} = lights only (no video), or no value to toggle.
+        A running scene starts again from the top in the new mode."""
+        on = bool(cmd["value"]) if "value" in cmd else not self.video
+        if on == self.video:
+            return
+        self.video = on
+        self.note("projection %s" % ("ON" if on else "OFF: lights only"))
+        self._touch()
+        if self.phase in ("preparing", "running"):
+            self.go(self.index, step=0)
+        elif not on:
+            for pid in self.show.players:
+                self.send(pid, {"cmd": "stop", "fade": 0})
+
     def _publish_floods_on(self) -> None:
         self.bus.publish("%s/floods/enabled" % self.topics.prefix, "1" if self.floods_on else "0", retain=True)
 
@@ -1011,7 +1074,9 @@ class Director:
             "cue": self.cue if active else None,
             "master": scene.master,
             "pos": round(self.pos, 1) if self.phase == "running" else 0.0,
-            "dur": m.state.get("dur") if m.at(self.cue) else None,
+            "dur": (m.state.get("dur") if m.at(self.cue) else None) if self.video
+                   else (self.lights_only_end() if active else None),
+            "video": self.video,
             "end_at": scene.end_at,
             "next": self.next[0] % len(self.show.scenes) if self.next else None,
             "master_level": round(self.master_level, 1),

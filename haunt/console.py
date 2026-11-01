@@ -32,7 +32,7 @@ ASCII = {"bar_on": "#", "bar_off": "-", "dot": "*", "swatch": "#",
 
 HELP = [
     "space pause/resume   n next   p previous   r restart scene   enter go to selected",
-    "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo   v mirror (rear projection)",
+    "s stop/start show   x skip scene on/off   +/- master   tab player   [ ] level   m mute   c mono/stereo   v mirror (rear projection)   V projection on/off",
     "u undo level changes   R reload show file   h Hue rooms: show / house   up/down select",
     "f fog   w mister: each press steps auto > forced on > forced off > auto (fog on = one burst)   o floods on/off   , . floods brightness",
     "t test mode (lights scene by scene, without the videos)   q quit (the show keeps running)",
@@ -263,6 +263,8 @@ def render(model: Model, width: int, height: int, sel: int = 0, focus: Optional[
         seg.append((pad(st.get("scene", ""), room, ell), "bold"))
         seg.append((tail, ""))
         lines.append(seg)
+        if st.get("video") is False:
+            lines.append([(" PROJECTION OFF", "warn"), ("  lights only: scenes run on the director's clock   V projection on", "dim")])
 
     if connected and model.director_online and (st.get("phase") == "test" or st.get("test_pending")):
         lines += render_test(model, w, height - len(lines) if height else 0, sym, test_sel, wallclock)
@@ -780,6 +782,8 @@ class Controller:
             self.send("reload")
         elif k == "h":
             self.send("hue")
+        elif k == "V":
+            self.send("video")
         else:
             outs = self.model.playlist.get("outputs") or {}
             for name, o in outs.items():

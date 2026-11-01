@@ -211,3 +211,10 @@ def test_mirror_from_the_phone(web):
     assert post(base + "/api/cmd", {"cmd": "mirror", "player": "2", "value": True})[0] == 200
     sim.run(0.5)
     assert sim.agents["2"].mirror is True and sim.agents["1"].mirror is False
+
+
+def test_projection_off_from_the_phone(web):
+    sim, app, base = web
+    assert post(base + "/api/cmd", {"cmd": "video", "value": False})[0] == 200
+    sim.run(0.5)
+    assert sim.director.video is False

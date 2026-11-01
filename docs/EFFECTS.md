@@ -70,6 +70,14 @@ stopped show leaves the floods to their own motion sensors either way, and
 test mode still drives them. Kept across restarts and sent as
 `haunt/floods/enabled` (retained, 1/0).
 
+**Projection off (lights only).** `V` in the console (or Projection: Off on the
+phone page) runs the show without video: each scene lasts as long as its master
+video (its `end_at` if it has one), on the director's own clock, and every cue,
+fog burst and mister setting fires at the same moment as with video. The video
+lengths come from the players' probes and are kept in show.state.json, so the
+players can be unplugged. A scene whose length was never learned runs 180 s.
+Switching mid-scene restarts that scene in the new mode. Kept across restarts.
+
 **Group command.** A row can name a `group:` entity in floods.yaml, one
 Home Assistant light that reaches all the floods at once. When most of the row
 should show the same thing (a solid look, off at the end of the show, the
