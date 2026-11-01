@@ -6,3 +6,5 @@ __pycache__/
 *.state.json.tmp
 # local secrets
 /env
+# macOS folder metadata
+.DS_Store
